@@ -401,52 +401,10 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function HomeV5() {
-  const [searchFocused, setSearchFocused] = useState(false);
   const [liked, setLiked] = useState<number[]>([]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20" suppressHydrationWarning>
-
-      {/* ── NAV ──────────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-border/40 bg-background/80 backdrop-blur-2xl">
-        <div className="max-w-[1440px] mx-auto px-10 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-10">
-            <span className="text-2xl font-black italic tracking-tighter text-primary select-none">PROMPTX</span>
-            <div className="hidden lg:flex items-center gap-8">
-              {[
-                { label: "Explore", href: "/explore" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Coins", href: "/coins" },
-                { label: "Prompt Upload", href: "/upload" },
-                { label: "Trending", href: "#" },
-              ].map((item) => (
-                <Link key={item.label} href={item.href} className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">{item.label}</Link>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <motion.div
-              animate={{ width: searchFocused ? 320 : 240 }}
-              className="relative hidden md:block overflow-hidden"
-            >
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-              <input
-                type="text"
-                placeholder="Search 10,000+ prompts..."
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                className="w-full h-11 pl-11 pr-4 bg-secondary/60 border border-border/60 rounded-2xl text-xs font-bold placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
-              />
-            </motion.div>
-            <Link href="/sign-in" className="h-11 px-6 bg-secondary text-foreground text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all inline-flex items-center">
-              Sign In
-            </Link>
-            <Link href="/get-started" className="h-11 px-6 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-lg shadow-primary/30 transition-all inline-flex items-center">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
 
       <main className="max-w-[1440px] mx-auto px-10 pt-32 pb-40 space-y-28">
 

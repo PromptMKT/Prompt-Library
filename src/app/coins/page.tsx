@@ -135,26 +135,6 @@ const coinParticles = [
 export default function CoinsPage() {
   return (
     <div className="coin-page min-h-screen bg-background text-foreground font-sans">
-      <nav className="fixed top-0 left-0 right-0 z-100 border-b border-border/50 bg-background/85 backdrop-blur-2xl">
-        <div className="max-w-310 mx-auto px-6 h-18 flex items-center justify-between">
-          <Link href="/home-v5" className="text-2xl font-black tracking-tight text-primary">PROMPTX</Link>
-          <div className="hidden md:flex items-center gap-8">
-            {["Explore", "Dashboard", "Wallet", "Coins"].map((item) => (
-              <Link
-                key={item}
-                href={item === "Coins" ? "/coins" : item === "Explore" ? "/explore" : item === "Dashboard" ? "/dashboard" : "#"}
-                className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors"
-              >
-                {item}
-              </Link>
-            ))}
-          </div>
-          <Link href="/get-started" className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-[0.14em] inline-flex items-center hover:bg-primary/90 transition-colors">
-            Get O100 Free
-          </Link>
-        </div>
-      </nav>
-
       <main className="max-w-310 mx-auto px-6 pt-28 pb-24 space-y-22">
         <section className="text-center space-y-6 pt-8">
           <div className="coin-scene mx-auto mb-10">

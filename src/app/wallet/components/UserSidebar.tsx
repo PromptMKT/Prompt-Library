@@ -17,13 +17,12 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutGrid, href: "/dashboard" },
-  { label: "Analytics", icon: Activity, href: "/analytics" },
-  { label: "Profile", icon: User, href: "/u/priyanair" },
-  { label: "My Prompts", icon: Sparkles, href: "/my-prompts" },
-  { label: "Drafts", icon: FileText, href: "/drafts" },
+  { label: "Profile", icon: User, href: "/profile" },
+  { label: "Explore", icon: Sparkles, href: "/explore" },
+  { label: "Upload", icon: FileText, href: "/upload" },
   { label: "Wallet", icon: Wallet, href: "/wallet" },
-  { label: "Earnings", icon: BarChart3, href: "/earnings" },
-  { label: "Settings", icon: Settings, href: "/settings" },
+  { label: "Coins", icon: BarChart3, href: "/coins" },
+  { label: "Sign In", icon: Settings, href: "/sign-in" },
 ];
 
 export function UserSidebar() {

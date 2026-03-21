@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet, MessageCircle, CircleDashed } from "lucide-react";
 
 const promptRows = [
@@ -38,6 +39,16 @@ const categorySegments = [
   { label: "Research", color: "#D5D0FC", dash: "39 402", offset: "-363" },
 ];
 
+const sidebarLinks = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Home", href: "/" },
+  { label: "Explore", href: "/explore" },
+  { label: "Upload", href: "/upload" },
+  { label: "Wallet", href: "/wallet" },
+  { label: "Coins", href: "/coins" },
+  { label: "Sign In", href: "/sign-in" },
+];
+
 export default function DashboardPage() {
   return (
     <div className="bg-background min-h-dvh w-full font-sans text-slate-900 dark:text-foreground">
@@ -45,15 +56,16 @@ export default function DashboardPage() {
         <aside className="hidden lg:block border-r border-border bg-card/70 p-4 h-[calc(100dvh-4rem)] sticky top-16">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3">Overview</p>
           <nav className="space-y-1">
-            {["Dashboard", "Analytics", "Profile", "My Prompts", "Drafts", "Wallet", "Earnings", "Settings"].map((item) => (
-              <button
-                key={item}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
-                  item === "Dashboard" ? "bg-primary/10 text-primary" : "text-card-foreground hover:bg-secondary"
+            {sidebarLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`block w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
+                  item.href === "/dashboard" ? "bg-primary/10 text-primary" : "text-card-foreground hover:bg-secondary"
                 }`}
               >
-                {item}
-              </button>
+                {item.label}
+              </Link>
             ))}
           </nav>
         </aside>

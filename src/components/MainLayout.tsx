@@ -23,8 +23,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         "flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300",
         isAuthPage && "min-h-dvh bg-[#0a0a0f]"
       )}>
-        {!isAuthPage && <Navbar />}
-        <main className={cn("grow", isAuthPage && "bg-[#0a0a0f]")}>
+        <Navbar />
+        <main className={cn("grow pt-16", isAuthPage && "bg-[#0a0a0f]")}>
           {children}
         </main>
       </div>

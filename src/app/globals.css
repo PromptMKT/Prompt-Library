@@ -62,9 +62,19 @@
     --foreground: var(--text-primary);
     --card: var(--bg-surface);
     --card-foreground: var(--text-secondary);
+    --popover: var(--bg-surface);
+    --popover-foreground: var(--text-primary);
     --primary: var(--accent-primary);
+    --primary-foreground: #ffffff;
     --secondary: var(--bg-soft);
+    --secondary-foreground: var(--text-primary);
     --muted: var(--text-muted);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--bg-soft);
+    --accent-foreground: var(--text-primary);
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --input: var(--border-color);
     --border: var(--border-color);
     --ring: var(--accent-primary);
     --radius: 14px;
@@ -105,6 +115,29 @@
   }
   h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
+  }
+
+  /* Make common hardcoded light utility colors respect dark mode across pages */
+  .dark .text-slate-900 {
+    color: var(--text-primary) !important;
+  }
+
+  .dark .text-slate-700,
+  .dark .text-slate-600 {
+    color: var(--text-secondary) !important;
+  }
+
+  .dark .bg-white {
+    background-color: var(--bg-surface) !important;
+  }
+
+  .dark .bg-slate-100 {
+    background-color: var(--bg-soft) !important;
+  }
+
+  .dark .border-slate-200,
+  .dark .border-slate-100 {
+    border-color: var(--border-color) !important;
   }
 }
 
