@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { 
   Home, 
   Search, 
-  PlusCircle, 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -13,7 +12,6 @@ import { motion } from "framer-motion";
 const menuItems = [
   { icon: Home, label: "Home", href: "/home-v5" },
   { icon: Search, label: "Explore", href: "/explore" },
-  { icon: PlusCircle, label: "Upload", href: "/upload" },
 ];
 
 export const Sidebar = () => {
@@ -40,7 +38,6 @@ export const Sidebar = () => {
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-black tracking-tighter leading-none text-foreground">Vault<span className="text-primary italic">.</span></span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Foundation</span>
           </div>
         </Link>
       </div>

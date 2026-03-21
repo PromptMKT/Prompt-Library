@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { WalletFilter } from "./WalletFilter";
 
 export const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -88,6 +89,10 @@ export const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <div className="hidden lg:block">
+                <WalletFilter />
+              </div>
+              
               <Button variant="ghost" size="icon" className="hidden sm:flex text-muted-foreground hover:text-primary rounded-2xl">
                 <Bell className="w-5 h-5" />
               </Button>
@@ -141,6 +146,7 @@ export const Navbar = () => {
               {[
                 { label: "Home", href: "/home-v5" },
                 { label: "Explore", href: "/explore" },
+                { label: "Wallet", href: "/wallet" },
                 { label: "Upload", href: "/upload" },
                 { label: "Sign In", href: "/sign-in" },
                 { label: "Get Started", href: "/get-started" },
