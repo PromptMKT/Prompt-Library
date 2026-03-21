@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Ban, ListTree, Bot, Video } from "lucide-react";
+import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Database, ListTree, Bot, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -28,16 +28,66 @@ type PromptItem = {
 };
 
 const OUTPUT_TYPES = [
-  { id: "Image / Visual Output", icon: ImageIcon, color: "text-emerald-500" },
-  { id: "Text Output", icon: Type, color: "text-blue-500" },
-  { id: "Code Output", icon: Code2, color: "text-indigo-500" },
-  { id: "No Output (Text-only)", icon: Ban, color: "text-orange-500" },
-  { id: "Multi-step / Chain", icon: ListTree, color: "text-purple-500" },
-  { id: "Agent / System Prompt", icon: Bot, color: "text-amber-500" },
-  { id: "Audio / Video", icon: Video, color: "text-rose-500" },
+  { 
+    id: "Image / Visual Output", icon: ImageIcon, color: "text-emerald-500",
+    popup: {
+      definition: "Generates photorealistic concepts, art, and visual representations.",
+      checks: ["Prompt-to-Image Generation", "Maintains Stylistic Rules", "Requires visual capabilities"],
+      models: "Midjourney v6, FLUX, DALL-E 3"
+    } 
+  },
+  { 
+    id: "Text Output", icon: Type, color: "text-blue-500",
+    popup: {
+      definition: "Generates human-readable sentences, formatted markdown, and copy-paste ready documentation.",
+      checks: ["Formatted Markdown", "Ideal for emails, reports & copy", "0 Custom parsing needed"],
+      models: "Claude 3.5 Sonnet, ChatGPT-4o, Gemini 1.5 Pro"
+    } 
+  },
+  { 
+    id: "Code Output", icon: Code2, color: "text-indigo-500",
+    popup: {
+      definition: "Generates production-ready scripts, components, or infrastructure-as-code.",
+      checks: ["Formatted Codeblocks", "Syntax-checked Logic", "Inline Code Comments"],
+      models: "Claude 3.7 Sonnet, GPT-4o, Gemini 1.5 Pro"
+    } 
+  },
+  { 
+    id: "Structured Data", icon: Database, color: "text-orange-500",
+    popup: {
+      definition: "Generates strict data schemas like JSON, YAML, or CSVs for API payloads or databases.",
+      checks: ["Strict Formatting", "No Conversational Fillers", "Schema Validation"],
+      models: "Claude 3.5 Sonnet, GPT-4o-mini"
+    } 
+  },
+  { 
+    id: "Multi-step / Chain", icon: ListTree, color: "text-purple-500",
+    popup: {
+      definition: "A series of sequential reasoning steps feeding into each other.",
+      checks: ["Chain-of-Thought", "Multi-prompt chaining", "Complex Reasoning"],
+      models: "OpenAI o1, Claude 3.5 Sonnet"
+    } 
+  },
+  { 
+    id: "Agent / System Prompt", icon: Bot, color: "text-amber-500",
+    popup: {
+      definition: "A robust reasoning prompt built for autonomous software loops.",
+      checks: ["JSON Tool Calls", "Chain-of-Thought Reasoning", "Strict Output Schemas"],
+      models: "Claude 3.7 Tool Use, OpenAI o1, GPT-4o"
+    } 
+  },
+  { 
+    id: "Audio / Video", icon: Video, color: "text-rose-500",
+    popup: {
+      definition: "Generates scripts, vocal parameters, or timeline-ready storyboards for generation.",
+      checks: ["Rich Media Blueprints", "Voice Settings & Pitch", "Shot Transitions"],
+      models: "Runway Gen-3, Sora, ElevenLabs"
+    } 
+  },
 ];
 
 function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const getMappedOutputType = (p: PromptItem): string => {
     const rawCategory = (p.category || "").toLowerCase();
     const rawType = (p.outputType || "").toLowerCase();
@@ -46,42 +96,44 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
     // 1. Check raw type overrides
     if (rawType.includes("image") || rawType.includes("visual")) return "Image / Visual Output";
     if (rawType.includes("video") || rawType.includes("audio") || rawType.includes("film") || rawType.includes("music")) return "Audio / Video";
-    if (rawType.includes("code") || rawType.includes("json") || rawType.includes("yaml") || rawType.includes("structured")) return "Code Output";
-    if (rawType.includes("agent") || rawType.includes("tool call") || rawType.includes("function")) return "Agent / System Prompt";
+    if (rawType.includes("code")) return "Code Output";
+    if (rawType.includes("json") || rawType.includes("yaml") || rawType.includes("csv") || rawType.includes("structured") || rawType.includes("data") || rawType.includes("tool") || rawType.includes("function")) return "Structured Data";
+    if (rawType.includes("agent") || rawType.includes("autonomous")) return "Agent / System Prompt";
     if (rawType.includes("step") || rawType.includes("chain")) return "Multi-step / Chain";
-    if (rawType.includes("none") || rawType.includes("no output")) return "No Output (Text-only)";
     if (rawType.includes("text") || rawType.includes("copy") || rawType.includes("long-form") || rawType.includes("short copy")) return "Text Output";
 
     // 2. Classify based on category and textual content
     if (rawCategory.includes("image") || text.includes("image") || text.includes("generator") && text.includes("art")) return "Image / Visual Output";
     if (rawCategory.includes("video") || rawCategory.includes("audio") || text.includes("video") || text.includes("audio") || text.includes("podcast")) return "Audio / Video";
     if (rawCategory.includes("code") || text.includes("react") || text.includes("python") || text.includes("generate code") || text.includes("api integration")) return "Code Output";
-    if (rawCategory.includes("agent") || text.includes("agent") || text.includes("autonomous") || text.includes("tool call") || text.includes("multi-step workflow")) return "Agent / System Prompt";
+    if (rawCategory.includes("agent") || text.includes("agent") || text.includes("autonomous") || text.includes("multi-step workflow")) return "Agent / System Prompt";
+    if (rawCategory.includes("data") || text.includes("json") || text.includes("csv") || text.includes("schema") || text.includes("database") || text.includes("structured format")) return "Structured Data";
     if (text.includes("chain") || text.includes("step-by-step")) return "Multi-step / Chain";
-    if (rawCategory.includes("text") || rawCategory.includes("copy") || rawCategory.includes("role") || rawCategory.includes("data") || text.includes("write") || text.includes("email") || text.includes("draft") || text.includes("report")) return "Text Output";
+    if (rawCategory.includes("text") || rawCategory.includes("copy") || rawCategory.includes("role") || text.includes("write") || text.includes("email") || text.includes("draft") || text.includes("report")) return "Text Output";
 
     return "Text Output"; // Default Fallback
   };
 
   const activeType = getMappedOutputType(prompt);
+  const activeTypeData = OUTPUT_TYPES.find(t => t.id === activeType) || OUTPUT_TYPES[1];
 
   return (
-    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-6 mb-2">
+    <div className="relative flex items-center gap-3 overflow-visible pb-6 mb-2">
       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
         Prompt Type:
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
         {OUTPUT_TYPES.map((type) => {
           const isActive = type.id === activeType;
           const Icon = type.icon;
           return (
             <div
               key={type.id}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border ${
-                isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20"
-                  : "bg-card text-muted-foreground border-border/40 hover:bg-secondary/50"
-              }`}
+              onClick={() => isActive && setIsPopoverOpen(!isPopoverOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border ${isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20 cursor-pointer hover:bg-primary/90 hover:scale-[1.02] transform duration-200"
+                  : "bg-card text-muted-foreground border-border/40"
+                }`}
             >
               <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary-foreground" : type.color}`} />
               {type.id}
@@ -89,6 +141,60 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {isPopoverOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPopoverOpen(false)}
+              className="fixed inset-0 z-40 bg-black/5"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+              className="fixed top-[42%] left-1/2 -translate-x-1/2 md:-ml-[170px] -translate-y-1/2 z-[100] w-[90%] max-w-sm bg-card border border-border/60 shadow-2xl rounded-2xl overflow-hidden"
+            >
+              <div className="p-4 bg-muted/40 border-b border-border/40">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-md bg-background shadow-xs`}>
+                    <activeTypeData.icon className={`w-4 h-4 ${activeTypeData.color}`} />
+                  </div>
+                  <h4 className="font-bold text-base text-foreground">{activeTypeData.id}</h4>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {activeTypeData.popup?.definition}
+                </p>
+              </div>
+              
+              <div className="p-4 space-y-4">
+                <div>
+                  <h5 className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">What you receive</h5>
+                  <ul className="space-y-2">
+                    {activeTypeData.popup?.checks.map((check, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-sm text-foreground">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        {check}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+                  <h5 className="text-[10px] font-bold tracking-widest uppercase text-primary mb-1">Recommended Models</h5>
+                  <p className="text-xs font-semibold text-foreground">
+                    {activeTypeData.popup?.models}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -240,7 +346,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
     <div className="min-h-screen bg-background text-foreground font-sans">
       <div className="max-w-300 mx-auto pt-8 pb-32 md:pb-8 px-6 lg:px-6">
         <OutputTypeBar prompt={prompt} />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-0 items-start">
           <div className="md:pr-10">
             <ImageGallery images={prompt.images} platform={prompt.platform} category={prompt.category} />
