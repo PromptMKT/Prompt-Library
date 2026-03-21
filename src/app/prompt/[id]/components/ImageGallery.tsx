@@ -75,11 +75,11 @@ export function ImageGallery({ images, platform, category }: ImageGalleryProps) 
             {/* RELEVANT PLACEHOLDERS FOR 1 IMAGE */}
             {images.length === 1 && (
               <>
-                <div className="w-16 h-12 flex-shrink-0 rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center bg-card shadow-sm cursor-help" title={`Platform: ${platform || 'AI'}`}>
+                <div className="w-16 h-12 flex-shrink-0 rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center bg-card shadow-sm cursor-pointer" title={`Platform: ${platform || 'AI'}`}>
                   <Cpu className="w-4 h-4 text-primary/60 mb-0.5" />
                   <div className="text-[8px] font-mono text-muted-foreground uppercase opacity-70 truncate px-1 w-full text-center">{platform || 'AI'}</div>
                 </div>
-                <div className="w-16 h-12 flex-shrink-0 rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center bg-card shadow-sm cursor-help" title={`Category: ${category || 'Prompt'}`}>
+                <div className="w-16 h-12 flex-shrink-0 rounded-lg border-2 border-dashed border-border/50 flex flex-col items-center justify-center bg-card shadow-sm cursor-pointer" title={`Category: ${category || 'Prompt'}`}>
                   <Tags className="w-4 h-4 text-primary/60 mb-0.5" />
                   <div className="text-[8px] font-mono text-muted-foreground uppercase opacity-70 truncate px-1 w-full text-center">{category || 'Prompt'}</div>
                 </div>
