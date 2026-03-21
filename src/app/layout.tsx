@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 // Main layout configuration for PromptVault
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background text-foreground transition-colors duration-300`} suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground transition-colors duration-300`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

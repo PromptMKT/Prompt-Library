@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,18 +22,18 @@ const prompts = [
 ];
 
 const widePrompts = [
-  { id: 6, title: "YouTube Thumbnail – Viral Energy",        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=700&q=80" },
-  { id: 7, title: "Documentary B-Roll – Urban Decay",        image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=700&q=80" },
-  { id: 8, title: "Cinematic Drone Shot – Coastal Cliffs",   image: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=700&q=80" },
-  { id: 9, title: "Product Reveal – Dark Studio Setup",      image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=700&q=80" },
+  { id: 6, title: "YouTube Thumbnail – Viral Energy",        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=700&q=80", promptId: 1 },
+  { id: 7, title: "Documentary B-Roll – Urban Decay",        image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=700&q=80", promptId: 2 },
+  { id: 8, title: "Cinematic Drone Shot – Coastal Cliffs",   image: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=700&q=80", promptId: 3 },
+  { id: 9, title: "Product Reveal – Dark Studio Setup",      image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=700&q=80", promptId: 4 },
 ];
 
 const batchPrompts = [
-  { title: "LinkedIn Prompt", img: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&q=80" },
-  { title: "SEO Strategy",    img: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80" },
-  { title: "Twitter Thread",  img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80" },
-  { title: "Content Plan",    img: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&q=80" },
-  { title: "Email Campaign",  img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=400&q=80" },
+  { title: "LinkedIn Prompt", img: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&q=80", promptId: 1 },
+  { title: "SEO Strategy",    img: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80", promptId: 2 },
+  { title: "Twitter Thread",  img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80", promptId: 3 },
+  { title: "Content Plan",    img: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&q=80", promptId: 4 },
+  { title: "Email Campaign",  img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=400&q=80", promptId: 5 },
 ];
 
 const platforms = [
@@ -126,12 +127,13 @@ const ActionStrip = () => (
 );
 
 // Portrait card (9:16)
-const PortraitCard = ({ image, badge, title, price, rating, author }: { image: string; badge?: string; title?: string; price?: number; rating?: number; author?: string }) => (
+const PortraitCard = ({ image, badge, title, price, rating, author, href }: { image: string; badge?: string; title?: string; price?: number; rating?: number; author?: string; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="glass-card group cursor-pointer rounded-2xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 flex flex-col"
+    className="glass-card group cursor-pointer rounded-2xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 flex flex-col w-full max-w-80 min-h-107.5"
+    onClick={() => { window.location.href = href; }}
   >
     <div className="aspect-[9/16] relative overflow-hidden">
       <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -160,15 +162,16 @@ const PortraitCard = ({ image, badge, title, price, rating, author }: { image: s
 );
 
 // Full standard prompt card
-const PromptCard = ({ p }: { p: typeof prompts[0] }) => (
+const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     whileHover={{ y: -6 }}
-    className="glass-card group cursor-pointer rounded-3xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
+    className="group cursor-pointer rounded-xl overflow-hidden border border-slate-200/80 bg-white transition-colors duration-300 flex flex-col shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-80 min-h-107.5"
+    onClick={() => { window.location.href = href; }}
   >
-    <div className="aspect-square relative overflow-hidden">
+    <div className="h-62.5 w-full relative overflow-hidden shrink-0 bg-slate-100">
       <img src={p.image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <ActionStrip />
@@ -192,9 +195,69 @@ const PromptCard = ({ p }: { p: typeof prompts[0] }) => (
   </motion.div>
 );
 
+// Shared fixed-size card for Image Transformation, Instagram, and YouTube sections
+const SectionCard200 = ({
+  p,
+  href,
+  category1,
+  category2,
+  imageOnly = false,
+}: {
+  p: typeof prompts[0] | { title: string; image: string; platform: string; rating: number; author: string; price: number };
+  href: string;
+  category1: string;
+  category2: string;
+  imageOnly?: boolean;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    whileHover={{ y: -4 }}
+    className="w-[280px] max-w-full"
+    onClick={() => { window.location.href = href; }}
+  >
+    <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group min-h-[430px]">
+      {imageOnly ? (
+        <div className="h-[430px] w-full relative overflow-hidden bg-secondary">
+          <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        </div>
+      ) : (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="h-[200px] relative overflow-hidden bg-secondary">
+            <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">
+              {p.platform}
+            </div>
+          </div>
+          <div className="p-4 flex flex-col h-full">
+            <div className="flex gap-1.5 flex-wrap mb-2">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{category1}</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{category2}</span>
+            </div>
+            <div className="text-sm font-bold text-foreground leading-snug mb-3 line-clamp-2 min-h-[2.75rem]">{p.title}</div>
+            <div className="flex items-center gap-1.5 mb-3 text-[11px]">
+              <span className="text-primary tracking-widest">★★★★★</span>
+              <span className="font-mono font-bold text-foreground">{p.rating.toFixed(1)}</span>
+            </div>
+            <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-[8px] font-bold text-white shrink-0 uppercase">
+                {p.author.charAt(0)}
+              </div>
+              <div className="text-[11px] text-muted-foreground flex-1 truncate">{p.author}</div>
+              <div className="text-sm font-bold font-mono text-primary">◈ {p.price}</div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  </motion.div>
+);
+
 // Stacked batch card
-const BatchCard = ({ title, img }: { title: string; img: string }) => (
-  <motion.div whileHover={{ y: -6 }} className="relative group cursor-pointer">
+const BatchCard = ({ title, img, href }: { title: string; img: string; href: string }) => (
+  <motion.div whileHover={{ y: -6 }} className="relative group cursor-pointer w-full max-w-80 min-h-107.5" onClick={() => { window.location.href = href; }}>
     <div className="absolute inset-0 bg-card border border-border rounded-3xl -rotate-3 scale-95 opacity-40 shadow-sm" />
     <div className="absolute inset-0 bg-card border border-border rounded-3xl -rotate-1 scale-[0.97] opacity-60 shadow-sm" />
     <div className="glass-card relative bg-card border border-border/60 hover:border-primary rounded-3xl overflow-hidden shadow-sm transition-all hover:shadow-2xl hover:shadow-primary/20">
@@ -208,8 +271,8 @@ const BatchCard = ({ title, img }: { title: string; img: string }) => (
 );
 
 // Trending mini card
-const TrendingCard = ({ seed, idx }: { seed: string; idx: number }) => (
-  <motion.div whileHover={{ y: -4, scale: 1.03 }} className="glass-card w-28 shrink-0 bg-card border border-border/60 hover:border-primary rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-primary/20 transition-all">
+const TrendingCard = ({ seed, idx, href }: { seed: string; idx: number; href: string }) => (
+  <motion.div whileHover={{ y: -4, scale: 1.03 }} className="glass-card w-28 shrink-0 bg-card border border-border/60 hover:border-primary rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-primary/20 transition-all" onClick={() => { window.location.href = href; }}>
     <div className="aspect-square overflow-hidden relative">
       <img src={`https://picsum.photos/seed/${seed}-${idx}/200`} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
     </div>
@@ -221,10 +284,11 @@ const TrendingCard = ({ seed, idx }: { seed: string; idx: number }) => (
 );
 
 // Contributor profile card
-const ProfileCard = ({ c }: { c: typeof contributors[0] }) => (
+const ProfileCard = ({ c, href }: { c: typeof contributors[0]; href: string }) => (
   <motion.div
     whileHover={{ y: -6 }}
     className="glass-card w-60 shrink-0 bg-card border border-border/60 hover:border-primary rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/20 transition-all cursor-pointer"
+    onClick={() => { window.location.href = href; }}
   >
     <div className="h-20 bg-gradient-to-br from-primary/80 to-violet-600/80 relative overflow-hidden">
       <img src={`https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&q=80&seed=${c.seed}`} className="w-full h-full object-cover opacity-30 mix-blend-overlay" alt="" />
@@ -269,14 +333,15 @@ const ProfileCard = ({ c }: { c: typeof contributors[0] }) => (
 );
 
 // Favorite Card (Specific to Most Liked section matching User requirements)
-const FavoriteCard = ({ p }: { p: typeof prompts[0] }) => (
+const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="bg-white rounded-xl overflow-hidden border border-slate-200/80 hover:border-purple-500 transition-colors duration-300 flex flex-col group cursor-pointer shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full"
+    className="bg-white rounded-xl overflow-hidden border border-slate-200/80 hover:border-purple-500 transition-colors duration-300 flex flex-col group cursor-pointer shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-80 min-h-107.5"
+    onClick={() => { window.location.href = href; }}
   >
-    <div className="h-[200px] w-full relative overflow-hidden shrink-0 bg-slate-100">
+    <div className="h-62.5 w-full relative overflow-hidden shrink-0 bg-slate-100">
       <img src={p.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
       
       {/* Top-Left Platform Badge */}
@@ -340,7 +405,7 @@ export default function HomeV5() {
   const [liked, setLiked] = useState<number[]>([]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20" suppressHydrationWarning>
 
       {/* ── NAV ──────────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-border/40 bg-background/80 backdrop-blur-2xl">
@@ -348,8 +413,12 @@ export default function HomeV5() {
           <div className="flex items-center gap-10">
             <span className="text-2xl font-black italic tracking-tighter text-primary select-none">PROMPTX</span>
             <div className="hidden lg:flex items-center gap-8">
-              {["Explore", "Categories", "Professionals", "Guides", "Trending"].map(l => (
-                <a key={l} href="#" className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">{l}</a>
+              {[
+                { label: "Explore", href: "/explore" },
+                { label: "Prompt Upload", href: "/upload" },
+                { label: "Trending", href: "#" },
+              ].map((item) => (
+                <Link key={item.label} href={item.href} className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">{item.label}</Link>
               ))}
             </div>
           </div>
@@ -367,12 +436,12 @@ export default function HomeV5() {
                 className="w-full h-11 pl-11 pr-4 bg-secondary/60 border border-border/60 rounded-2xl text-xs font-bold placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
               />
             </motion.div>
-            <button className="h-11 px-6 bg-secondary text-foreground text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all">
+            <Link href="/sign-in" className="h-11 px-6 bg-secondary text-foreground text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-secondary/80 transition-all inline-flex items-center">
               Sign In
-            </button>
-            <button className="h-11 px-6 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-lg shadow-primary/30 transition-all">
+            </Link>
+            <Link href="/get-started" className="h-11 px-6 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-lg shadow-primary/30 transition-all inline-flex items-center">
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -412,7 +481,7 @@ export default function HomeV5() {
             transition={{ delay: 0.3 }}
             className="flex items-center justify-center gap-4"
           >
-            <button className="h-14 px-10 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-2xl shadow-primary/30 transition-all">
+            <button className="h-14 px-10 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-2xl shadow-primary/30 transition-all" suppressHydrationWarning>
               Browse Prompts
             </button>
             <button className="h-14 px-10 bg-secondary text-foreground text-sm font-black uppercase tracking-widest rounded-2xl hover:bg-secondary/70 transition-all">
@@ -437,12 +506,16 @@ export default function HomeV5() {
         {/* ── IMAGE TRANSFORMATION (9:16) ──────────────────────────────────────── */}
         <section>
           <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" />
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
-            {prompts.map((p, i) => (
-              <PortraitCard key={p.id} image={p.image} badge={i === 0 ? "AI Avatar" : i === 1 ? "Reel" : "Post"} />
-            ))}
-            {prompts.slice(0, 2).map((p, i) => (
-              <PortraitCard key={`extra-${p.id}`} image={p.image} badge="Transformation" />
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {prompts.slice(0, 5).map((p, i) => (
+              <SectionCard200
+                key={p.id}
+                p={p}
+                href={`/prompt/${p.id}`}
+                category1="Transformation"
+                category2={i % 2 === 0 ? "Portrait" : "Reel"}
+                imageOnly
+              />
             ))}
           </div>
         </section>
@@ -450,12 +523,16 @@ export default function HomeV5() {
         {/* ── INSTAGRAM PROMPTS ────────────────────────────────────────────────── */}
         <section>
           <SectionHeader title="Instagram Prompts" sub="Reels · AI Avatars · Posts" />
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
-            {prompts.map((p, i) => (
-              <PortraitCard key={`ig-${p.id}`} image={p.image} badge={["Reel","AI Avatar","Post","Story","Reel"][i]} />
-            ))}
-            {prompts.slice(0, 2).map((p, i) => (
-              <PortraitCard key={`extra-ig-${p.id}`} image={p.image} badge="Reel" />
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {prompts.slice(0, 5).map((p, i) => (
+              <SectionCard200
+                key={`ig-${p.id}`}
+                p={p}
+                href={`/prompt/${p.id}`}
+                category1="Instagram"
+                category2={["Reel", "AI Avatar", "Post", "Story", "Reel"][i]}
+                imageOnly
+              />
             ))}
           </div>
         </section>
@@ -490,34 +567,22 @@ export default function HomeV5() {
         {/* ── 16:9 VIDEO PROMPTS ───────────────────────────────────────────────── */}
         <section>
           <SectionHeader title="Video & YouTube Prompts" sub="16:9 Widescreen · Cinematic" />
-          <div className="grid md:grid-cols-4 gap-5">
-            {widePrompts.map((p, i) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -6 }}
-                className="glass-card group cursor-pointer rounded-3xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all"
-              >
-                <div className="aspect-video relative overflow-hidden">
-                  <img src={p.image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-14 h-14 rounded-full bg-white/25 backdrop-blur-md flex items-center justify-center border border-white/40 shadow-2xl">
-                      <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-                    </div>
-                  </div>
-                  <ActionStrip />
-                </div>
-                <div className="p-4">
-                  <div className="text-xs font-black text-foreground line-clamp-2">{p.title}</div>
-                  <div className="flex items-center justify-between mt-3">
-                    <Stars rating={4.7} />
-                    <span className="text-xs font-black text-primary">$24</span>
-                  </div>
-                </div>
-              </motion.div>
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {[...widePrompts, widePrompts[0]].slice(0, 5).map((p, i) => (
+              <SectionCard200
+                key={`${p.id}-${i}`}
+                p={{
+                  title: p.title,
+                  image: p.image,
+                  platform: "YouTube",
+                  rating: 4.7,
+                  author: "Creator Pro",
+                  price: 24,
+                }}
+                href={`/prompt/${p.promptId}`}
+                category1="Video"
+                category2={i % 2 === 0 ? "YouTube" : "Cinematic"}
+              />
             ))}
           </div>
         </section>
@@ -525,9 +590,22 @@ export default function HomeV5() {
         {/* ── BATCH STACKED PROMPT CARDS ───────────────────────────────────────── */}
         <section>
           <SectionHeader title="Prompt Packs" sub="Bundled collections → stacked value" />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-            {batchPrompts.map((b, i) => (
-              <BatchCard key={i} title={b.title} img={b.img} />
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {batchPrompts.slice(0, 5).map((b, i) => (
+              <SectionCard200
+                key={`${b.title}-${i}`}
+                p={{
+                  title: b.title,
+                  image: b.img,
+                  platform: "Bundle",
+                  rating: 4.8,
+                  author: prompts[i % prompts.length].author,
+                  price: prompts[i % prompts.length].price,
+                }}
+                href={`/prompt/${b.promptId}`}
+                category1="Prompt Pack"
+                category2="Bundle"
+              />
             ))}
           </div>
         </section>
@@ -535,8 +613,16 @@ export default function HomeV5() {
         {/* ── BASED ON PROFESSION & INTEREST ─────────────────────────────────────── */}
         <section>
           <SectionHeader title="Based on Your Profession & Interest" sub="Single prompt cards · handpicked for you" />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
-            {prompts.map((p) => <FavoriteCard key={`prof2-${p.id}`} p={p} />)}
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {prompts.slice(0, 5).map((p) => (
+              <SectionCard200
+                key={`prof2-${p.id}`}
+                p={p}
+                href={`/prompt/${p.id}`}
+                category1="Profession"
+                category2="Interest"
+              />
+            ))}
           </div>
         </section>
 
@@ -649,7 +735,7 @@ export default function HomeV5() {
                 </div>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 snap-x">
                   {[...Array(12)].map((_, j) => (
-                    <TrendingCard key={j} seed={`${group.label}-${gi}`} idx={j} />
+                    <TrendingCard key={j} seed={`${group.label}-${gi}`} idx={j} href={`/prompt/${prompts[j % prompts.length].id}`} />
                   ))}
                 </div>
               </div>
@@ -662,7 +748,7 @@ export default function HomeV5() {
           <SectionHeader title="Top Contributors" more={false} />
           <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-6 snap-x -mx-2 px-2">
             {contributors.map((c) => (
-              <ProfileCard key={c.seed} c={c} />
+              <ProfileCard key={c.seed} c={c} href={`/prompt/${prompts[0].id}`} />
             ))}
           </div>
         </section>
@@ -670,9 +756,15 @@ export default function HomeV5() {
         {/* ── MOST LIKED PROMPTS (Favorite Section) ─────────────────────────────── */}
         <section className="bg-slate-50 border border-slate-200/60 rounded-[3rem] p-8 md:p-12">
           <SectionHeader title="Most Liked Prompts" sub="User favorites · Community picks" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {prompts.map((p, i) => (
-              <FavoriteCard key={`fave-${i}`} p={{ ...p, id: i + 100 }} />
+          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+            {prompts.slice(0, 5).map((p, i) => (
+              <SectionCard200
+                key={`fave-${i}`}
+                p={{ ...p, id: i + 100 }}
+                href={`/prompt/${p.id}`}
+                category1="Architecture"
+                category2="System Design"
+              />
             ))}
           </div>
         </section>

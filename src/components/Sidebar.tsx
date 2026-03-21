@@ -6,31 +6,28 @@ import {
   Home, 
   Search, 
   PlusCircle, 
-  Wallet, 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Settings,
-  LogOut,
-  Sparkles,
-  Zap,
-  Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const menuItems = [
-  { icon: Home, label: "Home", href: "/" },
+  { icon: Home, label: "Home", href: "/home-v5" },
   { icon: Search, label: "Explore", href: "/explore" },
-  { icon: PlusCircle, label: "Add Prompt", href: "/sell" },
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: ShoppingBag, label: "My Purchases", href: "/purchases" },
-  { icon: Wallet, label: "Wallet", href: "/wallet" },
+  { icon: PlusCircle, label: "Upload", href: "/upload" },
 ];
 
 export const Sidebar = () => {
   const pathname = usePathname();
 
-  if (pathname === "/auth" || pathname.startsWith("/home-") || pathname === "/upload") return null;
+  if (
+    pathname.startsWith("/home-") ||
+    pathname.startsWith("/prompt/") ||
+    pathname === "/explore" ||
+    pathname === "/upload" ||
+    pathname === "/sign-in" ||
+    pathname === "/get-started"
+  )
+    return null;
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-background border-r border-border z-50 hidden lg:flex flex-col p-6 shadow-sm overflow-y-auto scrollbar-hide dark:bg-[#0B0B0F]">
@@ -46,7 +43,7 @@ export const Sidebar = () => {
         </Link>
       </div>
 
-      <nav className="flex-grow space-y-1.5">
+      <nav className="grow space-y-1.5">
         {menuItems.map((item, index) => (
           <Link
             key={item.href}
