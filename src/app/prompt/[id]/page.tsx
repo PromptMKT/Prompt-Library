@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { CheckCircle, Flame } from "lucide-react";
+import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Ban, ListTree, Bot, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -24,7 +24,74 @@ type PromptItem = {
   promptText: string;
   images: string[];
   seller: { username: string; avatar?: string };
+  outputType?: string;
 };
+
+const OUTPUT_TYPES = [
+  { id: "Image / Visual Output", icon: ImageIcon, color: "text-emerald-500" },
+  { id: "Text Output", icon: Type, color: "text-blue-500" },
+  { id: "Code Output", icon: Code2, color: "text-indigo-500" },
+  { id: "No Output (Text-only)", icon: Ban, color: "text-orange-500" },
+  { id: "Multi-step / Chain", icon: ListTree, color: "text-purple-500" },
+  { id: "Agent / System Prompt", icon: Bot, color: "text-amber-500" },
+  { id: "Audio / Video", icon: Video, color: "text-rose-500" },
+];
+
+function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
+  const getMappedOutputType = (p: PromptItem): string => {
+    const rawCategory = (p.category || "").toLowerCase();
+    const rawType = (p.outputType || "").toLowerCase();
+    const text = (p.promptText || p.tagline || p.title || "").toLowerCase();
+
+    // 1. Check raw type overrides
+    if (rawType.includes("image") || rawType.includes("visual")) return "Image / Visual Output";
+    if (rawType.includes("video") || rawType.includes("audio") || rawType.includes("film") || rawType.includes("music")) return "Audio / Video";
+    if (rawType.includes("code") || rawType.includes("json") || rawType.includes("yaml") || rawType.includes("structured")) return "Code Output";
+    if (rawType.includes("agent") || rawType.includes("tool call") || rawType.includes("function")) return "Agent / System Prompt";
+    if (rawType.includes("step") || rawType.includes("chain")) return "Multi-step / Chain";
+    if (rawType.includes("none") || rawType.includes("no output")) return "No Output (Text-only)";
+    if (rawType.includes("text") || rawType.includes("copy") || rawType.includes("long-form") || rawType.includes("short copy")) return "Text Output";
+
+    // 2. Classify based on category and textual content
+    if (rawCategory.includes("image") || text.includes("image") || text.includes("generator") && text.includes("art")) return "Image / Visual Output";
+    if (rawCategory.includes("video") || rawCategory.includes("audio") || text.includes("video") || text.includes("audio") || text.includes("podcast")) return "Audio / Video";
+    if (rawCategory.includes("code") || text.includes("react") || text.includes("python") || text.includes("generate code") || text.includes("api integration")) return "Code Output";
+    if (rawCategory.includes("agent") || text.includes("agent") || text.includes("autonomous") || text.includes("tool call") || text.includes("multi-step workflow")) return "Agent / System Prompt";
+    if (text.includes("chain") || text.includes("step-by-step")) return "Multi-step / Chain";
+    if (rawCategory.includes("text") || rawCategory.includes("copy") || rawCategory.includes("role") || rawCategory.includes("data") || text.includes("write") || text.includes("email") || text.includes("draft") || text.includes("report")) return "Text Output";
+
+    return "Text Output"; // Default Fallback
+  };
+
+  const activeType = getMappedOutputType(prompt);
+
+  return (
+    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-6 mb-2">
+      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+        Prompt Type:
+      </span>
+      <div className="flex items-center gap-2">
+        {OUTPUT_TYPES.map((type) => {
+          const isActive = type.id === activeType;
+          const Icon = type.icon;
+          return (
+            <div
+              key={type.id}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border ${
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20"
+                  : "bg-card text-muted-foreground border-border/40 hover:bg-secondary/50"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary-foreground" : type.color}`} />
+              {type.id}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function mapFallbackPrompt(id: string): PromptItem | null {
   const fallback = (exploreData as any)?.prompts?.find((p: any) => String(p.id) === id);
@@ -43,6 +110,7 @@ function mapFallbackPrompt(id: string): PromptItem | null {
       username: fallback.seller || "creator",
       avatar: "",
     },
+    outputType: fallback.output_type || fallback.outputType || undefined,
   };
 }
 
@@ -63,6 +131,7 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
         username: "creator",
         avatar: "",
       },
+      outputType: undefined,
     };
   }
 
@@ -79,6 +148,7 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
       username: firstPrompt.seller || "creator",
       avatar: "",
     },
+    outputType: firstPrompt.output_type || firstPrompt.outputType || undefined,
   };
 }
 
@@ -102,6 +172,7 @@ function mapDbPrompt(row: any): PromptItem {
       username: row.seller || "creator",
       avatar: row.seller_avatar || "",
     },
+    outputType: row.output_type || row.outputType || undefined,
   };
 }
 
@@ -168,6 +239,8 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
       <div className="max-w-300 mx-auto pt-8 pb-32 md:pb-8 px-6 lg:px-6">
+        <OutputTypeBar prompt={prompt} />
+        
         <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-0 items-start">
           <div className="md:pr-10">
             <ImageGallery images={prompt.images} platform={prompt.platform} category={prompt.category} />
