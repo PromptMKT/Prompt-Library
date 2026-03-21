@@ -33,7 +33,7 @@ export const Navbar = () => {
     };
   }, []);
 
-  if (pathname.startsWith("/home-")) return null;
+  if (pathname.startsWith("/home-") || pathname.startsWith("/coins")) return null;
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && search.trim()) {

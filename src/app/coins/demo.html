@@ -1,0 +1,992 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Coin Economy — PromptVault.</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06040f;
+  --s1:#0d0920;
+  --s2:#130f2a;
+  --s3:#1a1535;
+  --border:rgba(168,139,250,.1);
+  --border2:rgba(168,139,250,.18);
+
+  --gold:#F5C842;
+  --gold2:#e8a838;
+  --gold3:#fde68a;
+  --gold-glow:rgba(245,200,66,.25);
+  --gold-glow2:rgba(232,168,56,.12);
+
+  --violet:#7C3AED;
+  --violet2:#8B5CF6;
+  --violet3:#A78BFA;
+
+  --text:#F5F0FF;
+  --muted:#8B7FC0;
+  --dim:#3D3466;
+
+  --sans:'Sora',sans-serif;
+  --serif:'Instrument Serif',serif;
+  --mono:'DM Mono',monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--sans);font-size:14px;line-height:1.6;
+  overflow-x:hidden;
+}
+
+/* Deep space background */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(124,58,237,.2) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(245,200,66,.06) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 10% 80%, rgba(139,92,246,.08) 0%, transparent 50%);
+}
+
+/* Stars */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 85%, rgba(255,255,255,.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,.2) 0%, transparent 100%),
+    radial-gradient(2px 2px at 60% 20%, rgba(245,200,66,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 90%, rgba(168,139,250,.5) 0%, transparent 100%);
+}
+
+a{text-decoration:none;color:inherit}
+.page{position:relative;z-index:1}
+
+/* ═══════════ NAV ═══════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:400;
+  height:62px;display:flex;align-items:center;
+  padding:0 40px;gap:16px;
+  background:rgba(6,4,15,.85);
+  backdrop-filter:blur(32px);
+  border-bottom:1px solid var(--border);
+  transition:background .3s;
+}
+.logo{
+  display:flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:16px;font-weight:500;
+  color:var(--gold);text-decoration:none;flex-shrink:0;
+}
+.logo-hex{font-size:20px;filter:drop-shadow(0 0 8px rgba(245,200,66,.6))}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:10px}
+.nav-link{
+  padding:7px 16px;border-radius:20px;font-size:12px;font-weight:500;
+  color:var(--muted);transition:.2s;border:1px solid transparent;
+}
+.nav-link:hover{color:var(--text);border-color:var(--border2)}
+.nav-link.cta{
+  background:linear-gradient(135deg,var(--gold2),var(--gold));
+  color:#000;font-weight:700;border-color:transparent;
+  box-shadow:0 2px 16px var(--gold-glow);
+}
+.nav-link.cta:hover{opacity:.9;transform:translateY(-1px)}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;border:1.5px solid rgba(168,139,250,.3)}
+
+/* ═══════════ HERO ═══════════ */
+.hero{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:100px 40px 80px;
+  text-align:center;
+  position:relative;
+}
+
+/* ─── 3D COIN ─── */
+.coin-scene{
+  perspective:800px;
+  width:200px;height:200px;
+  margin:0 auto 48px;
+  cursor:pointer;
+}
+.coin{
+  width:200px;height:200px;
+  position:relative;
+  transform-style:preserve-3d;
+  animation:coinSpin 8s linear infinite;
+  transition:animation-duration .3s;
+}
+.coin-scene:hover .coin{animation-duration:2s}
+@keyframes coinSpin{
+  0%{transform:rotateY(0deg) rotateX(10deg)}
+  100%{transform:rotateY(360deg) rotateX(10deg)}
+}
+.coin-face,.coin-back,.coin-edge{
+  position:absolute;width:100%;height:100%;
+  border-radius:50%;
+  backface-visibility:hidden;
+}
+/* FRONT */
+.coin-face{
+  background:
+    radial-gradient(circle at 35% 30%, #fff8d4 0%, #f5c842 25%, #d4980a 55%, #8b6200 85%, #5a3e00 100%);
+  box-shadow:
+    inset -8px -8px 20px rgba(0,0,0,.4),
+    inset 6px 6px 16px rgba(255,255,255,.35),
+    0 0 60px rgba(245,200,66,.4),
+    0 0 120px rgba(245,200,66,.15);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:4px;
+}
+.coin-face-inner{
+  width:80%;height:80%;border-radius:50%;
+  border:2px solid rgba(255,220,80,.4);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  background:radial-gradient(circle at 40% 35%, rgba(255,245,180,.15), transparent 60%);
+}
+.coin-symbol{
+  font-size:52px;font-family:var(--mono);font-weight:500;
+  color:#5a3000;
+  text-shadow:1px 1px 0 rgba(255,220,80,.8),0 0 8px rgba(255,180,0,.3);
+  line-height:1;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));
+}
+.coin-text{
+  font-size:9px;font-family:var(--mono);font-weight:500;
+  color:#7a4a00;letter-spacing:.15em;text-transform:uppercase;
+  text-shadow:0 1px 0 rgba(255,220,100,.5);
+}
+/* Rim detail on face */
+.coin-face::after{
+  content:'';
+  position:absolute;inset:6px;border-radius:50%;
+  border:1.5px solid rgba(255,220,80,.25);
+  box-shadow:inset 0 0 8px rgba(0,0,0,.2);
+}
+/* BACK */
+.coin-back{
+  background:
+    radial-gradient(circle at 65% 70%, #fff8d4 0%, #f5c842 25%, #d4980a 55%, #8b6200 85%, #5a3e00 100%);
+  box-shadow:
+    inset 8px 8px 20px rgba(0,0,0,.4),
+    inset -6px -6px 16px rgba(255,255,255,.25);
+  transform:rotateY(180deg);
+  display:flex;align-items:center;justify-content:center;
+}
+.coin-back-pattern{
+  width:70%;height:70%;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,220,100,.12), transparent 70%);
+  border:1.5px solid rgba(255,220,80,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;opacity:.6;
+  text-shadow:0 2px 8px rgba(0,0,0,.5);
+}
+/* EDGE — creates coin thickness */
+.coin-edge{
+  width:200px;height:200px;
+  position:absolute;top:0;left:0;
+  transform:translateZ(-1px);
+  border-radius:50%;
+  background:linear-gradient(to right, #8b6200, #f5c842, #8b6200, #f5c842, #8b6200);
+  /* Fake depth via multiple box shadows forming a thick ring */
+  box-shadow:
+    0 0 0 6px #a07010,
+    0 0 0 8px #c09020,
+    0 0 0 10px #8b6200;
+  z-index:-1;
+}
+
+/* Glow ring under coin */
+.coin-glow-ring{
+  position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
+  width:180px;height:20px;
+  background:radial-gradient(ellipse, rgba(245,200,66,.4) 0%, transparent 70%);
+  filter:blur(8px);
+  animation:glowPulse 3s ease-in-out infinite;
+}
+@keyframes glowPulse{0%,100%{opacity:.6;transform:translateX(-50%) scaleX(1)}50%{opacity:1;transform:translateX(-50%) scaleX(1.15)}}
+
+/* Particles floating up */
+.coin-particles{
+  position:absolute;inset:-40px;pointer-events:none;overflow:hidden;
+}
+.particle{
+  position:absolute;width:4px;height:4px;border-radius:50%;
+  background:var(--gold);
+  animation:floatUp var(--dur,4s) ease-in-out infinite;
+  animation-delay:var(--delay,0s);
+  opacity:0;
+}
+@keyframes floatUp{
+  0%{opacity:0;transform:translateY(0) scale(0)}
+  20%{opacity:.8}
+  80%{opacity:.4}
+  100%{opacity:0;transform:translateY(-120px) scale(1.5)}
+}
+
+/* HERO TEXT */
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 18px;border-radius:20px;
+  border:1px solid rgba(245,200,66,.3);
+  background:rgba(245,200,66,.06);
+  font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--gold);font-family:var(--mono);margin-bottom:24px;
+}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
+
+.hero h1{
+  font-family:var(--serif);
+  font-size:clamp(40px,6vw,80px);
+  line-height:1.05;letter-spacing:-.02em;
+  margin-bottom:20px;
+}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero-sub{
+  font-size:16px;color:var(--muted);max-width:540px;margin:0 auto 40px;line-height:1.75;
+}
+.hero-ctas{display:flex;align-items:center;justify-content:center;gap:12px}
+.btn-gold{
+  padding:13px 32px;border-radius:14px;
+  background:linear-gradient(135deg,#e8a838,#f5c842);
+  color:#000;font-size:14px;font-weight:700;border:none;cursor:pointer;
+  font-family:var(--sans);transition:.2s;
+  box-shadow:0 6px 28px rgba(245,200,66,.35);
+}
+.btn-gold:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 10px 36px rgba(245,200,66,.45)}
+.btn-gold:active{transform:scale(.97)}
+.btn-outline{
+  padding:13px 28px;border-radius:14px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;
+  font-family:var(--sans);transition:.2s;
+}
+.btn-outline:hover{border-color:var(--gold2);color:var(--text)}
+
+/* Stats */
+.hero-stats{
+  display:flex;gap:0;justify-content:center;
+  margin-top:60px;
+  border:1px solid var(--border);border-radius:18px;
+  background:rgba(13,9,32,.6);backdrop-filter:blur(16px);
+  max-width:720px;margin-left:auto;margin-right:auto;
+  overflow:hidden;
+}
+.hstat{flex:1;padding:20px 24px;text-align:center;border-right:1px solid var(--border)}
+.hstat:last-child{border-right:none}
+.hstat-val{font-size:24px;font-weight:800;font-family:var(--mono);color:var(--gold);letter-spacing:-.03em;margin-bottom:4px}
+.hstat-lbl{font-size:11px;color:var(--muted)}
+
+/* ═══════════ SECTION SHARED ═══════════ */
+.section{padding:80px 0;position:relative}
+.container{max-width:1160px;margin:0 auto;padding:0 40px}
+.sec-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--violet3);font-family:var(--mono);margin-bottom:14px;
+}
+.sec-dot{width:5px;height:5px;border-radius:50%;background:var(--violet3)}
+.sec-title{font-family:var(--serif);font-size:clamp(28px,3.5vw,44px);line-height:1.12;margin-bottom:12px}
+.sec-title em{font-style:italic;color:var(--gold)}
+.sec-sub{font-size:14px;color:var(--muted);max-width:480px;line-height:1.75}
+
+/* ═══════════ EARN WAYS ═══════════ */
+.earn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+.earn-card{
+  background:rgba(13,9,32,.7);
+  border:1px solid var(--border);border-radius:20px;
+  padding:28px;position:relative;overflow:hidden;
+  transition:.3s cubic-bezier(.34,1.56,.64,1);
+  cursor:default;
+}
+.earn-card:hover{border-color:var(--border2);transform:translateY(-5px);box-shadow:0 20px 48px rgba(0,0,0,.5)}
+.earn-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--gold2),var(--gold),transparent);
+  opacity:0;transition:.3s;
+}
+.earn-card:hover::before{opacity:1}
+.earn-icon{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-bottom:18px;
+  border:1px solid rgba(245,200,66,.2);
+  background:rgba(245,200,66,.08);
+  position:relative;
+}
+.earn-icon::after{
+  content:'';position:absolute;inset:-4px;border-radius:18px;
+  background:radial-gradient(circle, rgba(245,200,66,.08), transparent 70%);
+}
+.earn-amount{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;
+  background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.2);
+  font-family:var(--mono);font-size:12px;color:var(--gold);
+  font-weight:600;margin-bottom:14px;
+}
+.earn-title{font-size:16px;font-weight:700;margin-bottom:8px;letter-spacing:-.02em}
+.earn-desc{font-size:13px;color:var(--muted);line-height:1.6}
+.earn-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.earn-tag{
+  padding:3px 9px;border-radius:20px;font-size:10px;
+  background:var(--s3);border:1px solid var(--border);color:var(--muted);
+  font-family:var(--mono);
+}
+
+/* ═══════════ CIRCULAR ECONOMY VIZ ═══════════ */
+.economy-section{
+  padding:100px 0;
+  background:linear-gradient(180deg, var(--bg) 0%, var(--s1) 50%, var(--bg) 100%);
+}
+.economy-canvas-wrap{
+  position:relative;width:100%;max-width:800px;margin:60px auto 0;
+  height:500px;
+}
+/* The 3 orbit rings */
+.orbit-ring{
+  position:absolute;border-radius:50%;border:1px solid var(--border);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.orbit-ring-1{width:160px;height:160px;border-color:rgba(245,200,66,.2)}
+.orbit-ring-2{width:320px;height:320px;border-color:rgba(168,139,250,.15);animation:rotateRing 20s linear infinite}
+.orbit-ring-3{width:480px;height:480px;border-color:rgba(124,58,237,.1);animation:rotateRing 35s linear infinite reverse}
+@keyframes rotateRing{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+/* Center coin in economy */
+.eco-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #fff8d4, #f5c842 30%, #d4980a 65%, #8b6200 100%);
+  box-shadow:0 0 40px rgba(245,200,66,.4),0 0 80px rgba(245,200,66,.15),inset -4px -4px 12px rgba(0,0,0,.3),inset 3px 3px 8px rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:2px;
+  animation:ecoPulse 4s ease-in-out infinite;
+}
+@keyframes ecoPulse{0%,100%{box-shadow:0 0 40px rgba(245,200,66,.4),0 0 80px rgba(245,200,66,.15),inset -4px -4px 12px rgba(0,0,0,.3)}50%{box-shadow:0 0 60px rgba(245,200,66,.6),0 0 120px rgba(245,200,66,.25),inset -4px -4px 12px rgba(0,0,0,.3)}}
+.eco-center-sym{font-size:36px;font-family:var(--mono);color:#5a3000;text-shadow:1px 1px 0 rgba(255,220,80,.8);font-weight:500}
+.eco-center-lbl{font-size:8px;font-family:var(--mono);color:#7a4a00;letter-spacing:.1em;text-transform:uppercase}
+
+/* Orbit nodes */
+.eco-node{
+  position:absolute;top:50%;left:50%;
+  width:64px;height:64px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  border:1px solid var(--border2);
+  background:rgba(13,9,32,.85);
+  backdrop-filter:blur(8px);
+  cursor:pointer;
+  transition:.2s;
+  z-index:2;
+}
+.eco-node:hover{border-color:var(--gold2);transform:translate(var(--tx),var(--ty)) scale(1.15);z-index:3}
+.eco-node-icon{font-size:20px;margin-bottom:2px}
+.eco-node-lbl{font-size:8px;font-family:var(--mono);color:var(--muted);text-align:center;line-height:1.2;white-space:nowrap}
+
+/* Flow arrows (SVG) */
+.eco-svg{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;overflow:visible;
+}
+
+/* Connector labels */
+.eco-conn-label{
+  position:absolute;
+  padding:4px 10px;border-radius:20px;
+  font-size:9px;font-family:var(--mono);font-weight:600;
+  background:rgba(13,9,32,.9);border:1px solid var(--border2);
+  color:var(--gold);white-space:nowrap;pointer-events:none;
+}
+
+/* ═══════════ PACKS ═══════════ */
+.packs-section{padding:80px 0;background:rgba(13,9,32,.5)}
+.packs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+.pack{
+  border-radius:22px;padding:32px 28px;text-align:center;
+  border:1px solid var(--border);
+  background:rgba(13,9,32,.8);
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:.3s cubic-bezier(.34,1.56,.64,1);
+}
+.pack:hover{transform:translateY(-6px)}
+.pack.featured{
+  border-color:var(--gold2);
+  background:linear-gradient(160deg,rgba(30,20,5,.95),rgba(20,12,0,.98));
+  box-shadow:0 0 0 1px var(--gold2),0 16px 48px rgba(245,200,66,.2);
+}
+.pack-badge{
+  position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  padding:4px 16px;border-radius:0 0 12px 12px;
+  background:linear-gradient(135deg,#e8a838,#f5c842);
+  color:#000;font-size:10px;font-weight:800;font-family:var(--mono);
+  white-space:nowrap;letter-spacing:.06em;
+}
+/* 3D coin stack for packs */
+.coin-stack{
+  position:relative;width:90px;height:90px;
+  margin:0 auto 20px;perspective:400px;
+}
+.coin-stack-item{
+  position:absolute;width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #fff8d4, #f5c842 35%, #d4980a 65%, #8b6200 100%);
+  left:5px;
+  box-shadow:inset -3px -3px 8px rgba(0,0,0,.3),inset 2px 2px 6px rgba(255,255,255,.3);
+}
+.coin-stack-item:nth-child(1){top:20px;box-shadow:inset -3px -3px 8px rgba(0,0,0,.3),0 3px 0 #8b6200,0 6px 0 #7a5200}
+.coin-stack-item:nth-child(2){top:10px;box-shadow:inset -3px -3px 8px rgba(0,0,0,.3),0 3px 0 #8b6200,0 6px 0 #7a5200}
+.coin-stack-item:nth-child(3){top:0px;box-shadow:inset -3px -3px 8px rgba(0,0,0,.3),inset 2px 2px 6px rgba(255,255,255,.35),0 0 20px rgba(245,200,66,.4)}
+.coin-stack-num{
+  position:absolute;top:0;left:5px;width:80px;height:80px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;font-family:var(--mono);
+  color:#5a3000;text-shadow:1px 1px 0 rgba(255,220,80,.6);
+  z-index:2;
+}
+
+.pack-coins{font-size:44px;font-weight:800;font-family:var(--mono);color:var(--gold);letter-spacing:-.04em;margin-bottom:3px}
+.pack-lbl{font-size:12px;color:var(--muted);margin-bottom:18px}
+.pack-price{font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px}
+.pack-per{font-size:11px;color:var(--muted);margin-bottom:20px;font-family:var(--mono)}
+.pack-save{display:inline-block;padding:3px 12px;border-radius:20px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);color:#22d3ee;font-size:10px;font-weight:700;margin-bottom:20px;font-family:var(--mono)}
+.pack-btn{
+  width:100%;padding:12px;border-radius:12px;font-size:13px;font-weight:700;
+  border:none;cursor:pointer;font-family:var(--sans);transition:.2s;
+}
+.pack-btn.gold{background:linear-gradient(135deg,#e8a838,#f5c842);color:#000;box-shadow:0 4px 20px rgba(245,200,66,.35)}
+.pack-btn.outline{background:rgba(13,9,32,.6);border:1px solid var(--border2);color:var(--muted)}
+.pack-btn:hover{opacity:.9;transform:translateY(-1px)}
+
+.free-pill{
+  display:flex;align-items:center;gap:14px;
+  max-width:600px;margin:24px auto 0;
+  padding:16px 24px;border-radius:14px;
+  background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.2);
+  font-size:13px;color:var(--muted);
+}
+.free-pill strong{color:var(--text)}
+
+/* ═══════════ HOW IT FLOWS ═══════════ */
+.flow-section{padding:80px 0}
+.flow-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;position:relative}
+.flow-steps::before{
+  content:'';position:absolute;top:34px;left:12%;right:12%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(245,200,66,.3),rgba(245,200,66,.5),rgba(245,200,66,.3),transparent);
+}
+.flow-step{text-align:center;padding:0 20px;position:relative}
+.flow-num{
+  width:68px;height:68px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #fff8d4, #f5c842 30%, #d4980a 65%, #8b6200 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:800;font-family:var(--mono);
+  color:#5a3000;text-shadow:1px 1px 0 rgba(255,220,80,.8);
+  margin:0 auto 20px;
+  box-shadow:0 0 20px rgba(245,200,66,.3),inset -2px -2px 8px rgba(0,0,0,.3),inset 2px 2px 6px rgba(255,255,255,.3);
+  position:relative;z-index:1;
+  transition:.3s;
+}
+.flow-step:hover .flow-num{box-shadow:0 0 36px rgba(245,200,66,.5),inset -2px -2px 8px rgba(0,0,0,.3)}
+.flow-arrow{
+  position:absolute;top:34px;right:-8px;z-index:2;
+  font-size:18px;color:rgba(245,200,66,.5);
+  transform:translateY(-50%);
+}
+.flow-step:last-child .flow-arrow{display:none}
+.flow-title{font-size:15px;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
+.flow-desc{font-size:12px;color:var(--muted);line-height:1.55}
+.flow-coin{font-family:var(--mono);font-size:11px;color:var(--gold);margin-top:8px;font-weight:600}
+
+/* ═══════════ PROTECTION ═══════════ */
+.protection-section{padding:80px 0;background:linear-gradient(180deg,var(--bg),var(--s1))}
+.protection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:48px}
+.prot-card{
+  background:rgba(13,9,32,.7);border:1px solid var(--border);
+  border-radius:16px;padding:22px;transition:.2s;
+}
+.prot-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.prot-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;margin-bottom:14px;
+  background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.15);
+}
+.prot-title{font-size:13px;font-weight:700;margin-bottom:6px}
+.prot-desc{font-size:12px;color:var(--muted);line-height:1.55}
+
+/* ═══════════ FINAL CTA ═══════════ */
+.final-cta{
+  padding:120px 0;text-align:center;
+  background:linear-gradient(180deg,var(--s1),var(--bg));
+  position:relative;overflow:hidden;
+}
+.final-cta::before{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:400px;
+  background:radial-gradient(ellipse,rgba(245,200,66,.08) 0%,transparent 65%);
+  pointer-events:none;
+}
+.final-cta h2{
+  font-family:var(--serif);
+  font-size:clamp(32px,4.5vw,60px);
+  line-height:1.1;letter-spacing:-.02em;margin-bottom:16px;
+  position:relative;
+}
+.final-cta h2 em{font-style:italic;color:var(--gold)}
+.final-cta p{font-size:15px;color:var(--muted);max-width:440px;margin:0 auto 36px;line-height:1.7;position:relative}
+
+/* ═══════════ ANIMATIONS ═══════════ */
+@keyframes reveal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.reveal.on{opacity:1;transform:translateY(0)}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);padding:11px 22px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(13,9,32,.95);border:1px solid rgba(245,200,66,.3);color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="promptvault_home.html"><span class="logo-hex">⬡</span>PromptStash</a>
+  <div class="nav-r">
+    <a class="nav-link" href="promptvault_explore.html">Explore</a>
+    <a class="nav-link" href="promptvault_dashboard.html">Dashboard</a>
+    <a class="nav-link" href="promptvault_wallet.html">Wallet</a>
+    <a class="nav-link cta" onclick="showToast('🎁 ⬡100 free coins on signup!')">Get ⬡100 free</a>
+    <div class="nav-avatar">PN</div>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <div style="position:relative;text-align:center;z-index:1">
+
+    <!-- 3D COIN -->
+    <div class="coin-scene">
+      <div class="coin">
+        <div class="coin-face">
+          <div class="coin-face-inner">
+            <div class="coin-symbol">⬡</div>
+            <div class="coin-text">PromptCoin</div>
+          </div>
+        </div>
+        <div class="coin-back">
+          <div class="coin-back-pattern">⚡</div>
+        </div>
+        <div class="coin-edge"></div>
+      </div>
+      <div class="coin-glow-ring"></div>
+      <div class="coin-particles">
+        <div class="particle" style="left:40%;--dur:3s;--delay:0s;width:3px;height:3px"></div>
+        <div class="particle" style="left:60%;--dur:4s;--delay:.7s;width:4px;height:4px;background:var(--violet3)"></div>
+        <div class="particle" style="left:30%;--dur:5s;--delay:1.4s;width:2px;height:2px"></div>
+        <div class="particle" style="left:70%;--dur:3.5s;--delay:2s;width:3px;height:3px;background:var(--violet3)"></div>
+        <div class="particle" style="left:50%;--dur:4.5s;--delay:.3s;width:5px;height:5px"></div>
+        <div class="particle" style="left:45%;--dur:3.8s;--delay:1s;width:2px;height:2px;background:#fff"></div>
+      </div>
+    </div>
+
+    <div class="hero-eyebrow"><div class="hero-eyebrow-dot"></div>The PromptStash Coin Economy</div>
+    <h1>Earn coins.<br><em>Spend coins.</em><br>Stay in orbit.</h1>
+    <p class="hero-sub">A fully circular in-platform economy. Earn by contributing, spend to access the best prompts. Every coin stays in the ecosystem.</p>
+    <div class="hero-ctas">
+      <button class="btn-gold" onclick="showToast('🎁 ⬡100 free coins credited!')">Claim your ⬡100 free</button>
+      <button class="btn-outline" onclick="document.getElementById('economy').scrollIntoView({behavior:'smooth'})">See how it works ↓</button>
+    </div>
+
+    <div class="hero-stats reveal">
+      <div class="hstat">
+        <div class="hstat-val">⬡ 1.2M</div>
+        <div class="hstat-lbl">Coins in circulation</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val">48K+</div>
+        <div class="hstat-lbl">Active coin holders</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val">₹0.89</div>
+        <div class="hstat-lbl">Per coin (fixed rate)</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val">90%</div>
+        <div class="hstat-lbl">Seller keeps on every sale</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ HOW YOU EARN ═══════ -->
+<section class="section" id="earn">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:0">
+      <div class="sec-eyebrow"><div class="sec-dot"></div>How you earn</div>
+      <div class="sec-title" style="text-align:center">Every action creates <em>value</em></div>
+      <div class="sec-sub" style="margin:0 auto;text-align:center">Coins aren't just for buying. The platform rewards you for every meaningful contribution you make.</div>
+    </div>
+    <div class="earn-grid reveal">
+      <div class="earn-card">
+        <div class="earn-icon">🎁</div>
+        <div class="earn-amount">⬡ 100</div>
+        <div class="earn-title">Sign up bonus</div>
+        <div class="earn-desc">Every new user receives 100 free coins instantly — no card required. Buy your first prompt the moment you join.</div>
+        <div class="earn-tags"><span class="earn-tag">One time</span><span class="earn-tag">Instant</span></div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-icon">✦</div>
+        <div class="earn-amount">⬡ 50 – 500</div>
+        <div class="earn-title">Publish a prompt</div>
+        <div class="earn-desc">List a prompt and earn coins when your first sale happens. Every sale earns you 90% of the listing price — platform takes only 10%.</div>
+        <div class="earn-tags"><span class="earn-tag">Per sale</span><span class="earn-tag">90% payout</span></div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-icon">⭐</div>
+        <div class="earn-amount">⬡ 10</div>
+        <div class="earn-title">Leave a verified review</div>
+        <div class="earn-desc">Bought a prompt? Leave a genuine review and earn 10 coins as a thank-you for helping the community make better decisions.</div>
+        <div class="earn-tags"><span class="earn-tag">Per review</span><span class="earn-tag">Must be buyer</span></div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-icon">👥</div>
+        <div class="earn-amount">⬡ 25</div>
+        <div class="earn-title">Refer a friend</div>
+        <div class="earn-desc">Share your referral link. When a friend signs up and makes their first purchase, you earn 25 coins — and so do they.</div>
+        <div class="earn-tags"><span class="earn-tag">Per referral</span><span class="earn-tag">Mutual reward</span></div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-icon">🏆</div>
+        <div class="earn-amount">⬡ 100 – 500</div>
+        <div class="earn-title">Creator milestones</div>
+        <div class="earn-desc">Hit 10 sales, 50 sales, or 500 sales — each milestone unlocks a coin bonus. Top Creator badge also unlocks at 100 sales.</div>
+        <div class="earn-tags"><span class="earn-tag">Milestone</span><span class="earn-tag">One per tier</span></div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-icon">🎯</div>
+        <div class="earn-amount">⬡ 5 – 50</div>
+        <div class="earn-title">Daily streak & challenges</div>
+        <div class="earn-desc">Log in daily, complete weekly challenges (e.g. "buy 3 prompts this week") and earn bonus coins. Streaks multiply rewards.</div>
+        <div class="earn-tags"><span class="earn-tag">Daily</span><span class="earn-tag">Weekly</span><span class="earn-tag">Streak bonus</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CIRCULAR ECONOMY ═══════ -->
+<section class="economy-section" id="economy">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="sec-eyebrow"><div class="sec-dot"></div>Circular economy</div>
+      <div class="sec-title" style="text-align:center">Coins stay <em>inside</em><br>the ecosystem</div>
+      <div class="sec-sub" style="margin:0 auto;text-align:center">Every coin earned by a seller comes from a buyer. Every coin spent by a buyer goes to a seller. The platform facilitates — coins never leave.</div>
+    </div>
+
+    <div class="economy-canvas-wrap reveal">
+      <!-- Orbit rings -->
+      <div class="orbit-ring orbit-ring-1"></div>
+      <div class="orbit-ring orbit-ring-2"></div>
+      <div class="orbit-ring orbit-ring-3"></div>
+
+      <!-- SVG flow arrows -->
+      <svg class="eco-svg" viewBox="0 0 800 500">
+        <defs>
+          <marker id="arrowGold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L9 5L1 9" fill="none" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+          </marker>
+          <marker id="arrowViolet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L9 5L1 9" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>
+          </marker>
+          <!-- Animated dash for flows -->
+          <style>
+            .flow-path{stroke-dasharray:6 4;animation:dashFlow 1.5s linear infinite}
+            .flow-path-rev{stroke-dasharray:6 4;animation:dashFlow 1.5s linear infinite reverse}
+            @keyframes dashFlow{to{stroke-dashoffset:-20}}
+          </style>
+        </defs>
+        <!-- Buyer → Center (paying coins) -->
+        <path d="M 195 250 Q 300 230 355 250" fill="none" stroke="#f5c842" stroke-width="1.5" class="flow-path" marker-end="url(#arrowGold)" opacity=".7"/>
+        <!-- Center → Seller (receiving coins) -->
+        <path d="M 445 250 Q 510 220 590 200" fill="none" stroke="#22d3ee" stroke-width="1.5" class="flow-path" marker-end="url(#arrowViolet)" opacity=".7"/>
+        <!-- Seller → Platform (10% fee) -->
+        <path d="M 590 260 Q 560 330 490 340" fill="none" stroke="#A78BFA" stroke-width="1" class="flow-path-rev" marker-end="url(#arrowViolet)" opacity=".5"/>
+        <!-- Platform → Free coins new users -->
+        <path d="M 450 360 Q 370 400 280 370" fill="none" stroke="#A78BFA" stroke-width="1" class="flow-path" marker-end="url(#arrowViolet)" opacity=".5"/>
+        <!-- Top-up flow -->
+        <path d="M 160 360 Q 190 310 220 280" fill="none" stroke="#f5c842" stroke-width="1" stroke-dasharray="4 4" opacity=".4"/>
+      </svg>
+
+      <!-- Center coin -->
+      <div class="eco-center">
+        <div class="eco-center-sym">⬡</div>
+        <div class="eco-center-lbl">Economy</div>
+      </div>
+
+      <!-- Orbit nodes (positioned absolutely via margin-left/top trick) -->
+      <!-- Buyer node LEFT -->
+      <div class="eco-node" style="--tx:-202px;--ty:-32px;margin-left:calc(50% - 32px - 202px);margin-top:calc(50% - 32px - 32px)">
+        <div class="eco-node-icon">🛒</div>
+        <div class="eco-node-lbl">Buyer</div>
+      </div>
+      <!-- Seller node RIGHT -->
+      <div class="eco-node" style="--tx:162px;--ty:-72px;margin-left:calc(50% - 32px + 162px);margin-top:calc(50% - 32px - 72px)">
+        <div class="eco-node-icon">✦</div>
+        <div class="eco-node-lbl">Seller</div>
+      </div>
+      <!-- Platform node BOTTOM RIGHT -->
+      <div class="eco-node" style="--tx:92px;--ty:92px;margin-left:calc(50% - 32px + 92px);margin-top:calc(50% - 32px + 92px)">
+        <div class="eco-node-icon">⬡</div>
+        <div class="eco-node-lbl">Platform</div>
+      </div>
+      <!-- New users node BOTTOM LEFT -->
+      <div class="eco-node" style="--tx:-122px;--ty:82px;margin-left:calc(50% - 32px - 122px);margin-top:calc(50% - 32px + 82px)">
+        <div class="eco-node-icon">🎁</div>
+        <div class="eco-node-lbl">New Users</div>
+      </div>
+      <!-- Top-up node FAR LEFT -->
+      <div class="eco-node" style="--tx:-226px;--ty:82px;margin-left:calc(50% - 32px - 226px);margin-top:calc(50% - 32px + 82px)">
+        <div class="eco-node-icon">💳</div>
+        <div class="eco-node-lbl">Top-up</div>
+      </div>
+
+      <!-- Flow labels -->
+      <div class="eco-conn-label" style="position:absolute;top:calc(50% - 58px);left:calc(50% - 130px);font-size:8px">Spend coins</div>
+      <div class="eco-conn-label" style="position:absolute;top:calc(50% - 90px);left:calc(50% + 60px);font-size:8px;color:var(--success)">Earn 90%</div>
+      <div class="eco-conn-label" style="position:absolute;top:calc(50% + 60px);left:calc(50% + 30px);font-size:8px;color:var(--violet3)">10% fee</div>
+      <div class="eco-conn-label" style="position:absolute;top:calc(50% + 100px);left:calc(50% - 100px);font-size:8px;color:var(--violet3)">Free coins</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ COIN PACKS ═══════ -->
+<section class="packs-section" id="packs">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="sec-eyebrow"><div class="sec-dot"></div>Top up packages</div>
+      <div class="sec-title" style="text-align:center">Buy once,<br>spend on <em>anything</em></div>
+      <div class="sec-sub" style="margin:0 auto;text-align:center">Coins never expire. Every pack is a one-time purchase. The more you buy, the better the rate.</div>
+    </div>
+
+    <div class="packs-grid reveal">
+      <!-- Starter -->
+      <div class="pack" onclick="showToast('Opening Razorpay for ₹89...')">
+        <div class="coin-stack" style="margin-top:12px">
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-num">1×</div>
+        </div>
+        <div class="pack-coins">⬡100</div>
+        <div class="pack-lbl">Starter pack</div>
+        <div class="pack-price">₹89</div>
+        <div class="pack-per" style="margin-bottom:36px">₹0.89 per coin</div>
+        <button class="pack-btn outline">Buy Starter</button>
+      </div>
+
+      <!-- Popular -->
+      <div class="pack featured" onclick="showToast('Opening Razorpay for ₹399...')">
+        <div class="pack-badge">⭐ Most popular · Best value</div>
+        <div class="coin-stack" style="margin-top:28px">
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-num">5×</div>
+        </div>
+        <div class="pack-coins" style="font-size:52px">⬡500</div>
+        <div class="pack-lbl">Popular pack</div>
+        <div class="pack-price">₹399</div>
+        <div class="pack-per">₹0.80 per coin</div>
+        <div class="pack-save">Save 10%</div>
+        <button class="pack-btn gold">Buy Popular</button>
+      </div>
+
+      <!-- Pro -->
+      <div class="pack" onclick="showToast('Opening Razorpay for ₹849...')">
+        <div class="coin-stack" style="margin-top:12px">
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-item"></div>
+          <div class="coin-stack-num">12×</div>
+        </div>
+        <div class="pack-coins">⬡1200</div>
+        <div class="pack-lbl">Pro pack</div>
+        <div class="pack-price">₹849</div>
+        <div class="pack-per">₹0.71 per coin</div>
+        <div class="pack-save">Save 20%</div>
+        <button class="pack-btn outline">Buy Pro</button>
+      </div>
+    </div>
+
+    <div class="free-pill reveal" style="animation-delay:.2s">
+      <span style="font-size:24px">🎁</span>
+      <span><strong>New users get ⬡100 free coins instantly</strong> — enough to buy multiple prompts before you spend a single rupee. No card, no catch.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ COIN FLOW STEPS ═══════ -->
+<section class="flow-section" id="flow">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:0">
+      <div class="sec-eyebrow"><div class="sec-dot"></div>Coin lifecycle</div>
+      <div class="sec-title" style="text-align:center">From rupees to results,<br>every step <em>tracked</em></div>
+    </div>
+    <div class="flow-steps reveal">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-title">Buy or earn coins</div>
+        <div class="flow-desc">Top up via Razorpay or earn through signup, sales, reviews, and referrals.</div>
+        <div class="flow-coin">⬡ Enter wallet</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-title">Browse & spend</div>
+        <div class="flow-desc">Buy any prompt on the platform. Coins deduct instantly. Prompt unlocks immediately.</div>
+        <div class="flow-coin">⬡ Leave wallet</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-title">Escrow holds</div>
+        <div class="flow-desc">Coins are held 48h. Buyer can raise a dispute. After 48h with no dispute, coins release automatically.</div>
+        <div class="flow-coin">⬡ In escrow</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-title">Seller earns</div>
+        <div class="flow-desc">90% of coins transfer to seller. 10% goes to the platform. Seller can reinvest or withdraw (coming soon).</div>
+        <div class="flow-coin">⬡ Seller wallet</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ EXCHANGE RATE ═══════ -->
+<section class="section" style="padding:60px 0;background:rgba(13,9,32,.5)">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center">
+      <div>
+        <div class="sec-eyebrow"><div class="sec-dot"></div>Real value</div>
+        <div class="sec-title">1 coin = <em>₹0.89</em><br>always.</div>
+        <div class="sec-sub" style="margin-top:12px">The exchange rate is fixed and transparent. No hidden conversion. No dynamic pricing. ⬡30 is always ≈₹27. You always know what you're paying.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="reveal">
+        <div style="background:rgba(13,9,32,.8);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;font-family:var(--mono);color:var(--gold);margin-bottom:4px">⬡10</div>
+          <div style="font-size:11px;color:var(--muted)">≈ ₹8.90</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:6px">Min prompt price</div>
+        </div>
+        <div style="background:rgba(13,9,32,.8);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;font-family:var(--mono);color:var(--gold);margin-bottom:4px">⬡100</div>
+          <div style="font-size:11px;color:var(--muted)">≈ ₹89</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:6px">Starter pack</div>
+        </div>
+        <div style="background:rgba(13,9,32,.8);border:1px solid var(--border2);border-radius:16px;padding:20px;text-align:center;border-color:rgba(245,200,66,.25)">
+          <div style="font-size:28px;font-weight:800;font-family:var(--mono);color:var(--gold);margin-bottom:4px">⬡500</div>
+          <div style="font-size:11px;color:var(--muted)">≈ ₹399</div>
+          <div style="font-size:10px;color:var(--success);margin-top:6px">Save 10%</div>
+        </div>
+        <div style="background:rgba(13,9,32,.8);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center">
+          <div style="font-size:28px;font-weight:800;font-family:var(--mono);color:var(--gold);margin-bottom:4px">⬡1200</div>
+          <div style="font-size:11px;color:var(--muted)">≈ ₹849</div>
+          <div style="font-size:10px;color:var(--success);margin-top:6px">Save 20%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PROTECTION ═══════ -->
+<section class="protection-section">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="sec-eyebrow"><div class="sec-dot"></div>Built on trust</div>
+      <div class="sec-title" style="text-align:center">Your coins are<br><em>protected</em></div>
+    </div>
+    <div class="protection-grid reveal">
+      <div class="prot-card">
+        <div class="prot-icon">🔒</div>
+        <div class="prot-title">48-hour escrow</div>
+        <div class="prot-desc">Every sale holds coins for 48 hours. If a prompt doesn't work as shown, raise a dispute and get a coin credit back.</div>
+      </div>
+      <div class="prot-card">
+        <div class="prot-icon">🛡️</div>
+        <div class="prot-title">Buyer protection</div>
+        <div class="prot-desc">Platform reviews disputes fairly. If the prompt doesn't match its output proof, we issue a coin credit — no questions asked.</div>
+      </div>
+      <div class="prot-card">
+        <div class="prot-icon">💎</div>
+        <div class="prot-title">Coins never expire</div>
+        <div class="prot-desc">Your coin balance stays forever. No expiry date, no seasonal resets. Your coins are yours until you spend them.</div>
+      </div>
+      <div class="prot-card">
+        <div class="prot-icon">📊</div>
+        <div class="prot-title">Full transaction log</div>
+        <div class="prot-desc">Every coin movement is recorded in your wallet history — when earned, when spent, which prompt, which buyer or seller.</div>
+      </div>
+      <div class="prot-card">
+        <div class="prot-icon">⚡</div>
+        <div class="prot-title">Instant credit</div>
+        <div class="prot-desc">Coin top-ups via Razorpay are credited instantly. No waiting. Your coins appear in your wallet before you close the payment window.</div>
+      </div>
+      <div class="prot-card">
+        <div class="prot-icon">🏦</div>
+        <div class="prot-title">Withdrawal coming</div>
+        <div class="prot-desc">Sellers will soon be able to withdraw earned coins to UPI or bank account. Coins in escrow will auto-release first.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FINAL CTA ═══════ -->
+<section class="final-cta">
+  <div class="container">
+    <!-- Mini 3D coin for CTA -->
+    <div style="perspective:500px;width:80px;height:80px;margin:0 auto 32px">
+      <div style="width:80px;height:80px;border-radius:50%;transform-style:preserve-3d;animation:coinSpin 5s linear infinite;background:radial-gradient(circle at 40% 35%, #fff8d4, #f5c842 30%, #d4980a 65%, #8b6200 100%);box-shadow:0 0 32px rgba(245,200,66,.5),inset -3px -3px 10px rgba(0,0,0,.3),inset 2px 2px 8px rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:28px;font-family:var(--mono);color:#5a3000;text-shadow:1px 1px 0 rgba(255,220,80,.8)">⬡</div>
+    </div>
+    <h2>Start with ⬡100.<br><em>Earn the rest.</em></h2>
+    <p>Join 48,000+ users already using PromptStash coins to access the best AI prompts — and creating them.</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;position:relative">
+      <button class="btn-gold" style="padding:14px 36px;font-size:15px" onclick="showToast('🎁 ⬡100 free coins credited! Welcome!')">Create account — get ⬡100 free</button>
+      <button class="btn-outline" style="padding:14px 28px;font-size:15px" onclick="window.location='promptvault_explore.html'">Browse prompts first →</button>
+    </div>
+    <div style="margin-top:20px;display:flex;align-items:center;justify-content:center;gap:20px;font-size:12px;color:var(--dim);flex-wrap:wrap">
+      <span>✓ No credit card required</span>
+      <span>✓ Coins credited instantly</span>
+      <span>✓ Coins never expire</span>
+      <span>✓ Cancel anytime</span>
+    </div>
+  </div>
+</section>
+
+</div><!-- end .page -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Toast
+let toastT;
+function showToast(m){
+  const t=document.getElementById('toast');
+  t.innerHTML=m;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// Scroll reveal
+const revObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');revObs.unobserve(e.target)}});
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>revObs.observe(el));
+</script>
+</body>
+</html>

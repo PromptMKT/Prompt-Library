@@ -7,12 +7,14 @@ import { cn } from "@/lib/utils";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === "/sign-in" || pathname === "/get-started";
+  const isAuthPage = pathname === "/sign-in" || pathname.startsWith("/get-started");
   const isFullWidthPage =
     pathname.startsWith("/home-") ||
     pathname.startsWith("/prompt/") ||
+    pathname.startsWith("/coins") ||
     pathname === "/explore" ||
     pathname === "/upload" ||
+    pathname === "/dashboard" ||
     pathname === "/card-variants" ||
     isAuthPage;
 

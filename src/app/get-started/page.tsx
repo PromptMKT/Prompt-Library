@@ -2,20 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Shield, Phone, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
 
 export default function GetStartedPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [role, setRole] = useState("buyer");
-  const [phone, setPhone] = useState("");
-  const [countryCode, setCountryCode] = useState("+1");
   const [interests, setInterests] = useState<string[]>([]);
 
   const pathOptions = [
@@ -40,21 +40,23 @@ export default function GetStartedPage() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Placeholder submit action for frontend flow.
-    console.log("Get started", { username, email, password, confirmPassword, role, phone, countryCode, interests });
+    console.log("Get started", { email, password, confirmPassword, role, interests });
   };
 
+  const username = email.includes("@") ? email.split("@")[0] : "newuser";
+  const displayName = username.replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   const canNext =
-    (step === 1 && username && email && password && confirmPassword) ||
-    (step === 2 && phone) ||
-    (step === 3 && role) ||
-    (step === 4 && interests.length > 0);
+    (step === 1 && email && password && confirmPassword && acceptedTerms) ||
+    (step === 2 && role) ||
+    (step === 3 && interests.length > 0);
 
   return (
     <main className="min-h-dvh bg-[#0a0a0f] text-white selection:bg-purple-500/30 selection:text-white">
       <div className="grid min-h-dvh lg:grid-cols-[40%_60%]">
         <aside className="relative hidden lg:flex flex-col justify-between p-12 border-r border-white/5 bg-[#0f0f1a]">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
           <div className="relative z-10 space-y-8">
             <Link href="/home-v5" className="inline-flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-900/30">
@@ -91,38 +93,51 @@ export default function GetStartedPage() {
         </aside>
 
         <section className="relative p-6 sm:p-10 lg:p-14 flex items-center justify-center bg-[#07070b] min-h-dvh">
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none" />
-          <div className="w-full max-w-[640px] space-y-8">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] bg-size-[32px_32px] pointer-events-none" />
+          <div className="w-full max-w-160 space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {[1, 2, 3, 4].map((i) => (
+                {[1, 2, 3].map((i) => (
                   <span key={i} className={cn("h-1 w-8 rounded-full", i <= step ? "bg-purple-600" : "bg-white/15")} />
                 ))}
               </div>
-              <p className="text-xs font-black tracking-[0.2em] uppercase text-slate-500">Phase {String(step).padStart(2, "0")} / 04</p>
+              <p className="text-xs font-black tracking-[0.2em] uppercase text-slate-500">Phase {String(step).padStart(2, "0")} / 03</p>
             </div>
 
             <form onSubmit={onSubmit} className="rounded-3xl border border-white/8 bg-[#060913] p-6 sm:p-8 space-y-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
               {step === 1 && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <span className="inline-flex items-center rounded-full bg-purple-500/10 border border-purple-500/30 px-3 py-1 text-[10px] font-black tracking-widest uppercase text-purple-400">Get Started</span>
-                    <h1 className="text-5xl font-black tracking-tight mt-3 text-white">Create your portal.</h1>
-                    <p className="text-slate-400 mt-2">Your digital identity starts here.</p>
+                    <h1 className="text-6xl font-black tracking-tight leading-[0.95] text-white">
+                      Create your <span className="text-purple-400 italic">account</span>
+                    </h1>
+                    <p className="text-slate-400 mt-3">Join 48,000+ creators. Sign up with Google for the fastest experience, or use your email.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="w-full h-14 rounded-2xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 transition-colors flex items-center justify-between px-4"
+                  >
+                    <span className="w-8 h-8 rounded-md bg-white inline-flex items-center justify-center">
+                      <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" className="w-5 h-5" />
+                    </span>
+                    <span className="text-lg font-bold text-white">Continue with Google</span>
+                    <span className="text-xs font-bold text-purple-200 bg-purple-500/20 px-2 py-1 rounded-full">Recommended</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">
+                    <span className="h-px bg-white/10 flex-1" />
+                    or continue with email
+                    <span className="h-px bg-white/10 flex-1" />
                   </div>
 
                   <div className="space-y-3">
-                    <label htmlFor="username" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Universal Name</label>
-                    <input id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 text-sm text-white outline-none focus:border-purple-500/50" placeholder="e.g. Satoshi Nakamoto" required />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label htmlFor="email" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Encrypted Email</label>
+                    <label htmlFor="email" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Email Address</label>
                     <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 text-sm text-white outline-none focus:border-purple-500/50" placeholder="you@example.com" required />
                   </div>
 
                   <div className="space-y-3">
-                    <label htmlFor="password" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Secure Password</label>
+                    <label htmlFor="password" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Create Password</label>
                     <div className="relative">
                       <input
                         id="password"
@@ -142,6 +157,7 @@ export default function GetStartedPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-slate-500">Use a mix of letters, numbers and symbols</p>
                   </div>
 
                   <div className="space-y-3">
@@ -166,42 +182,20 @@ export default function GetStartedPage() {
                       </button>
                     </div>
                   </div>
+
+                  <label className="inline-flex items-center gap-2.5 text-sm text-slate-400 select-none">
+                    <input
+                      type="checkbox"
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 accent-purple-500"
+                    />
+                    I agree to the <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span>
+                  </label>
                 </div>
               )}
 
               {step === 2 && (
-                <div className="space-y-5">
-                  <div className="text-center space-y-2">
-                    <div className="mx-auto w-20 h-20 rounded-3xl bg-purple-600/10 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-                      <Phone className="w-9 h-9" />
-                    </div>
-                    <h2 className="text-5xl font-black tracking-tight text-white">Guard your account.</h2>
-                    <p className="text-slate-400">Enable multi-factor security with your phone number.</p>
-                  </div>
-
-                  <div className="grid grid-cols-[120px_1fr] gap-3">
-                    <div className="space-y-2">
-                      <label htmlFor="cc" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Zone</label>
-                      <select id="cc" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="w-full h-11 rounded-2xl bg-white/5 border border-white/10 px-3 text-sm text-white outline-none focus:border-purple-500/50">
-                        <option>+1</option>
-                        <option>+44</option>
-                        <option>+91</option>
-                        <option>+61</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="phone" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Phone Number</label>
-                      <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-11 rounded-2xl bg-white/5 border border-white/10 px-3 text-sm text-white outline-none focus:border-purple-500/50" placeholder="000 000 0000" required />
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/5 px-4 py-3 text-xs text-slate-300 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-indigo-300" /> Verification helps maintain high-quality community standards.
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
                 <div className="space-y-5">
                   <div>
                     <h2 className="text-5xl font-black tracking-tight text-white">Pick your path.</h2>
@@ -233,7 +227,7 @@ export default function GetStartedPage() {
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 3 && (
                 <div className="space-y-5">
                   <div>
                     <h2 className="text-5xl font-black tracking-tight text-white">Your interests.</h2>
@@ -280,10 +274,10 @@ export default function GetStartedPage() {
                   <div />
                 )}
 
-                {step < 4 ? (
+                {step < 3 ? (
                   <button
                     type="button"
-                    onClick={() => canNext && setStep((s) => Math.min(4, s + 1))}
+                    onClick={() => canNext && setStep((s) => Math.min(3, s + 1))}
                     disabled={!canNext}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
@@ -291,11 +285,12 @@ export default function GetStartedPage() {
                   </button>
                 ) : (
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={() => router.push("/get-started/bonus")}
                     disabled={!canNext}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
-                    Launch Dashboard <Rocket className="w-4 h-4" />
+                    Claim Bonus & Launch <Rocket className="w-4 h-4" />
                   </button>
                 )}
               </div>

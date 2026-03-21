@@ -415,6 +415,8 @@ export default function HomeV5() {
             <div className="hidden lg:flex items-center gap-8">
               {[
                 { label: "Explore", href: "/explore" },
+                { label: "Dashboard", href: "/dashboard" },
+                { label: "Coins", href: "/coins" },
                 { label: "Prompt Upload", href: "/upload" },
                 { label: "Trending", href: "#" },
               ].map((item) => (

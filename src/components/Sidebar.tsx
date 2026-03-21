@@ -22,10 +22,12 @@ export const Sidebar = () => {
   if (
     pathname.startsWith("/home-") ||
     pathname.startsWith("/prompt/") ||
+    pathname.startsWith("/coins") ||
     pathname === "/explore" ||
+    pathname === "/dashboard" ||
     pathname === "/upload" ||
     pathname === "/sign-in" ||
-    pathname === "/get-started"
+    pathname.startsWith("/get-started")
   )
     return null;
 
