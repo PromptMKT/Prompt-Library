@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Search, Menu, X, Moon, Sun, Bell } from "lucide-react";
+import { Search, Menu, X, Moon, Sun, Bell, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
@@ -83,6 +83,9 @@ export const Navbar = () => {
               <Link href="/explore" className="items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-2xl border border-white/10 transition-colors text-xs font-bold uppercase tracking-wider hidden sm:flex">
                 Explore
               </Link>
+              <Link href="/profile" className="items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-2xl border border-white/10 transition-colors text-xs font-bold uppercase tracking-wider hidden sm:flex">
+                Profile
+              </Link>
               <Link href="/upload" className="items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-2xl border border-white/10 transition-colors text-xs font-bold uppercase tracking-wider hidden sm:flex">
                 Prompt Upload
               </Link>
@@ -108,17 +111,17 @@ export const Navbar = () => {
                 </Button>
               )}
 
-              <Link href="/sign-in" className="hidden sm:block">
-                <Button variant="ghost" size="sm" className="rounded-2xl px-5 h-11 font-black uppercase tracking-wide">
-                  Sign In
-                </Button>
-              </Link>
-
-              <Link href="/get-started" className="hidden sm:block">
-                <Button size="sm" className="rounded-2xl px-6 h-11 bg-primary text-white hover:bg-primary/90 shadow-[0_4px_15px_-3px_hsla(199,89%,48%,0.4)] transition-all font-bold uppercase tracking-wide">
-                  Get Started
-                </Button>
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link href="/profile" className="flex items-center gap-3 group">
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">Priya Nair</span>
+                    <span className="text-[10px] text-muted-foreground">Certified Creator</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-sm font-bold text-white border-2 border-white/10 shadow-lg shadow-primary/20 group-hover:scale-105 transition-all">
+                    PN
+                  </div>
+                </Link>
+              </div>
 
               <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(true)}>
                 <Menu className="w-5 h-5" />
@@ -146,6 +149,7 @@ export const Navbar = () => {
               {[
                 { label: "Home", href: "/home-v5" },
                 { label: "Explore", href: "/explore" },
+                { label: "Profile", href: "/profile" },
                 { label: "Wallet", href: "/wallet" },
                 { label: "Upload", href: "/upload" },
                 { label: "Sign In", href: "/sign-in" },
@@ -165,16 +169,16 @@ export const Navbar = () => {
               ))}
             </div>
 
-            <div className="mt-auto space-y-4">
-              <Link href="/sign-in">
-                <Button variant="outline" className="w-full h-12 rounded-xl border-border/60 font-black uppercase tracking-wide">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/get-started">
-                <Button className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase tracking-wide hover:bg-primary/90 shadow-[0_4px_12px_-4px_hsl(199_89%_48%)]">
-                  Get Started
-                </Button>
+            <div className="mt-auto p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-primary/20">
+                PN
+              </div>
+              <div className="flex flex-col flex-1">
+                <span className="font-bold text-foreground">Priya Nair</span>
+                <span className="text-xs text-muted-foreground">@priyanair</span>
+              </div>
+              <Link href="/profile" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                <ArrowRight className="w-4 h-4 text-white" />
               </Link>
             </div>
           </nav>
