@@ -59,7 +59,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-4">
-              {section.items.map((item, i) => (
+              {section.items.map((item: any, i) => (
                 <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-secondary/30 border border-transparent hover:border-border/50 hover:bg-secondary/50 transition-all cursor-pointer group/item">
                   <div className="space-y-0.5">
                     <p className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.label}</p>
