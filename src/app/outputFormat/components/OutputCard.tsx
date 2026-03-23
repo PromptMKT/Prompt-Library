@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 interface OutputCardProps {
   title: string;
@@ -30,10 +31,10 @@ export function OutputCard({ title, description, icon, children, id }: OutputCar
         </p>
         
         <div className="mt-auto">
-          <button className="text-primary font-medium flex items-center gap-2 group/btn hover:text-accent-hover transition-colors text-sm">
+          <Link href={`/outputFormat/${id}`} className="text-primary font-medium flex items-center gap-2 group/btn hover:text-accent-hover transition-colors text-sm">
             View examples 
             <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
-          </button>
+          </Link>
         </div>
       </div>
 
