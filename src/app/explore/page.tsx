@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, Suspense, useEffect } from "react";
-import { Flame, Grid3X3, List, SlidersHorizontal } from "lucide-react";
+import { Flame, Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,6 @@ import {
   AUDIENCE_TABS,
   CATEGORY_SECTION,
   OUTPUT_FORMAT_SECTION,
-  PLATFORM_FILTER_SECTIONS,
   TARGET_AUDIENCE_SECTION,
 } from "./components/filter-config";
 import exploreData from "./data/explore-data.json";
@@ -70,13 +69,15 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "Audio & voice": ["audio", "voice", "podcast", "music", "interview"],
   "Video generation": ["video", "short", "reel", "youtube", "runway", "storyboard"],
   "Agentic & workflow": ["agent", "automation", "workflow", "tool", "task"],
-  "Role & persona": ["persona", "customer", "support", "founder", "marketer", "designer", "developer"],
+  "Role & persona simulation": ["persona", "customer", "support", "founder", "marketer", "designer", "developer"],
+  "Strategy & planning": ["strategy", "planning", "roadmap", "prioritization", "gtm", "go to market"],
+  "Learning & education": ["learning", "education", "tutor", "lesson", "curriculum", "study", "exam"],
 };
 
 const OUTPUT_KEYWORDS: Record<string, string[]> = {
   "Long-form text": ["long", "article", "guide", "essay", "document"],
   "Short copy": ["short", "tweet", "headline", "hook", "copy"],
-  "Structured data (JSON/YAML)": ["json", "yaml", "schema", "structured"],
+  "Structured data": ["json", "yaml", "schema", "structured", "xml", "table"],
   Code: ["code", "typescript", "python", "react", "script"],
   "Image / visual": ["image", "render", "visual", "midjourney", "flux"],
   "Audio / music": ["audio", "music", "voice", "podcast"],
@@ -139,27 +140,61 @@ function matchesOption(sectionId: string, option: string, prompt: PromptRecord, 
   return promptText.includes(value);
 }
 
+function ExploreAppleMark() {
+  return (
+    <svg
+      width="74"
+      height="74"
+      viewBox="0 0 74 74"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className="text-[#2F2F2F]"
+    >
+      <path
+        d="M37.1 24.6C32.8 20.4 25 20.8 21.2 26.6C17.9 31.7 19.3 41.4 24.4 45.7C27.1 48 30.7 48.3 33.7 47.1C35.8 46.3 38.2 46.3 40.3 47.1C43.3 48.3 46.9 48 49.6 45.7C54.7 41.4 56.1 31.7 52.8 26.6C49 20.8 41.2 20.4 37.1 24.6Z"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M41.4 17.2C42 13.8 44.4 11.2 47.8 10.5"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31.4 15.3C34.6 14.7 37.4 16.4 38.9 19.3"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.8 55.1C8.8 51.7 11.5 49 14.9 49H59.1C62.5 49 65.2 51.7 65.2 55.1C65.2 58 63 60.3 60.1 60.6C55.4 61.2 48.2 61.9 37 61.9C25.8 61.9 18.6 61.2 13.9 60.6C11 60.3 8.8 58 8.8 55.1Z"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M20.6 54.7H53.4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      <path d="M24.9 57.7H49.1" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ExploreContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
 
   const [dataset, setDataset] = useState<ExploreDataset>(FALLBACK_DATA);
 
-  const [sidebarSearch, setSidebarSearch] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<FilterSelections>({});
   const [openSections, setOpenSections] = useState<OpenSections>({
-    platform: true,
-    textMultimodal: true,
-    imageGeneration: false,
-    videoGeneration: false,
-    audioVoice: false,
-    codingAgentic: false,
-    category: true,
+    category: false,
     targetAudience: false,
     outputFormat: false,
-    priceRange: true,
-    minRating: true,
-    complexity: true,
+    priceRange: false,
   });
 
   const [priceRange, setPriceRange] = useState<[number, number]>([10, 500]);
@@ -168,7 +203,8 @@ function ExploreContent() {
   const [activeTab, setActiveTab] = useState<(typeof AUDIENCE_TABS)[number]>("All prompts");
   const [activeTrend, setActiveTrend] = useState("All");
   const [sortBy, setSortBy] = useState("Trending");
-  const [layoutMode] = useState<"grid" | "list">("grid");
+  const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
+  const [cardSearch, setCardSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(16);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -230,7 +266,7 @@ function ExploreContent() {
           website: {
             name: "PromptVault",
             idea: "Prompt marketplace",
-            tagline: "Explore community prompts and open full detail pages instantly.",
+            tagline: "Prompt systems that ship outcomes, not guesses.",
           },
           topCreators: topCreators.length > 0 ? topCreators : FALLBACK_DATA.topCreators,
           trendingTags: ["All", ...(trendingTags.length > 0 ? trendingTags : FALLBACK_DATA.trendingTags)],
@@ -261,7 +297,6 @@ function ExploreContent() {
 
   const optionCounts = useMemo(() => {
     const sections = [
-      ...PLATFORM_FILTER_SECTIONS,
       CATEGORY_SECTION,
       TARGET_AUDIENCE_SECTION,
       OUTPUT_FORMAT_SECTION,
@@ -283,20 +318,12 @@ function ExploreContent() {
   }, [prompts, promptTexts]);
 
   const filteredPrompts = useMemo(() => {
-    const selectedPlatformOptions = [
-      ...(selectedFilters.platform || []),
-      ...(selectedFilters.textMultimodal || []),
-      ...(selectedFilters.imageGeneration || []),
-      ...(selectedFilters.videoGeneration || []),
-      ...(selectedFilters.audioVoice || []),
-      ...(selectedFilters.codingAgentic || []),
-    ];
-
     return prompts
       .filter((prompt) => {
         const text = promptTexts.get(prompt.id) || getPromptText(prompt);
 
         if (q && !text.includes(normalize(q))) return false;
+        if (cardSearch && !text.includes(normalize(cardSearch))) return false;
         if ((prompt.price || 0) < priceRange[0] || (prompt.price || 0) > priceRange[1]) return false;
         if (minRating !== null && (prompt.rating || 0) < minRating) return false;
 
@@ -304,13 +331,6 @@ function ExploreContent() {
           const difficulty = normalize(prompt.difficulty || "");
           const target = complexity === "Mid" ? "mid" : normalize(complexity);
           if (!difficulty.includes(target)) return false;
-        }
-
-        if (selectedPlatformOptions.length > 0) {
-          const matchesPlatform = selectedPlatformOptions.some((option) =>
-            matchesOption("platform", option, prompt, text)
-          );
-          if (!matchesPlatform) return false;
         }
 
         for (const sectionId of ["category", "targetAudience", "outputFormat"]) {
@@ -360,6 +380,7 @@ function ExploreContent() {
     activeTrend,
     activeTab,
     sortBy,
+    cardSearch,
   ]);
 
   const topCreators = useMemo(() => dataset.topCreators || [], [dataset]);
@@ -413,7 +434,6 @@ function ExploreContent() {
 
   const clearAll = () => {
     setSelectedFilters({});
-    setSidebarSearch("");
     setPriceRange([10, 500]);
     setMinRating(null);
     setComplexity("All");
@@ -422,39 +442,37 @@ function ExploreContent() {
     setVisibleCount(16);
   };
 
-  const sectionGridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center";
+  const sectionGridClass =
+    layoutMode === "grid"
+      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center"
+      : "grid grid-cols-1 gap-4";
 
   return (
-    <div className="relative px-3 sm:px-4 lg:px-6 py-5">
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 right-10 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-1/2 -left-10 w-80 h-80 rounded-full bg-violet/10 blur-3xl" />
+    <div className="bg-white px-3 sm:px-4 lg:px-6 py-5">
+      <div className="h-10" />
+
+      <div className="fixed top-16 left-0 right-0 z-[110] h-10 border-y border-border/40 bg-white px-3 sm:px-4 lg:px-6 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>Tutorials</span>
+        <span>Explore here</span>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 lg:gap-6 max-w-470 mx-auto">
-        <ExploreFilterSidebar
-          sidebarSearch={sidebarSearch}
-          onSidebarSearchChange={setSidebarSearch}
-          selectedFilters={selectedFilters}
-          openSections={openSections}
-          toggleSection={toggleSection}
-          toggleFilterOption={toggleFilterOption}
-          optionCounts={optionCounts}
-          priceRange={priceRange}
-          setPriceRange={setPriceRange}
-          minRating={minRating}
-          setMinRating={setMinRating}
-          complexity={complexity}
-          setComplexity={setComplexity}
-          clearAll={clearAll}
-          mobileOpen={mobileFiltersOpen}
-          setMobileOpen={setMobileFiltersOpen}
-        />
+
+      <div className="max-w-470 mx-auto grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 lg:gap-6">
+        <div className="hidden lg:block" />
 
         <section className="space-y-7 min-w-0">
-          <div className="rounded-3xl border border-border/50 bg-card/70 p-4 lg:p-5 backdrop-blur-md shadow-[0_20px_40px_rgba(13,15,40,0.06)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+          <div className="pt-4 lg:pt-8 pb-2">
+            <div className="inline-flex flex-col items-start gap-4">
+              <ExploreAppleMark />
+              <h1 className="text-5xl sm:text-6xl lg:text-[72px] leading-none font-black tracking-tight text-foreground">
+                Explore Prompt
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-3xl">Prompt systems that ship outcomes, not guesses.</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-4 lg:p-5">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-muted-foreground max-w-3xl">{dataset.website.tagline}</p>
+              <div className="flex items-center justify-end gap-4">
                 <Badge variant="outline" className="rounded-full hidden md:inline-flex">{dataset.website.name}</Badge>
               </div>
 
@@ -505,26 +523,48 @@ function ExploreContent() {
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-sm text-muted-foreground font-semibold">
-                  Showing <span className="text-foreground font-black">{Math.min(filteredPrompts.length, visibleCount)}</span> of {filteredPrompts.length.toLocaleString()} prompts
+            </div>
+          </div>
+
+          <TopCreatorsRow creators={topCreators} />
+
+          <div className="p-0.5">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div className="flex items-center gap-2 w-full lg:max-w-xl">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMobileFiltersOpen(true)}
+                  className="lg:hidden rounded-xl border-border/60 shrink-0"
+                >
+                  <SlidersHorizontal className="w-4 h-4" /> Filters
+                </Button>
+
+                <div className="relative w-full">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={cardSearch}
+                    onChange={(e) => {
+                      setCardSearch(e.target.value);
+                      setVisibleCount(16);
+                    }}
+                    placeholder="Search tutorials"
+                    className="h-10 w-full rounded-xl border border-border/60 bg-background pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
+                  Showing <span className="text-foreground font-black">{Math.min(filteredPrompts.length, visibleCount)}</span> of {filteredPrompts.length.toLocaleString()}
                 </p>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setMobileFiltersOpen(true)}
-                    className="lg:hidden rounded-xl border-border/60"
-                  >
-                    <SlidersHorizontal className="w-4 h-4" /> Filters
-                  </Button>
-
-                  <label className="text-sm text-muted-foreground font-medium">Sort by</label>
+                  <label className="text-sm text-muted-foreground font-medium whitespace-nowrap">Sort by</label>
                   <select
                     value={sortBy}
                     onChange={(e) => handleSortChange(e.target.value)}
-                    className="h-10 rounded-xl border border-border/60 bg-background/70 px-3 text-sm font-semibold outline-none focus:border-primary/50"
+                    className="h-10 min-w-34 rounded-xl border border-border/60 bg-background px-3 text-sm font-semibold outline-none focus:border-primary/50"
                   >
                     <option value="Trending">Trending</option>
                     <option value="Most Purchased">Most Purchased</option>
@@ -533,13 +573,53 @@ function ExploreContent() {
                     <option value="Price: High to Low">Price: High to Low</option>
                   </select>
 
-                  {/* Layout toggle removed per request for 4-card grid */}
+                  <div className="rounded-xl border border-border/60 bg-background p-1 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setLayoutMode("grid")}
+                      className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center",
+                        layoutMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLayoutMode("list")}
+                      className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center",
+                        layoutMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <TopCreatorsRow creators={topCreators} />
+        </section>
+
+        <ExploreFilterSidebar
+          selectedFilters={selectedFilters}
+          openSections={openSections}
+          toggleSection={toggleSection}
+          toggleFilterOption={toggleFilterOption}
+          optionCounts={optionCounts}
+          priceRange={priceRange}
+          setPriceRange={setPriceRange}
+          minRating={minRating}
+          setMinRating={setMinRating}
+          complexity={complexity}
+          setComplexity={setComplexity}
+          clearAll={clearAll}
+          mobileOpen={mobileFiltersOpen}
+          setMobileOpen={setMobileFiltersOpen}
+        />
+
+        <section className="space-y-7 min-w-0">
 
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-2">

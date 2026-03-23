@@ -56,7 +56,9 @@ export const CATEGORY_SECTION: FilterSection = {
     "Audio & voice",
     "Video generation",
     "Agentic & workflow",
-    "Role & persona",
+    "Role & persona simulation",
+    "Strategy & planning",
+    "Learning & education",
   ],
 };
 
@@ -72,7 +74,7 @@ export const OUTPUT_FORMAT_SECTION: FilterSection = {
   options: [
     "Long-form text",
     "Short copy",
-    "Structured data (JSON/YAML)",
+    "Structured data",
     "Code",
     "Image / visual",
     "Audio / music",

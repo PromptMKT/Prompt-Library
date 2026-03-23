@@ -15,15 +15,15 @@ type FilterDropdownProps = {
 
 export function FilterDropdown({ title, isOpen, onToggle, children, rightLabel }: FilterDropdownProps) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-sm overflow-hidden">
+    <div className="border-b border-border/60 bg-transparent">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/40 transition-colors"
+        className="w-full py-4 flex items-center justify-between text-left hover:bg-muted/20 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground/85">{title}</span>
-          {rightLabel ? <span className="text-[10px] text-muted-foreground font-bold">{rightLabel}</span> : null}
+          <span className="text-[14px] font-medium tracking-[0.01em] text-foreground/90">{title}</span>
+          {rightLabel ? <span className="text-[11px] text-muted-foreground font-semibold">{rightLabel}</span> : null}
         </div>
         <ChevronDown
           className={cn(
@@ -42,7 +42,7 @@ export function FilterDropdown({ title, isOpen, onToggle, children, rightLabel }
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4">{children}</div>
+            <div className="pb-4">{children}</div>
           </motion.div>
         ) : null}
       </AnimatePresence>
