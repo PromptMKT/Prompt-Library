@@ -444,7 +444,7 @@ export default function HomeV5() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="heading-h1 leading-[0.9] text-foreground"
+            className="hero-title text-foreground"
           >
             The Prompt<br />
             <span className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent">Marketplace</span>
