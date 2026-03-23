@@ -24,6 +24,33 @@ const dummyPrompt = {
   image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800&q=80"
 };
 
+const editorialCards = [
+  {
+    title: "Set up your AI workspace to match the way you ship",
+    accent: "from-emerald-200/80 via-teal-100/70 to-background",
+    category: "Workspace",
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&q=80",
+  },
+  {
+    title: "Using Claude for architecture reviews and system planning",
+    accent: "from-rose-200/80 via-fuchsia-100/70 to-background",
+    category: "Engineering",
+    image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=1200&q=80",
+  },
+  {
+    title: "Navigating prompt workflows across chat, cowork, and code",
+    accent: "from-orange-200/80 via-amber-100/70 to-background",
+    category: "Workflow",
+    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&q=80",
+  },
+  {
+    title: "Ship clean prompt systems with reusable patterns and reviews",
+    accent: "from-sky-200/80 via-indigo-100/70 to-background",
+    category: "Systems",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&q=80",
+  },
+];
+
 export default function CardVariants() {
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [quickViewImage, setQuickViewImage] = useState("");
@@ -38,8 +65,8 @@ export default function CardVariants() {
       <div className="max-w-[1400px] mx-auto space-y-16">
         
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-extrabold tracking-tight mb-3">Vertical Card Variations</h1>
-          <p className="text-muted-foreground">12 variations exploring dimensions, spacing, and layout configurations keeping the original aesthetic.</p>
+          <h1 className="heading-h1 mb-3">Vertical Card Variations</h1>
+          <p className="body-base">12 variations exploring dimensions, spacing, and layout configurations keeping the original aesthetic.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16 items-start">
@@ -179,7 +206,7 @@ export default function CardVariants() {
               <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl transition-all">
                 <div className="h-[100px] bg-secondary flex items-center justify-center px-6 relative">
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold text-muted-foreground border border-border">{dummyPrompt.platform}</div>
-                  <span className="font-mono text-[10px] text-center text-muted-foreground italic line-clamp-2">"{dummyPrompt.snippet[0]}"</span>
+                  <span className="font-mono text-[10px] text-center text-muted-foreground italic line-clamp-2">{`"${dummyPrompt.snippet[0]}"`}</span>
                 </div>
                 <div className="p-5 flex flex-col items-center text-center">
                   <div className="text-[10px] text-primary uppercase tracking-[0.15em] font-bold mb-2">{dummyPrompt.category1}</div>
@@ -307,7 +334,7 @@ export default function CardVariants() {
                 </div>
                 <div className="h-[90px] relative bg-secondary mx-2 mb-2 rounded-2xl">
                   <div className="absolute inset-0 p-3 flex flex-col pt-3">
-                     <span className="font-mono text-[9px] leading-[1.6] line-clamp-3 text-muted-foreground italic">"{dummyPrompt.snippet.join(" ")}"</span>
+                     <span className="font-mono text-[9px] leading-[1.6] line-clamp-3 text-muted-foreground italic">{`"${dummyPrompt.snippet.join(" ")}"`}</span>
                   </div>
                 </div>
                 <div className="p-4 pt-2 flex justify-between items-center">
@@ -356,7 +383,7 @@ export default function CardVariants() {
               <div className="bg-card border-y border-r border-l-4 border-l-primary/80 border-y-border border-r-border rounded-lg overflow-hidden cursor-pointer hover:translate-x-1 hover:shadow-lg transition-all focus:border-l-primary">
                 <div className="h-[80px] bg-secondary p-3 flex flex-col justify-end relative">
                    <div className="absolute top-2 right-2 text-[10px] text-primary font-bold">★ {dummyPrompt.rating}</div>
-                   <span className="font-mono text-[9px] leading-[1.6] text-muted-foreground line-clamp-2">"{dummyPrompt.snippet[0]}"</span>
+                   <span className="font-mono text-[9px] leading-[1.6] text-muted-foreground line-clamp-2">{`"${dummyPrompt.snippet[0]}"`}</span>
                 </div>
                 <div className="p-3">
                   <div className="flex gap-1.5 flex-wrap mb-1.5">
@@ -409,13 +436,12 @@ export default function CardVariants() {
             </div>
           </div>
 
-          {/* 13. HEIGHT: 80px */}
           <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">13. Height: 80px</h2>
+            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">13. Custom Replica Design</h2>
             <div className="w-[280px]">
               <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[80px] relative overflow-hidden bg-secondary">
+                <div className="h-[120px] relative overflow-hidden bg-secondary">
                   <div className="absolute inset-0 p-3 flex flex-col pt-8">
                      {dummyPrompt.snippet.map((line, i) => (
                        <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-1", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
@@ -444,785 +470,13 @@ export default function CardVariants() {
             </div>
           </div>
 
-          {/* 14. HEIGHT: 100px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">14. Height: 100px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[100px] relative overflow-hidden bg-secondary">
-                  <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                     {dummyPrompt.snippet.map((line, i) => (
-                       <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-1", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
-                     ))}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 15. HEIGHT: 140px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">15. Height: 140px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[140px] relative overflow-hidden bg-secondary">
-                  <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                     {dummyPrompt.snippet.map((line, i) => (
-                       <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-2", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
-                     ))}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 16. HEIGHT: 160px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">16. Height: 160px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[160px] relative overflow-hidden bg-secondary">
-                  <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                     {dummyPrompt.snippet.map((line, i) => (
-                       <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-2", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
-                     ))}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 17. HEIGHT: 200px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">17. Height: 200px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[200px] relative overflow-hidden bg-secondary">
-                  <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                     {dummyPrompt.snippet.map((line, i) => (
-                       <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-3", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
-                     ))}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 18. HEIGHT: 240px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">18. Height: 240px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[240px] relative overflow-hidden bg-secondary">
-                  <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                     {dummyPrompt.snippet.map((line, i) => (
-                       <span key={i} className={cn("font-mono text-[10px] leading-[1.6] line-clamp-4", i === 0 ? "text-foreground font-semibold mb-2" : "text-muted-foreground")}>{line}</span>
-                     ))}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 19. IMAGE HEIGHT: 80px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">19. Image Height: 80px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[80px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 20. IMAGE HEIGHT: 100px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">20. Image Height: 100px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[100px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 21. IMAGE HEIGHT: 140px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">21. Image Height: 140px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[140px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 22. IMAGE HEIGHT: 160px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">22. Image Height: 160px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[160px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 23. IMAGE HEIGHT: 200px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">23. Image Height: 200px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[200px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 24. IMAGE HEIGHT: 240px */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-bold mb-4 opacity-70 uppercase tracking-widest">24. Image Height: 240px</h2>
-            <div className="w-[280px]">
-              <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="h-[240px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                </div>
-                <div className="p-4">
-                  <div className="flex gap-1.5 flex-wrap mb-2">
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                     <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-3">{dummyPrompt.title}</div>
-                  <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-                    <span className="text-primary tracking-widest">★★★★★</span>
-                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-                     <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                     <div className="text-[11px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                     <div className="text-sm font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
-
-        {/* --- 5 COLUMN ROW: HEIGHT 160px --- */}
-        <div className="pt-16 mt-16 border-t border-border">
-          <h2 className="text-2xl font-extrabold mb-8 text-center uppercase tracking-wider">5 Columns — Media Height: 160px</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[...Array(5)].map((_, idx) => (
-              <div key={`h160-${idx}`} className="w-full">
-                <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="h-[160px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                  </div>
-                  <div className="p-3 flex flex-col h-full">
-                    <div className="flex items-center gap-1.5 mb-1.5 text-[10px]">
-                      <span className="text-primary tracking-widest">★★★★★</span>
-                      <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                    </div>
-                    <div className="text-xs font-bold text-foreground leading-snug mb-2">{dummyPrompt.title}</div>
-                    <div className="flex gap-1.5 flex-wrap mb-3">
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                       <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                       <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                       <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* --- 5 COLUMN ROW: HEIGHT 180px --- */}
-        <div className="pt-12">
-          <h2 className="text-2xl font-extrabold mb-8 text-center uppercase tracking-wider">5 Columns — Media Height: 180px</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[...Array(5)].map((_, idx) => (
-              <div key={`h180-${idx}`} className="w-full">
-                <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="h-[180px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                  </div>
-                  <div className="p-3 flex flex-col h-full">
-                    <div className="flex items-center gap-1.5 mb-1.5 text-[10px]">
-                      <span className="text-primary tracking-widest">★★★★★</span>
-                      <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                    </div>
-                    <div className="text-xs font-bold text-foreground leading-snug mb-2">{dummyPrompt.title}</div>
-                    <div className="flex gap-1.5 flex-wrap mb-3">
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                       <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                       <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                       <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* --- 5 COLUMN ROW: HEIGHT 200px --- */}
-        <div className="pt-12">
-          <h2 className="text-2xl font-extrabold mb-8 text-center uppercase tracking-wider">5 Columns — Media Height: 200px</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[...Array(5)].map((_, idx) => (
-              <div key={`h200-${idx}`} className="w-full">
-                <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="h-[200px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                  </div>
-                  <div className="p-3 flex flex-col h-full">
-                    <div className="flex items-center gap-1.5 mb-1.5 text-[10px]">
-                      <span className="text-primary tracking-widest">★★★★★</span>
-                      <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                    </div>
-                    <div className="text-xs font-bold text-foreground leading-snug mb-2">{dummyPrompt.title}</div>
-                    <div className="flex gap-1.5 flex-wrap mb-3">
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                       <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                       <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                       <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                       <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* --- MIXED SHOWCASE: SNIPPETS & IMAGES --- */}
-        <div className="pt-16 mt-16 border-t border-border">
-          <h2 className="text-2xl font-extrabold mb-8 text-center uppercase tracking-wider">Mixed Showcase (Text & Images)</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[...Array(10)].map((_, idx) => {
-              const isImage = idx % 2 === 1;
-              return (
-                <div key={`mixed-${idx}`} className="w-full">
-                  <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    {isImage ? (
-                      <div className="h-[180px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                      </div>
-                    ) : (
-                      <div className="h-[180px] relative overflow-hidden bg-secondary">
-                        <div className="absolute inset-0 p-3 flex flex-col pt-8">
-                           {dummyPrompt.snippet.map((line, i) => (
-                             <span key={i} className={cn("font-mono text-[9px] leading-[1.6] line-clamp-2", i === 0 ? "text-foreground font-semibold mb-1" : "text-muted-foreground")}>{line}</span>
-                           ))}
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-border bg-primary/10 text-primary backdrop-blur-md z-10">Claude</div>
-                      </div>
-                    )}
-
-                    <div className="p-3 flex flex-col h-full">
-                      <div className="flex items-center gap-1.5 mb-1.5 text-[10px]">
-                        <span className="text-primary tracking-widest">★★★★★</span>
-                        <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                      </div>
-                      <div className="text-xs font-bold text-foreground leading-snug mb-2">
-                        {isImage ? "Prompt to Generate Abstract Neon Art" : dummyPrompt.title}
-                      </div>
-                      <div className="flex gap-1.5 flex-wrap mb-3">
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                         <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                         <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                         <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-
-        {/* --- WISHLIST: HEART BUTTON PLACEMENTS --- */}
-        <div className="pt-16 mt-16 border-t border-border">
-          <h2 className="text-2xl font-extrabold mb-8 text-center uppercase tracking-wider">Wishlist (Heart) Design Placements</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[...Array(5)].map((_, idx) => {
-              const placement = [
-                "Top-Right Floating (Media)",
-                "Next to Rating (Title Area)",
-                "Bottom Right (Price Area)",
-                "Hover Reveal Only",
-                "Action Row (Dedicated)"
-              ][idx];
-              
-              return (
-                <div key={`heart-${idx}`} className="w-full">
-                  <h3 className="text-[10px] font-bold text-center mb-3 opacity-50 uppercase tracking-widest">{placement}</h3>
-                  <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    <div className="h-[160px] relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&q=80')" }}>
-                      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">Midjourney</div>
-                      
-                      {/* Variation 1: Top-Right Floating */}
-                      {idx === 0 && (
-                        <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-red-500 hover:bg-white/10 transition-all z-20 group/heart">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-none group-hover/heart:fill-current" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        </button>
-                      )}
-
-                      {/* Variation 4: Hover Reveal */}
-                      {idx === 3 && (
-                        <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-primary backdrop-blur-md flex items-center justify-center text-white shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all z-20 hover:scale-110 active:scale-95">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="p-3 flex flex-col h-full">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span className="text-primary tracking-widest">★★★★★</span>
-                          <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                        </div>
-                        
-                        {/* Variation 2: Next to Rating */}
-                        {idx === 1 && (
-                          <button className="text-muted-foreground hover:text-red-500 transition-colors p-1 -m-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="text-xs font-bold text-foreground leading-snug mb-2">{dummyPrompt.title}</div>
-                      
-                      <div className="flex gap-1.5 flex-wrap mb-3">
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                         <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                         <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                         
-                         <div className="flex items-center gap-2">
-                           <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                           
-                           {/* Variation 3: Bottom Right Placement */}
-                           {idx === 2 && (
-                             <button className="w-6 h-6 rounded-md bg-secondary flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-secondary/80 transition-all border border-border/50">
-                               <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                             </button>
-                           )}
-                         </div>
-                      </div>
-
-                      {/* Variation 5: Dedicated Action Row */}
-                      {idx === 4 && (
-                        <div className="mt-3 pt-3 border-t border-border/40 grid grid-cols-2 gap-2">
-                          <button className="flex items-center justify-center gap-1.5 py-1 text-[9px] font-bold bg-secondary hover:bg-secondary/80 rounded-md transition-colors text-muted-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                            WISHLIST
-                          </button>
-                          <button className="flex items-center justify-center gap-1.5 py-1 text-[9px] font-bold bg-primary text-white rounded-md transition-colors hover:brightness-110">
-                            BUY NOW
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* --- SECTION: QUICK VIEW (EYE ICON) PLACEMENTS --- */}
-        <div className="pt-12 mt-12 border-t border-border/60">
-          <div className="mb-10">
-            <h2 className="text-xl font-black text-foreground uppercase tracking-widest border-l-4 border-primary pl-4 mb-2">QUICK VIEW (EYE ICON) INTERACTIONS</h2>
-            <p className="text-muted-foreground text-sm pl-5">Click the eye icon to see the image output in a popup modal.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
-            {[1, 2, 3, 4, 5].map((idx) => {
-              return (
-                <div key={`eye-v2-${idx}`} className="w-full">
-                  <div className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group">
-                    {/* Interaction 1 & 2: Vertical Side Strip on Image */}
-                    <div className="h-[200px] relative overflow-hidden bg-cover bg-center group" style={{ backgroundImage: `url(${dummyPrompt.image})` }}>
-                      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">{dummyPrompt.platform}</div>
-                      
-                      {/* Variation 1: Floating Vertical Right Strip (Hover) */}
-                      {idx === 1 && (
-                        <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
-                            className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm text-primary flex items-center justify-center shadow-lg hover:bg-primary hover:text-white transition-all transform hover:scale-110"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-8 h-8 rounded-lg bg-white/90 backdrop-blur-sm text-muted-foreground flex items-center justify-center shadow-lg hover:text-red-500 transition-all transform hover:scale-110"
-                          >
-                            <Heart className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Variation 2: Vertical Left Strip (Permanent) */}
-                      {idx === 2 && (
-                        <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-20">
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
-                             className="w-7 h-7 rounded-md bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-primary transition-colors"
-                           >
-                             <Eye className="w-3.5 h-3.5" />
-                           </button>
-                           <button className="w-7 h-7 rounded-md bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:text-red-400">
-                             <Heart className="w-3.5 h-3.5" />
-                           </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-3 flex flex-col h-full relative">
-                      {/* Variation 3: Vertical Strip in Content Area (Right) */}
-                      {idx === 3 && (
-                        <div className="absolute top-3 right-3 flex flex-col gap-3">
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
-                             className="text-muted-foreground hover:text-primary transition-colors"
-                           >
-                             <Eye className="w-4 h-4" />
-                           </button>
-                           <button className="text-muted-foreground hover:text-red-500 transition-colors">
-                             <Heart className="w-4 h-4" />
-                           </button>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-1.5 mb-1.5 text-[10px]">
-                        <span className="text-primary tracking-widest">★★★★★</span>
-                        <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
-                      </div>
-                      <div className={cn("text-xs font-bold text-foreground leading-snug mb-2", idx === 3 ? "pr-8" : "")}>{dummyPrompt.title}</div>
-                      
-                      <div className="flex gap-1.5 flex-wrap mb-3">
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category1}</span>
-                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{dummyPrompt.category2}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 pt-2 border-t border-border mt-auto">
-                        <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br flex items-center justify-center text-[7px] font-bold text-white", dummyPrompt.authorGradient)}>{dummyPrompt.authorAv}</div>
-                        <div className="text-[10px] text-muted-foreground flex-1 truncate">{dummyPrompt.author}</div>
-                        <div className="text-xs font-bold font-mono text-primary">◈ {dummyPrompt.price}</div>
-                      </div>
-
-                      {/* Variation 4 & 5: Stacked Vertical Actions Below */}
-                      {idx === 4 && (
-                        <div className="mt-3 flex flex-col gap-2">
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
-                             className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg border border-border bg-secondary/30 text-[9px] font-black tracking-widest uppercase text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all"
-                           >
-                             <Eye className="w-3 h-3" /> Quick View
-                           </button>
-                           <button className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg border border-border text-[9px] font-black tracking-widest uppercase text-muted-foreground hover:bg-red-50 transition-colors">
-                             <Heart className="w-3 h-3 text-red-500" /> Save to Wishlist
-                           </button>
-                        </div>
-                      )}
-
-                      {idx === 5 && (
-                        <div className="mt-3 grid grid-cols-1 gap-1">
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
-                             className="flex items-center justify-center gap-2 py-2 text-[8px] font-black uppercase text-primary hover:bg-primary/5 rounded-md transition-all border-b border-border/40"
-                           >
-                             <Eye className="w-3 h-3" /> Preview Output
-                           </button>
-                           <button className="flex items-center justify-center gap-2 py-2 text-[8px] font-black uppercase text-secondary-foreground hover:bg-secondary rounded-md">
-                             <Heart className="w-3 h-3" /> Add Favorite
-                           </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* --- QUICK VIEW PORTAL (MODAL) --- */}
-        {isQuickViewOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-             {/* Backdrop */}
-             <div 
-               className="absolute inset-0 bg-black/60 backdrop-blur-md"
-               onClick={() => setIsQuickViewOpen(false)}
-             />
-             
-             {/* Modal Content */}
-             <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-300">
-                <div className="absolute top-4 right-4 z-10">
-                   <button 
-                     onClick={() => setIsQuickViewOpen(false)}
-                     className="w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all"
-                   >
-                     <X className="w-5 h-5" />
-                   </button>
-                </div>
-
-                <div className="aspect-square w-full sm:aspect-video bg-muted overflow-hidden">
-                   <img src={quickViewImage} className="w-full h-full object-cover" alt="Quick View" />
-                </div>
-
-                <div className="p-8 border-t border-border">
-                   <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-black text-foreground">{dummyPrompt.title}</h3>
-                        <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold opacity-60 mt-1">Output Verification ◈ Full Quality</p>
-                      </div>
-                      <div className="text-right">
-                         <div className="text-2xl font-black text-primary">◈ {dummyPrompt.price}</div>
-                         <div className="text-[10px] font-bold text-muted-foreground uppercase">Instant License</div>
-                      </div>
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-4 pt-4">
-                      <button className="py-4 bg-secondary font-black rounded-2xl text-[11px] tracking-widest uppercase text-muted-foreground hover:bg-secondary/80 transition-all">Add to Wishlist</button>
-                      <button className="py-4 bg-primary font-black rounded-2xl text-[11px] tracking-widest uppercase text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all">Buy Now ◈ {dummyPrompt.price}</button>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
 
         {/* --- REPLICA CARD SECTION --- */}
         <div className="pt-12 mt-12 border-t border-border/60">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight mb-3">Custom Replica Design</h2>
-            <p className="text-muted-foreground">Permanent glass-morphism icons, solid crisp image edges (no fade), and clean spacing.</p>
+            <h2 className="heading-h2 mb-3">Custom Replica Design</h2>
+            <p className="body-base">Permanent glass-morphism icons, solid crisp image edges (no fade), and clean spacing.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
@@ -1299,6 +553,222 @@ export default function CardVariants() {
             </div>
           </div>
         </div>
+
+        {/* --- IMAGE ONLY VARIATION --- */}
+        <div className="pt-12 mt-12 border-t border-border/60">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">Image Only Variation</h2>
+            <p className="text-muted-foreground">Minimalist design with hover-only icons and no content section.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
+            <div className="w-full bg-white border border-slate-200/80 rounded-xl overflow-hidden hover:shadow-xl hover:border-purple-500 transition-all duration-300 flex flex-col cursor-pointer group">
+              
+              {/* ── IMAGE SECTION ── */}
+              <div className="h-[200px] w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src={dummyPrompt.image} 
+                  alt={dummyPrompt.title} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                />
+
+                {/* Top-Left Platform Badge */}
+                <span className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-md">
+                  {dummyPrompt.platform}
+                </span>
+
+                {/* Top-Right Glass Icons (Hover Only) */}
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
+                    className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-purple-600 hover:border-purple-500 transition-colors shadow-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:text-rose-400 hover:border-rose-400/50 transition-colors shadow-sm"
+                  >
+                    <Heart className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-12 mt-12 border-t border-border/60">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">Editorial Theme Cards</h2>
+            <p className="text-muted-foreground">
+              A tighter 4-card row using the same image-first rhythm as Custom Replica Design, but adapted from your reference style.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-start">
+            {editorialCards.map((card, index) => (
+              <div
+                key={card.title}
+                className="group bg-card border border-border/70 rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/35 transition-all duration-300"
+              >
+                <div className={cn("relative h-[178px] overflow-hidden bg-gradient-to-br p-4", card.accent)}>
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full border border-white/30 bg-black/45 backdrop-blur-md text-[9px] font-black uppercase tracking-[0.16em] text-white shadow-sm">
+                    Guide {index + 1}
+                  </div>
+                  <div className="h-full w-full rounded-[18px] overflow-hidden border border-white/40 shadow-[0_16px_36px_rgba(15,23,42,0.12)]">
+                    <img
+                      src={card.image}
+                      alt={card.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                </div>
+
+                <div className="px-4 pt-4 pb-4 min-h-[182px] flex flex-col bg-card">
+                  <div className="flex items-center gap-1.5 mb-3 text-[10px]">
+                    <span className="text-primary tracking-[0.28em] font-black">★★★★★</span>
+                    <span className="font-mono font-bold text-foreground">{dummyPrompt.rating}</span>
+                  </div>
+
+                  <h3 className="text-[18px] leading-[1.08] tracking-tight font-bold text-foreground line-clamp-3">
+                    {card.title}
+                  </h3>
+
+                  <div className="mt-auto pt-5 flex items-center justify-between gap-3 border-t border-border/60">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white shadow-sm", dummyPrompt.authorGradient)}>
+                        {dummyPrompt.authorAv}
+                      </div>
+                      <div className="text-[10px] font-medium text-muted-foreground truncate">
+                        {card.category}
+                      </div>
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+                      {dummyPrompt.platform}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+ 
+        {/* --- CUSTOM REPLICA - LARGE TITLE / NO TAGS --- */}
+        <div className="pt-12 mt-12 border-t border-border/60">
+          <div className="mb-10 text-center">
+            <h2 className="heading-h2 mb-3">Custom Replica - Large Title</h2>
+            <p className="body-base">A variation with an 18px title and removed category tags for a cleaner typography focus.</p>
+          </div>
+ 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-start">
+            <div className="w-full bg-white border border-slate-200/80 rounded-xl overflow-hidden hover:shadow-xl hover:border-purple-500 transition-all duration-300 flex flex-col cursor-pointer group">
+              
+              {/* ── IMAGE SECTION ── */}
+              <div className="h-[170px] w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src={dummyPrompt.image} 
+                  alt={dummyPrompt.title} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                />
+ 
+                {/* Top-Left Platform Badge */}
+                <span className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-md">
+                  {dummyPrompt.platform}
+                </span>
+ 
+                {/* Top-Right Glass Icons (Hover Only) */}
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); openQuickView(dummyPrompt.image); }}
+                    className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-purple-600 hover:border-purple-500 transition-colors shadow-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:text-rose-400 hover:border-rose-400/50 transition-colors shadow-sm"
+                  >
+                    <Heart className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+ 
+              {/* ── CONTENT SECTION ── (Increased proportionate to image reduction) */}
+              <div className="p-4 flex-1 flex flex-col relative bg-white">
+                
+                {/* Rating */}
+                <div className="flex items-center gap-1.5 mb-2 text-[10px]">
+                  <span className="text-purple-600 tracking-widest">★★★★★</span>
+                  <span className="font-mono font-bold text-slate-900">{dummyPrompt.rating}</span>
+                </div>
+                
+                {/* Title - 18px per request */}
+                <div className="text-[18px] font-bold leading-[1.15] text-slate-900 mb-6 line-clamp-3">
+                  {dummyPrompt.title}
+                </div>
+                
+                {/* Footer (Author & Price) */}
+                <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-auto">
+                  <div className={cn("w-5 h-5 rounded-full bg-gradient-to-br flex items-center justify-center text-[8px] font-bold text-white shadow-sm", dummyPrompt.authorGradient)}>
+                    {dummyPrompt.authorAv}
+                  </div>
+                  <div className="text-[11px] font-medium text-slate-700 flex-1 truncate">
+                    {dummyPrompt.author}
+                  </div>
+                  <div className="text-sm font-bold font-mono text-purple-600">
+                    ◈ {dummyPrompt.price}
+                  </div>
+                </div>
+ 
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- QUICK VIEW PORTAL (MODAL) --- */}
+        {isQuickViewOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+             {/* Backdrop */}
+             <div 
+               className="absolute inset-0 bg-black/60 backdrop-blur-md"
+               onClick={() => setIsQuickViewOpen(false)}
+             />
+             
+             {/* Modal Content */}
+             <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-300">
+                <div className="absolute top-4 right-4 z-10">
+                   <button 
+                     onClick={() => setIsQuickViewOpen(false)}
+                     className="w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all"
+                   >
+                     <X className="w-5 h-5" />
+                   </button>
+                </div>
+
+                <div className="aspect-square w-full sm:aspect-video bg-muted overflow-hidden">
+                   <img src={quickViewImage} className="w-full h-full object-cover" alt="Quick View" />
+                </div>
+
+                <div className="p-8 border-t border-border">
+                   <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-black text-foreground">{dummyPrompt.title}</h3>
+                        <p className="text-muted-foreground text-sm uppercase tracking-widest font-bold opacity-60 mt-1">Output Verification ◈ Full Quality</p>
+                      </div>
+                      <div className="text-right">
+                         <div className="text-2xl font-black text-primary">◈ {dummyPrompt.price}</div>
+                         <div className="text-[10px] font-bold text-muted-foreground uppercase">Instant License</div>
+                      </div>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4 pt-4">
+                      <button className="py-4 bg-secondary font-black rounded-2xl text-[11px] tracking-widest uppercase text-muted-foreground hover:bg-secondary/80 transition-all">Add to Wishlist</button>
+                      <button className="py-4 bg-primary font-black rounded-2xl text-[11px] tracking-widest uppercase text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all">Buy Now ◈ {dummyPrompt.price}</button>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
 
       </div>
     </div>

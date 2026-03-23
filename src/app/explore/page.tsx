@@ -168,7 +168,7 @@ function ExploreContent() {
   const [activeTab, setActiveTab] = useState<(typeof AUDIENCE_TABS)[number]>("All prompts");
   const [activeTrend, setActiveTrend] = useState("All");
   const [sortBy, setSortBy] = useState("Trending");
-  const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
+  const [layoutMode] = useState<"grid" | "list">("grid");
   const [visibleCount, setVisibleCount] = useState(16);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -422,10 +422,7 @@ function ExploreContent() {
     setVisibleCount(16);
   };
 
-  const sectionGridClass =
-    layoutMode === "grid"
-      ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 justify-items-center xl:justify-items-start"
-      : "grid grid-cols-1 gap-4";
+  const sectionGridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center";
 
   return (
     <div className="relative px-3 sm:px-4 lg:px-6 py-5">
@@ -536,28 +533,7 @@ function ExploreContent() {
                     <option value="Price: High to Low">Price: High to Low</option>
                   </select>
 
-                  <div className="rounded-xl border border-border/60 bg-background/70 p-1 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setLayoutMode("grid")}
-                      className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        layoutMode === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLayoutMode("list")}
-                      className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center",
-                        layoutMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Layout toggle removed per request for 4-card grid */}
                 </div>
               </div>
             </div>

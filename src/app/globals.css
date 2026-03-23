@@ -115,8 +115,25 @@
   }
   h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
+    font-family: var(--font-jakarta);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
   }
-
+ 
+  h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.1; }
+  h2 { font-size: 1.875rem; font-weight: 700; line-height: 1.15; }
+  h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+  h4 { font-size: 1.25rem; font-weight: 700; line-height: 1.25; }
+  h5 { font-size: 1.125rem; font-weight: 700; line-height: 1.15; }
+  h6 { font-size: 1rem; font-weight: 700; line-height: 1.25; }
+ 
+  p, span, div, li, ul, ol {
+    font-family: var(--font-jakarta);
+    font-weight: 500;
+    line-height: 1.6;
+  }
+ 
   /* Make common hardcoded light utility colors respect dark mode across pages */
   .dark .text-slate-900 {
     color: var(--text-primary) !important;
@@ -142,6 +159,18 @@
 }
 
 @layer utilities {
+  /* --- Unified Typography Utility Classes --- */
+  .heading-h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; color: var(--text-primary); }
+  .heading-h2 { font-size: 1.875rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; color: var(--text-primary); }
+  .heading-h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; color: var(--text-primary); }
+  .card-title { font-size: 1.125rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: var(--text-primary); }
+  
+  .body-base { font-size: 1rem; font-weight: 500; line-height: 1.6; color: var(--text-secondary); }
+  .body-small { font-size: 0.875rem; font-weight: 500; line-height: 1.5; color: var(--text-muted); }
+  .body-xs { font-size: 0.75rem; font-weight: 600; line-height: 1.4; color: var(--text-muted); }
+  
+  .text-premium { letter-spacing: -0.015em; font-feature-settings: "cv05" 1, "cv08" 1, "ss01" 1; }
+
   .hero-gradient {
     background: 
       radial-gradient(at 0% 0%, var(--accent-primary) 0.05, transparent 50%),

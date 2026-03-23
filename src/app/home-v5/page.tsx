@@ -101,8 +101,8 @@ const Stars = ({ rating }: { rating: number }) => (
 const SectionHeader = ({ title, sub, more = true }: { title: string; sub?: string; more?: boolean }) => (
   <div className="flex items-end justify-between mb-8">
     <div>
-      <h2 className="text-2xl font-black uppercase tracking-tight text-foreground leading-none">{title}</h2>
-      {sub && <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-2">{sub}</p>}
+      <h2 className="heading-h2">{title}</h2>
+      {sub && <p className="body-xs tracking-widest mt-2">{sub}</p>}
     </div>
     {more && (
       <button className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group">
@@ -180,7 +180,7 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
       </span>
     </div>
     <div className="p-4 space-y-3">
-      <div className="text-[13px] font-black text-foreground line-clamp-2 leading-snug">{p.title}</div>
+      <div className="card-title text-foreground line-clamp-2">{p.title}</div>
       <Stars rating={p.rating} />
       <div className="flex items-center justify-between pt-2 border-t border-border/50">
         <div className="flex items-center gap-2">
@@ -214,13 +214,35 @@ const SectionCard200 = ({
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     whileHover={{ y: -4 }}
-    className="w-[280px] max-w-full"
+    className="w-full"
     onClick={() => { window.location.href = href; }}
   >
-    <div className="bg-card border border-border rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/50 transition-all relative group min-h-[430px]">
+    <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl hover:border-primary transition-all relative group h-full">
       {imageOnly ? (
         <div className="h-[430px] w-full relative overflow-hidden bg-secondary">
-          <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+          
+          {/* Top-Left Platform Badge */}
+          <span className="absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-md z-10 transition-transform duration-300 group-hover:translate-x-1">
+            {p.platform}
+          </span>
+
+          <ActionStrip />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          
+          {/* Hover Content Section (Bottom 15%) */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-black text-purple-600 tracking-wider">RATING</span>
+              <div className="flex items-center gap-1">
+                <span className="text-purple-600 text-[10px] tracking-tight">★★★★★</span>
+                <span className="text-[11px] font-bold text-slate-900">{p.rating.toFixed(1)}</span>
+              </div>
+            </div>
+            <button className="px-4 py-2 bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">
+              Buy Now ◈ {p.price}
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -230,8 +252,9 @@ const SectionCard200 = ({
             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">
               {p.platform}
             </div>
+            <ActionStrip />
           </div>
-          <div className="p-4 flex flex-col h-full">
+          <div className="p-4 flex flex-col h-full bg-white">
             <div className="flex gap-1.5 flex-wrap mb-2">
               <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{category1}</span>
               <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{category2}</span>
@@ -421,7 +444,7 @@ export default function HomeV5() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-6xl md:text-7xl font-black tracking-tighter leading-[0.9] uppercase text-foreground"
+            className="heading-h1 leading-[0.9] text-foreground"
           >
             The Prompt<br />
             <span className="bg-gradient-to-r from-primary to-violet-400 bg-clip-text text-transparent">Marketplace</span>
@@ -430,7 +453,7 @@ export default function HomeV5() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-muted-foreground max-w-xl mx-auto text-sm font-medium leading-relaxed"
+            className="body-base max-w-xl mx-auto"
           >
             Buy & sell high-quality AI prompts for Midjourney, ChatGPT, DALL-E, Runway and more.
             Unlock stunning outputs instantly.
@@ -466,7 +489,7 @@ export default function HomeV5() {
         {/* ── IMAGE TRANSFORMATION (9:16) ──────────────────────────────────────── */}
         <section>
           <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" />
-          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
             {prompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={p.id}
@@ -483,7 +506,7 @@ export default function HomeV5() {
         {/* ── INSTAGRAM PROMPTS ────────────────────────────────────────────────── */}
         <section>
           <SectionHeader title="Instagram Prompts" sub="Reels · AI Avatars · Posts" />
-          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
             {prompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={`ig-${p.id}`}
@@ -599,7 +622,7 @@ export default function HomeV5() {
                 <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] rounded-full bg-white flex items-center justify-center text-[44px] md:text-[52px] shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] group-hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)] transition-all border border-slate-100/80">
                   {prof.emoji}
                 </div>
-                <div className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] text-center text-slate-800 leading-tight">
+                <div className="text-[10px] md:text-[11px] font-black tracking-[0.05em] text-center text-slate-800 leading-tight">
                   {prof.title.split('\n').map((line, idx) => (
                     <span key={idx} className="block">{line}</span>
                   ))}
@@ -614,7 +637,7 @@ export default function HomeV5() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-[3px] h-5 bg-purple-600 rounded-full" />
-              <h2 className="text-[18px] md:text-[20px] font-black text-slate-900 tracking-tight uppercase">
+              <h2 className="text-[18px] md:text-[20px] font-black text-slate-900 tracking-tight">
                 Broad Categories
               </h2>
             </div>
@@ -635,7 +658,7 @@ export default function HomeV5() {
                 <cat.icon className="w-[18px] h-[18px] text-purple-600 mb-6 z-10" />
                 
                 <div className="flex flex-col gap-2 z-10 w-full mt-auto">
-                  <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-wide leading-tight">
+                  <h3 className="text-[11px] font-black text-slate-900 tracking-wide leading-tight">
                     {cat.title}
                   </h3>
                   <p className="text-[10px] text-slate-500 font-semibold leading-relaxed truncate w-full">
@@ -690,7 +713,7 @@ export default function HomeV5() {
               <div key={group.label}>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{group.icon}</div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-foreground">Trending in {group.label}</h4>
+                  <h4 className="text-[11px] font-black tracking-widest text-foreground">Trending in {group.label}</h4>
                   <Flame className="w-3.5 h-3.5 text-orange-500 ml-1" />
                 </div>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 snap-x">
