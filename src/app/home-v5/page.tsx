@@ -432,7 +432,7 @@ export default function HomeV5() {
       <main className="max-w-[1440px] mx-auto px-10 pt-32 pb-40 space-y-28">
 
         {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-        <section className="text-center space-y-6 pt-8">
+        <section className="text-center space-y-10 pt-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
