@@ -18,7 +18,7 @@ export default function WalletPage() {
     fetchBalance();
   }, []);
 
-  const fetchBalance = async () => {
+  async function fetchBalance() {
     try {
       const res = await fetch("/api/user/profile");
       if (res.ok) {
