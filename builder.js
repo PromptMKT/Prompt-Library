@@ -1,7 +1,6 @@
 const fs = require('fs');
 let lines = fs.readFileSync('src/app/upload/page.tsx', 'utf8').split('\n');
 
-// Help fn to find line indices by substring
 function f(startStr, fromIdx = 0) {
   for (let i = fromIdx; i < lines.length; i++) {
     if (lines[i].includes(startStr)) return i;
