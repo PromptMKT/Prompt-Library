@@ -143,6 +143,7 @@ export const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
+                  suppressHydrationWarning
                   aria-label="Open profile menu"
                   className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-background hover:border-primary transition-colors"
                 >

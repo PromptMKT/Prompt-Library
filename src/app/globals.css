@@ -49,11 +49,11 @@
     /* Theme Tokens */
     --bg-main: #F5F7FB;
     --bg-surface: #FFFFFF;
-    --bg-soft: #F1F3F9;
-    --text-primary: #111827;
+    --bg-soft: #EEF0FA;
+    --text-primary: #1A0B3B;
     --text-secondary: #4B5563;
-    --text-muted: #6B7280;
-    --border-color: #E6E8EF;
+    --text-muted: #6B5B9A;
+    --border-color: rgba(124, 58, 237, 0.12);
     --accent-primary: #7C3AED;
     --accent-hover: #6D28D9;
 
@@ -121,17 +121,18 @@
     letter-spacing: -0.02em;
   }
  
-  h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.1; }
-  h2 { font-size: 1.875rem; font-weight: 700; line-height: 1.15; }
-  h3 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
-  h4 { font-size: 1.25rem; font-weight: 700; line-height: 1.25; }
-  h5 { font-size: 1.125rem; font-weight: 700; line-height: 1.15; }
-  h6 { font-size: 1rem; font-weight: 700; line-height: 1.25; }
+  h1 { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+  h2 { font-size: 1.625rem; font-weight: 700; line-height: 1.15; }
+  h3 { font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
+  h4 { font-size: 1.1rem; font-weight: 700; line-height: 1.25; }
+  h5 { font-size: 1rem; font-weight: 700; line-height: 1.15; }
+  h6 { font-size: 0.9rem; font-weight: 700; line-height: 1.25; }
  
   p, span, div, li, ul, ol {
     font-family: var(--font-jakarta);
+    font-size: 0.9375rem;
     font-weight: 500;
-    line-height: 1.6;
+    line-height: 1.5;
   }
  
   /* Make common hardcoded light utility colors respect dark mode across pages */

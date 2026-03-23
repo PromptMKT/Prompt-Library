@@ -44,15 +44,11 @@ export default function WalletPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#03050a] flex flex-col lg:flex-row relative">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#03050a] flex flex-col relative">
       
-      {/* LEFT: Sticky Sidebar (Synchronized with global Navbar) */}
-      <aside className="w-[260px] h-[calc(100vh-80px)] sticky top-20 left-0 z-[30] hidden lg:block border-r border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-[#08090d]">
-         <UserSidebar />
-      </aside>
-
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0 relative selection:bg-primary/10">
+
         <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-[#7C3AED04] to-transparent pointer-events-none" />
         
         <div className="p-6 md:p-10 lg:p-14 relative z-10 w-full overflow-x-hidden">

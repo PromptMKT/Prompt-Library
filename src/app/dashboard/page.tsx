@@ -52,38 +52,22 @@ const sidebarLinks = [
 export default function DashboardPage() {
   return (
     <div className="bg-background min-h-dvh w-full font-sans text-slate-900 dark:text-foreground">
-      <div className="w-full grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="hidden lg:block border-r border-border bg-card/70 p-4 h-[calc(100dvh-4rem)] sticky top-16">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3">Overview</p>
-          <nav className="space-y-1">
-            {sidebarLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`block w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
-                  item.href === "/dashboard" ? "bg-primary/10 text-primary" : "text-card-foreground hover:bg-secondary"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
-
+      <div className="w-full">
         <section className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
+
           <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-foreground">Good morning, Priya</h1>
               <p className="text-muted-foreground mt-1">Here&apos;s how your prompts are performing</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
+              <button suppressHydrationWarning className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
                 Last 30 days
               </button>
-              <button className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
+              <button suppressHydrationWarning className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
                 <Download className="w-4 h-4" /> Export
               </button>
-              <button className="h-10 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
+              <button suppressHydrationWarning className="h-10 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
                 <Plus className="w-4 h-4" /> New prompt
               </button>
             </div>
@@ -186,7 +170,7 @@ export default function DashboardPage() {
               <div className="rounded-xl border border-border bg-secondary/60 p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-bold text-foreground">AI insights</p>
-                  <button className="text-xs font-bold text-primary">Refresh</button>
+                  <button suppressHydrationWarning className="text-xs font-bold text-primary">Refresh</button>
                 </div>
                 <ul className="space-y-2 text-sm text-card-foreground">
                   <li className="flex items-start gap-2"><TrendingUp className="w-4 h-4 text-primary mt-0.5" /> Cold Email trending this week.</li>
@@ -235,7 +219,7 @@ export default function DashboardPage() {
             <article className="rounded-2xl border border-border bg-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <h2 className="text-2xl font-black tracking-tight text-foreground">Top performing</h2>
-                <button className="text-sm font-bold text-primary">See all</button>
+                <button suppressHydrationWarning className="text-sm font-bold text-primary">See all</button>
               </div>
               <div className="p-5 space-y-4">
                 {topPerforming.map((item) => (
@@ -280,7 +264,7 @@ export default function DashboardPage() {
             <article className="rounded-2xl border border-border bg-card overflow-x-auto">
               <div className="p-5 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-foreground">All prompts</h2>
-                <button className="text-sm font-bold text-primary">Manage all</button>
+                <button suppressHydrationWarning className="text-sm font-bold text-primary">Manage all</button>
               </div>
               <table className="w-full min-w-190 text-sm">
                 <thead>
@@ -315,7 +299,7 @@ export default function DashboardPage() {
             <article className="rounded-2xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-foreground">Recent reviews</h2>
-                <button className="text-sm font-bold text-primary">View all</button>
+                <button suppressHydrationWarning className="text-sm font-bold text-primary">View all</button>
               </div>
               {reviews.map((review) => (
                 <div key={review.name} className="border-t border-border pt-3">
@@ -366,7 +350,7 @@ export default function DashboardPage() {
               <p className="text-lg font-black text-foreground">Your personalized feed is ready</p>
               <p className="text-sm text-card-foreground">Publish one more prompt to unlock featured creator placement.</p>
             </div>
-            <button className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
+            <button suppressHydrationWarning className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
               <MessageCircle className="w-4 h-4" /> Launch next prompt
             </button>
           </div>
