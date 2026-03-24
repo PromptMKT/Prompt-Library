@@ -445,13 +445,13 @@ function ExploreContent() {
   const sectionGridClass =
     layoutMode === "grid"
       ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center"
-      : "grid grid-cols-1 gap-4";
+      : "flex flex-col divide-y divide-border/45";
 
   return (
-    <div className="bg-white px-3 sm:px-4 lg:px-6 py-5">
+    <div className="min-h-screen bg-background text-foreground px-3 sm:px-4 lg:px-6 py-5">
       <div className="h-10" />
 
-      <div className="fixed top-16 left-0 right-0 z-[110] h-10 border-y border-border/40 bg-white px-3 sm:px-4 lg:px-6 flex items-center justify-between text-[11px] text-muted-foreground">
+      <div className="fixed top-16 left-0 right-0 z-110 h-10 border-y border-border/40 bg-background/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>Tutorials</span>
         <span>Explore here</span>
       </div>
@@ -472,9 +472,9 @@ function ExploreContent() {
 
           <div className="rounded-2xl border border-border/40 bg-card/40 p-4 lg:p-5">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-end gap-4">
-                <Badge variant="outline" className="rounded-full hidden md:inline-flex">{dataset.website.name}</Badge>
-              </div>
+              {/* <div className="flex items-center justify-end gap-4">
+                
+              </div> */}
 
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {AUDIENCE_TABS.map((tab) => {
@@ -548,7 +548,7 @@ function ExploreContent() {
                       setCardSearch(e.target.value);
                       setVisibleCount(16);
                     }}
-                    placeholder="Search tutorials"
+                    placeholder="Search Prompts"
                     className="h-10 w-full rounded-xl border border-border/60 bg-background pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50"
                   />
                 </div>
@@ -626,18 +626,27 @@ function ExploreContent() {
               <h3 className="text-sm font-black uppercase tracking-[0.16em] text-foreground/80">Trending This Week</h3>
               <Badge variant="outline" className="rounded-full">{trendingPrompts.length} prompts</Badge>
             </div>
-            <div className={sectionGridClass}>
+            {layoutMode === "list" ? (
+              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                <span>Description</span>
+                <span>Category</span>
+                <span>Product</span>
+              </div>
+            ) : null}
+            <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
               {trendingPrompts.map((prompt) => (
                 <ExplorePromptCard
                   key={prompt.id}
                   id={prompt.id}
                   title={prompt.title}
+                  description={prompt.short_description || prompt.full_description || prompt.title}
                   image={prompt.images?.[0] || ""}
                   rating={prompt.rating || 4.8}
                   usageCount={prompt.sales || 0}
                   tags={prompt.tags || [prompt.category || "Prompt"]}
                   creator={prompt.seller || "Unknown creator"}
                   price={prompt.price || 0}
+                  category={prompt.category || "Prompt"}
                   platform={prompt.platform || "AI"}
                   mode={layoutMode}
                 />
@@ -650,18 +659,27 @@ function ExploreContent() {
               <h3 className="text-sm font-black uppercase tracking-[0.16em] text-foreground/80">New Arrivals</h3>
               <Badge variant="outline" className="rounded-full">{newArrivals.length} this week</Badge>
             </div>
-            <div className={sectionGridClass}>
+            {layoutMode === "list" ? (
+              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                <span>Description</span>
+                <span>Category</span>
+                <span>Product</span>
+              </div>
+            ) : null}
+            <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
               {newArrivals.map((prompt) => (
                 <ExplorePromptCard
                   key={prompt.id}
                   id={prompt.id}
                   title={prompt.title}
+                  description={prompt.short_description || prompt.full_description || prompt.title}
                   image={prompt.images?.[0] || ""}
                   rating={prompt.rating || 4.8}
                   usageCount={prompt.sales || 0}
                   tags={prompt.tags || [prompt.category || "Prompt"]}
                   creator={prompt.seller || "Unknown creator"}
                   price={prompt.price || 0}
+                  category={prompt.category || "Prompt"}
                   platform={prompt.platform || "AI"}
                   mode={layoutMode}
                 />
@@ -682,23 +700,34 @@ function ExploreContent() {
                 <Button onClick={clearAll} className="mt-4">Reset Filters</Button>
               </div>
             ) : (
-              <div className={sectionGridClass}>
+              <>
+                {layoutMode === "list" ? (
+                  <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                    <span>Description</span>
+                    <span>Category</span>
+                    <span>Product</span>
+                  </div>
+                ) : null}
+                <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
                 {visiblePrompts.map((prompt) => (
                   <ExplorePromptCard
                     key={prompt.id}
                     id={prompt.id}
                     title={prompt.title}
+                    description={prompt.short_description || prompt.full_description || prompt.title}
                     image={prompt.images?.[0] || ""}
                     rating={prompt.rating || 4.8}
                     usageCount={prompt.sales || 0}
                     tags={prompt.tags || [prompt.category || "Prompt"]}
                     creator={prompt.seller || "Unknown creator"}
                     price={prompt.price || 0}
+                    category={prompt.category || "Prompt"}
                     platform={prompt.platform || "AI"}
                     mode={layoutMode}
                   />
                 ))}
-              </div>
+                </div>
+              </>
             )}
           </section>
 

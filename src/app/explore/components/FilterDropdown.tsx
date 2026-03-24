@@ -19,7 +19,7 @@ export function FilterDropdown({ title, isOpen, onToggle, children, rightLabel }
       <button
         type="button"
         onClick={onToggle}
-        className="w-full py-4 flex items-center justify-between text-left hover:bg-muted/20 transition-colors"
+        className="w-full py-4 flex items-center justify-between text-left bg-transparent hover:bg-transparent transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className="text-[14px] font-medium tracking-[0.01em] text-foreground/90">{title}</span>

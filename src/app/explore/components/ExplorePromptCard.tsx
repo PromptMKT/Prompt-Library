@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
 type ExplorePromptCardProps = {
   id: string;
   title: string;
+  description?: string;
   image: string;
   rating: number;
   usageCount: number;
   tags: string[];
   creator: string;
   price: number;
+  category?: string;
   platform?: string;
   mode?: "grid" | "list";
 };
@@ -42,18 +44,43 @@ function creatorInitials(name: string): string {
 export function ExplorePromptCard({
   id,
   title,
+  description,
   image,
   rating,
   usageCount,
   tags,
   creator,
   price,
+  category,
   platform = "AI",
   mode = "grid",
 }: ExplorePromptCardProps) {
   const displayTitle = withPromptPrefix(title);
   const displayTags = (tags || []).slice(0, 3);
   const normalizedRating = Number.isFinite(rating) ? rating : 4.8;
+  const listDescription = (description || title || "Untitled prompt").trim();
+
+  if (mode === "list") {
+    return (
+      <motion.article layout transition={{ duration: 0.2, ease: "easeOut" }} className="w-full">
+        <Link href={`/prompt/${id}`} className="block w-full py-5 hover:bg-transparent">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_180px_160px] gap-3 md:gap-6 items-start">
+            <div className="min-w-0">
+              <p className="text-[15px] md:text-[16px] leading-6 text-foreground truncate">{listDescription}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-semibold md:hidden">Category</p>
+              <p className="text-[14px] text-foreground/90 truncate">{category || tags?.[0] || "Prompt"}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-semibold md:hidden">Product</p>
+              <p className="text-[14px] text-foreground/90 truncate">{platform || "AI"}</p>
+            </div>
+          </div>
+        </Link>
+      </motion.article>
+    );
+  }
 
   return (
     <motion.article
@@ -62,12 +89,12 @@ export function ExplorePromptCard({
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
         "group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-md hover:shadow-xl hover:border-purple-500 transition-all duration-300",
-        "w-full max-w-[280px] flex flex-col cursor-pointer"
+        "w-full max-w-70 flex flex-col cursor-pointer"
       )}
     >
       <Link href={`/prompt/${id}`} className="w-full flex-1 flex flex-col">
         {/* ── IMAGE SECTION ── */}
-        <div className="h-[170px] w-full relative overflow-hidden bg-slate-100">
+        <div className="h-42.5 w-full relative overflow-hidden bg-slate-100">
           {image ? (
             <img 
               src={image} 
@@ -117,7 +144,7 @@ export function ExplorePromptCard({
           
           {/* Footer (Author & Price) */}
           <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-auto">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white shadow-sm shrink-0">
+            <div className="w-5 h-5 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white shadow-sm shrink-0">
               {creatorInitials(creator || "Anonymous")}
             </div>
             <div className="text-[11px] font-medium text-slate-700 flex-1 truncate">
