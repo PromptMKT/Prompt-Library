@@ -231,15 +231,15 @@ const SectionCard200 = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           
           {/* Hover Content Section (Bottom 15%) */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]">
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/20 backdrop-blur-xl border-t border-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-black text-purple-600 tracking-wider">RATING</span>
+              <span className="text-[10px] font-black text-white/90 tracking-wider">RATING</span>
               <div className="flex items-center gap-1">
-                <span className="text-purple-600 text-[10px] tracking-tight">★★★★★</span>
-                <span className="text-[11px] font-bold text-slate-900">{p.rating.toFixed(1)}</span>
+                <span className="text-white text-[10px] tracking-tight">★★★★★</span>
+                <span className="text-[11px] font-bold text-white">{p.rating.toFixed(1)}</span>
               </div>
             </div>
-            <button className="px-4 py-2 bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">
+            <button className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-xl text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/40 shadow-xl transition-all active:scale-95">
               Buy Now ◈ {p.price}
             </button>
           </div>
@@ -429,7 +429,7 @@ export default function HomeV5() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20" suppressHydrationWarning>
 
-      <main className="max-w-[1440px] mx-auto px-10 pt-32 pb-40 space-y-28">
+      <main className="max-w-[1440px] mx-auto px-10 pt-16 pb-40 space-y-28">
 
         {/* ── HERO ─────────────────────────────────────────────────────────────── */}
         <section className="text-center space-y-10 pt-8">
