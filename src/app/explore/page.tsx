@@ -191,6 +191,12 @@ function ExploreContent() {
 
   const [dataset, setDataset] = useState<ExploreDataset>(FALLBACK_DATA);
 
+  // Dynamic filter state from database
+  const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [platforms, setPlatforms] = useState<any[]>([]);
+  const [models, setModels] = useState<any[]>([]);
+  
   const [selectedFilters, setSelectedFilters] = useState<FilterSelections>({});
   const [openSections, setOpenSections] = useState<OpenSections>({
     platform: false,
@@ -200,7 +206,7 @@ function ExploreContent() {
     priceRange: false,
   });
 
-  const [priceRange, setPriceRange] = useState<[number, number]>([10, 500]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [minRating, setMinRating] = useState<number | null>(null);
   const [complexity, setComplexity] = useState("All");
   const [activeTab, setActiveTab] = useState<(typeof AUDIENCE_TABS)[number]>("All prompts");
@@ -212,13 +218,74 @@ function ExploreContent() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        const [cats, subcats, plats, mods] = await Promise.all([
+          supabase.from('categories').select('*').order('name'),
+          supabase.from('subcategories').select('*').order('name'),
+          supabase.from('platforms').select('*').order('name'),
+          supabase.from('models').select('*').order('name'),
+        ]);
+
+        if (cats.data) setCategories(cats.data);
+        if (subcats.data) setSubcategories(subcats.data);
+        if (plats.data) setPlatforms(plats.data);
+        if (mods.data) setModels(mods.data);
+      } catch (err) {
+        console.error("Error fetching filter data:", err);
+      }
+    };
+    fetchFilterData();
+  }, []);
+
+  // Clear subcategories if no longer valid (parent category deselected)
+  useEffect(() => {
+    if (categories.length === 0 || subcategories.length === 0) return;
+    
+    const selectedCategoryNames = selectedFilters.category || [];
+    if (selectedCategoryNames.length === 0) {
+      if (selectedFilters.subcategory && selectedFilters.subcategory.length > 0) {
+        setSelectedFilters(prev => ({ ...prev, subcategory: [] }));
+      }
+      return;
+    }
+
+    const selectedCategoryIds = categories
+      .filter(c => selectedCategoryNames.includes(c.name))
+      .map(c => c.id);
+
+    const validSubcatNames = subcategories
+      .filter(s => selectedCategoryIds.includes(s.category_id))
+      .map(s => s.name);
+
+    const currentSubcatSelections = selectedFilters.subcategory || [];
+    const newSubcatSelections = currentSubcatSelections.filter(name => validSubcatNames.includes(name));
+
+    if (newSubcatSelections.length !== currentSubcatSelections.length) {
+      setSelectedFilters(prev => ({ ...prev, subcategory: newSubcatSelections }));
+    }
+  }, [selectedFilters.category, categories, subcategories]);
+
+  useEffect(() => {
     const loadPrompts = async () => {
       try {
         const { data } = await supabase
           .from("prompts")
-          .select(
-            "id, title, short_description, tagline, images, screenshots, cover_image, rating, sales, tags, seller, price, platform, category, prompt_text, output_type, complexity, created_at"
-          )
+          .select(`
+            id, 
+            title, 
+            description, 
+            price, 
+            cover_image_url, 
+            average_rating, 
+            purchases_count, 
+            is_published,
+            created_at,
+            category:categories(name),
+            platform:platforms(name),
+            creator:users(display_name, username)
+          `)
+          .eq("is_published", true)
           .order("created_at", { ascending: false })
           .limit(400);
 
@@ -227,18 +294,15 @@ function ExploreContent() {
         const mappedPrompts: PromptRecord[] = data.map((row: any) => ({
           id: String(row.id),
           title: row.title || "Untitled Prompt",
-          short_description: row.short_description || row.tagline || "",
-          images: row.images?.length ? row.images : row.screenshots?.length ? row.screenshots : row.cover_image ? [row.cover_image] : [],
-          rating: Number(row.rating || 4.8),
-          sales: Number(row.sales || 0),
-          tags: Array.isArray(row.tags) ? row.tags : [],
-          seller: row.seller || "Creator",
+          short_description: row.description || "",
+          images: row.cover_image_url ? [row.cover_image_url] : [],
+          rating: Number(row.average_rating || 4.8),
+          sales: Number(row.purchases_count || 0),
+          tags: row.category?.name ? [row.category.name] : [],
+          seller: row.creator?.display_name || row.creator?.username || "Creator",
           price: Number(row.price || 0),
-          platform: row.platform || "AI",
-          category: row.category || "Prompt",
-          prompt_text: row.prompt_text,
-          output_type: row.output_type,
-          difficulty: row.complexity || "Mid",
+          platform: row.platform?.name || "AI",
+          category: row.category?.name || "Prompt",
           createdAt: row.created_at,
         }));
 
@@ -298,13 +362,44 @@ function ExploreContent() {
     return tags.length > 0 ? tags : ["All"];
   }, [dataset]);
 
+  const dynamicSections = useMemo(() => {
+    const sections = [];
+    if (platforms.length > 0) {
+      sections.push({ id: 'platform', title: 'Platform', options: platforms.map(p => p.name) });
+    }
+    if (categories.length > 0) {
+      sections.push({ id: 'category', title: 'Category', options: categories.map(c => c.name) });
+    }
+
+    const selectedCategoryNames = selectedFilters.category || [];
+    if (selectedCategoryNames.length > 0 && subcategories.length > 0) {
+      // Find IDs of selected categories to filter subcategories
+      const selectedCategoryIds = categories
+        .filter(c => selectedCategoryNames.includes(c.name))
+        .map(c => c.id);
+
+      const filteredSubcats = subcategories.filter(s => selectedCategoryIds.includes(s.category_id));
+      
+      if (filteredSubcats.length > 0) {
+        sections.push({ 
+          id: 'subcategory', 
+          title: 'Subcategory', 
+          options: filteredSubcats.map(s => s.name) 
+        });
+      }
+    }
+
+    // Add static sections if not already covered
+    sections.push(TARGET_AUDIENCE_SECTION);
+    sections.push(OUTPUT_FORMAT_SECTION);
+    
+    return sections;
+  }, [platforms, categories, subcategories, selectedFilters.category]);
+
   const optionCounts = useMemo(() => {
-    const sections = [
-      PLATFORM_SECTION,
-      CATEGORY_SECTION,
-      TARGET_AUDIENCE_SECTION,
-      OUTPUT_FORMAT_SECTION,
-    ];
+    const sections = (dynamicSections && dynamicSections.length > 0) 
+      ? dynamicSections 
+      : [PLATFORM_SECTION, CATEGORY_SECTION, TARGET_AUDIENCE_SECTION, OUTPUT_FORMAT_SECTION];
 
     const counts: Record<string, number> = {};
 
@@ -312,6 +407,10 @@ function ExploreContent() {
       for (const option of section.options) {
         const count = prompts.filter((prompt) => {
           const promptText = promptTexts.get(prompt.id) || getPromptText(prompt);
+          if (section.id === "subcategory") {
+             // Subcategory match: check if the prompt's subcategory matches or if it's in tags
+             return (prompt as any).subcategory?.name === option || (prompt.tags || []).includes(option);
+          }
           return matchesOption(section.id, option, prompt, promptText);
         }).length;
         counts[`${section.id}:${option}`] = count;
@@ -319,7 +418,7 @@ function ExploreContent() {
     }
 
     return counts;
-  }, [prompts, promptTexts]);
+  }, [prompts, promptTexts, dynamicSections]);
 
   const filteredPrompts = useMemo(() => {
     return prompts
@@ -337,10 +436,23 @@ function ExploreContent() {
           if (!difficulty.includes(target)) return false;
         }
 
-        for (const sectionId of ["platform", "category", "targetAudience", "outputFormat"]) {
+        const sectionIds = dynamicSections && dynamicSections.length > 0 
+          ? dynamicSections.map(s => s.id) 
+          : ["platform", "category", "targetAudience", "outputFormat"];
+
+        for (const sectionId of sectionIds) {
           const options = selectedFilters[sectionId] || [];
           if (options.length === 0) continue;
-          const sectionMatch = options.some((option) => matchesOption(sectionId, option, prompt, text));
+          
+          let sectionMatch = false;
+          if (sectionId === "subcategory") {
+            sectionMatch = options.some(option => 
+              (prompt as any).subcategory?.name === option || (prompt.tags || []).includes(option)
+            );
+          } else {
+            sectionMatch = options.some((option) => matchesOption(sectionId, option, prompt, text));
+          }
+          
           if (!sectionMatch) return false;
         }
 
@@ -621,6 +733,7 @@ function ExploreContent() {
           clearAll={clearAll}
           mobileOpen={mobileFiltersOpen}
           setMobileOpen={setMobileFiltersOpen}
+          dynamicSections={dynamicSections}
         />
 
         <section className="space-y-7 min-w-0">

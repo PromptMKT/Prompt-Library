@@ -11,6 +11,8 @@ import {
   Flame, TrendingUp, Zap, Globe, ArrowRight, BadgeCheck, Share2
 } from "lucide-react";
 
+import { supabase } from "@/lib/supabase";
+
 // ─── DUMMY DATA ───────────────────────────────────────────────────────────────
 
 const prompts = [
@@ -425,6 +427,60 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
 
 export default function HomeV5() {
   const [liked, setLiked] = useState<number[]>([]);
+  const [dbPrompts, setDbPrompts] = useState<any[]>([]);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [promptsRes, catsRes] = await Promise.all([
+          supabase
+            .from('prompts')
+            .select(`
+              id, title, price, average_rating, purchases_count, cover_image_url,
+              creator:user_profiles(display_name, username),
+              platform:platforms(name)
+            `)
+            .eq('is_published', true)
+            .order('purchases_count', { ascending: false })
+            .limit(10),
+          supabase.from('categories').select('*').limit(5)
+        ]);
+        
+        if (promptsRes.data) {
+          setDbPrompts(promptsRes.data.map(p => ({
+            id: p.id,
+            title: p.title,
+            price: p.price,
+            rating: p.average_rating || 4.8,
+            sales: p.purchases_count || 0,
+            author: (p.creator as any)?.display_name || (p.creator as any)?.username || "Creator",
+            platform: (p.platform as any)?.name || "AI",
+            image: p.cover_image_url
+          })));
+        }
+
+        if (catsRes.data) {
+          setDbCategories(catsRes.data);
+        }
+      } catch (err) {
+        console.error("Error loading home data:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const displayPrompts = dbPrompts.length > 0 ? dbPrompts : prompts;
+
+  // Icon mapping for database categories
+  const getCategoryIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('photo') || n.includes('image')) return ImageIcon;
+    if (n.includes('video')) return Video;
+    if (n.includes('code')) return Code;
+    if (n.includes('seo') || n.includes('market')) return Globe;
+    return Zap;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20" suppressHydrationWarning>
@@ -490,7 +546,7 @@ export default function HomeV5() {
         <section>
           <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            {prompts.slice(0, 5).map((p, i) => (
+            {displayPrompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={p.id}
                 p={p}
@@ -507,7 +563,7 @@ export default function HomeV5() {
         <section>
           <SectionHeader title="Instagram Prompts" sub="Reels · AI Avatars · Posts" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            {prompts.slice(0, 5).map((p, i) => (
+            {displayPrompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={`ig-${p.id}`}
                 p={p}
@@ -647,26 +703,28 @@ export default function HomeV5() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {categories.map((cat, i) => (
-              <div
-                key={cat.title}
-                className="group relative cursor-pointer bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-purple-600 overflow-hidden flex flex-col items-start justify-between min-h-[160px] transition-colors duration-300"
-              >
-                {/* Decorative Top Right Edge Blur/Circle */}
-                <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-purple-50/70 transition-colors duration-300 pointer-events-none group-hover:bg-purple-100/50" />
-                
-                <cat.icon className="w-[18px] h-[18px] text-purple-600 mb-6 z-10" />
-                
-                <div className="flex flex-col gap-2 z-10 w-full mt-auto">
-                  <h3 className="text-[11px] font-black text-slate-900 tracking-wide leading-tight">
-                    {cat.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-500 font-semibold leading-relaxed truncate w-full">
-                    {cat.desc}
-                  </p>
+            {(dbCategories.length > 0 ? dbCategories : categories).map((cat: any, i) => {
+              const Icon = cat.icon || getCategoryIcon(cat.name || cat.title);
+              return (
+                <div
+                  key={cat.id || cat.title}
+                  className="group relative cursor-pointer bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-purple-600 overflow-hidden flex flex-col items-start justify-between min-h-[160px] transition-colors duration-300"
+                >
+                  <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-purple-50/70 transition-colors duration-300 pointer-events-none group-hover:bg-purple-100/50" />
+                  
+                  <Icon className="w-[18px] h-[18px] text-purple-600 mb-6 z-10" />
+                  
+                  <div className="flex flex-col gap-2 z-10 w-full mt-auto">
+                    <h3 className="text-[11px] font-black text-slate-900 tracking-wide leading-tight">
+                      {cat.name || cat.title}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-semibold leading-relaxed truncate w-full">
+                      {cat.description || cat.desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

@@ -258,27 +258,31 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
   };
 }
 
-function mapDbPrompt(row: any): PromptItem {
+function mapDbPrompt(row: any, images: any[] = [], steps: any[] = []): PromptItem {
+  // Use the first image from prompt_images if available, otherwise fallback to cover_image_url
+  const allImages = images.length > 0 
+    ? images.map(img => img.image_url) 
+    : (row.cover_image_url ? [row.cover_image_url] : []);
+
+  // Handle both aliased and unaliased versions from Supabase
+  const profile = row.user_profiles || row.creator;
+  const platformData = row.platforms || row.platform;
+  const categoryData = row.categories || row.category;
+
   return {
     id: String(row.id),
     title: row.title || "Untitled Prompt",
     tagline: row.tagline || row.short_description || "Ready-to-use prompt",
-    platform: row.platform || "AI",
-    category: row.category || "Prompt",
+    platform: platformData?.name || (typeof platformData === 'string' ? platformData : "AI"),
+    category: categoryData?.name || (typeof categoryData === 'string' ? categoryData : "Prompt"),
     price: Number(row.price || 0),
-    promptText: row.prompt_text || row.promptText || "No preview available.",
-    images: row.images?.length
-      ? row.images
-      : row.screenshots?.length
-        ? row.screenshots
-        : row.cover_image
-          ? [row.cover_image]
-          : [],
+    promptText: row.prompt_text || (steps.length > 0 ? steps[0].content : "No preview available."),
+    images: allImages,
     seller: {
-      username: row.seller || "creator",
-      avatar: row.seller_avatar || "",
+      username: profile?.display_name || profile?.username || "creator",
+      avatar: profile?.avatar_url || "",
     },
-    outputType: row.output_type || row.outputType || undefined,
+    outputType: row.output_type || undefined,
   };
 }
 
@@ -290,19 +294,53 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   const [activeTab, setActiveTab] = useState("prompt");
 
   useEffect(() => {
-    const fetchPrompt = async () => {
+    const fetchPromptData = async () => {
       try {
-        const { data } = await supabase
+        console.log("Fetching prompt for ID:", params.id, "Type:", typeof params.id);
+        
+        // 1. Fetch main prompt data WITHOUT joins first to isolate the issue
+        const { data: mainData, error: mainError } = await supabase
           .from("prompts")
-          .select("id, title, tagline, short_description, platform, category, price, prompt_text, images, screenshots, cover_image, seller, seller_avatar")
+          .select("*")
           .eq("id", params.id)
           .maybeSingle();
 
-        if (data) {
-          setPrompt(mapDbPrompt(data));
+        if (mainError) {
+          console.error("Supabase Error [Main]:", {
+            message: mainError.message,
+            code: mainError.code,
+            details: mainError.details,
+            hint: mainError.hint
+          });
+          throw mainError;
+        }
+
+        console.log("Main prompt data fetched:", mainData);
+
+        if (mainData) {
+          // 2. Fetch joins separately to be safer
+          const [userRes, platformRes, categoryRes, imagesRes, stepsRes] = await Promise.all([
+            supabase.from("user_profiles").select("*").eq("id", mainData.creator_id).maybeSingle(),
+            supabase.from("platforms").select("*").eq("id", mainData.platform_id).maybeSingle(),
+            supabase.from("categories").select("*").eq("id", mainData.category_id).maybeSingle(),
+            supabase.from("prompt_images").select("*").eq("prompt_id", params.id).order('sort_order'),
+            supabase.from("prompt_steps").select("*").eq("prompt_id", params.id).order('step_number')
+          ]);
+
+          // Combine data
+          const enrichedData = {
+            ...mainData,
+            user_profiles: userRes.data,
+            platforms: platformRes.data,
+            categories: categoryRes.data
+          };
+
+          setPrompt(mapDbPrompt(enrichedData, imagesRes.data || [], stepsRes.data || []));
           return;
         }
 
+        console.warn("No prompt found in database for ID:", params.id);
+        // Fallback for demo IDs or non-existent database entries
         const fallbackPrompt = mapFallbackPrompt(params.id);
         if (fallbackPrompt) {
           setPrompt(fallbackPrompt);
@@ -310,19 +348,16 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
         }
 
         setPrompt(mapDefaultFallbackPrompt(params.id));
-      } catch {
+      } catch (err: any) {
+        console.error("Critical error fetching prompt detail:", err);
         const fallbackPrompt = mapFallbackPrompt(params.id);
-        if (fallbackPrompt) {
-          setPrompt(fallbackPrompt);
-        } else {
-          setPrompt(mapDefaultFallbackPrompt(params.id));
-        }
+        setPrompt(fallbackPrompt || mapDefaultFallbackPrompt(params.id));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPrompt();
+    fetchPromptData();
   }, [params.id]);
 
   if (loading) {
