@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { Input } from "./ui/input";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/AuthProvider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ import {
 
 export const Navbar = () => {
   const { theme, setTheme } = useTheme();
+  const { isAuthenticated, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -57,11 +59,16 @@ export const Navbar = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/home-v5");
+  };
+
   return (
     <>
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-[120] transition-all duration-300 border-b",
+          "fixed top-0 left-0 right-0 z-120 transition-all duration-300 border-b",
           scrolled ? "bg-background/90 backdrop-blur-md border-white/10" : "bg-background border-white/5"
         )}
       >
@@ -115,13 +122,17 @@ export const Navbar = () => {
           </div>
 
           <div className="ml-auto flex items-center gap-3 shrink-0">
-            <Link href="/upload" className="hidden md:inline-flex items-center text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
-              Upload Prompt
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/upload" className="hidden md:inline-flex items-center text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
+                Upload Prompt
+              </Link>
+            ) : null}
 
-            <Link href="/wallet" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 text-xs font-black text-foreground hover:border-primary/50 hover:text-primary transition-colors">
-              <span>0 PV</span>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/wallet" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 text-xs font-black text-foreground hover:border-primary/50 hover:text-primary transition-colors">
+                <span>0 PV</span>
+              </Link>
+            ) : null}
 
             {mounted && (
               <Button
@@ -134,56 +145,56 @@ export const Navbar = () => {
               </Button>
             )}
 
-            <Link href="/sign-in" className="hidden sm:block">
-              <Button size="sm" className="rounded-xl px-5 h-10 bg-primary text-white hover:bg-primary/90 font-bold uppercase tracking-wide">
-                Sign In
-              </Button>
-            </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  suppressHydrationWarning
-                  aria-label="Open profile menu"
-                  className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-background hover:border-primary transition-colors"
-                >
-                  <User className="h-5 w-5 text-primary" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 border border-border/70 p-2 z-[9999]">
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer font-bold text-primary">
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard" className="cursor-pointer">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/coins" className="cursor-pointer">
-                    <Coins className="mr-2 h-4 w-4" />
-                    Coin
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile#settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/sign-in" className="cursor-pointer text-destructive">
+            {!isAuthenticated ? (
+              <Link href="/sign-in" className="hidden sm:block">
+                <Button size="sm" className="rounded-xl px-5 h-10 bg-primary text-white hover:bg-primary/90 font-bold uppercase tracking-wide">
+                  Sign In
+                </Button>
+              </Link>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    suppressHydrationWarning
+                    aria-label="Open profile menu"
+                    className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-background hover:border-primary transition-colors"
+                  >
+                    <User className="h-5 w-5 text-primary" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 border border-border/70 p-2 z-9999">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer font-bold text-primary">
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/coins" className="cursor-pointer">
+                      <Coins className="mr-2 h-4 w-4" />
+                      Coin
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile#settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="w-5 h-5" />
@@ -210,12 +221,18 @@ export const Navbar = () => {
               {[
                 { label: "Home", href: "/" },
                 { label: "Explore", href: "/explore" },
-                { label: "Profile", href: "/profile" },
-                { label: "Wallet", href: "/wallet" },
-                { label: "Upload Prompt", href: "/upload" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Coin", href: "/coins" },
-                { label: "Sign In", href: "/sign-in" },
+                ...(isAuthenticated
+                  ? [
+                      { label: "Profile", href: "/profile" },
+                      { label: "Wallet", href: "/wallet" },
+                      { label: "Upload Prompt", href: "/upload" },
+                      { label: "Dashboard", href: "/dashboard" },
+                      { label: "Coin", href: "/coins" },
+                    ]
+                  : [
+                      { label: "Sign In", href: "/sign-in" },
+                      { label: "Get Started", href: "/get-started" },
+                    ]),
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -232,16 +249,30 @@ export const Navbar = () => {
             </div>
 
             <div className="mt-auto space-y-4">
-              <Link href="/wallet" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full h-12 rounded-xl border-border/60 font-black uppercase tracking-wide">
-                  0 PV Wallet
-                </Button>
-              </Link>
-              <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase tracking-wide hover:bg-primary/90">
-                  Sign In
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link href="/wallet" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full h-12 rounded-xl border-border/60 font-black uppercase tracking-wide">
+                      0 PV Wallet
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={async () => {
+                      await handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase tracking-wide hover:bg-primary/90"
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase tracking-wide hover:bg-primary/90">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </nav>
         </div>

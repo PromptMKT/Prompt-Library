@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Sidebar } from "./Sidebar";
+import { AuthGate } from "./AuthGate";
 import { cn } from "@/lib/utils";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       )}>
         <Navbar />
         <main className={cn("grow pt-16", isAuthPage && "bg-[#0a0a0f]")}>
-          {children}
+          <AuthGate>{children}</AuthGate>
         </main>
       </div>
     </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { ensureUserProfile, isValidEmail, sanitizeEmail, toAuthMessage, validatePassword } from "@/lib/auth";
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -17,6 +19,19 @@ export default function GetStartedPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [role, setRole] = useState("buyer");
   const [interests, setInterests] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [retryAfterSec, setRetryAfterSec] = useState(0);
+
+  useEffect(() => {
+    if (retryAfterSec <= 0) return;
+    const timer = window.setInterval(() => {
+      setRetryAfterSec((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [retryAfterSec]);
 
   const pathOptions = [
     { id: "creator", label: "Content Creator", sub: "Influencers, writers, creators", icon: Sparkles },
@@ -39,15 +54,86 @@ export default function GetStartedPage() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Placeholder submit action for frontend flow.
-    console.log("Get started", { email, password, confirmPassword, role, interests });
   };
 
   const username = email.includes("@") ? email.split("@")[0] : "newuser";
   const displayName = username.replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const handleRegister = async () => {
+    if (retryAfterSec > 0) {
+      setError(`Too many attempts right now. Please wait ${retryAfterSec}s and try again.`);
+      return;
+    }
+
+    const cleanEmail = sanitizeEmail(email);
+
+    if (!isValidEmail(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setError("Please accept terms before creating your account.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setInfo(null);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: {
+          role,
+          interests,
+          display_name: displayName,
+        },
+      },
+    });
+
+    if (signUpError) {
+      const authMessage = toAuthMessage(signUpError.message || "", "signup");
+      if (authMessage.toLowerCase().includes("too many attempts")) {
+        setRetryAfterSec(60);
+      }
+      setError(authMessage);
+      setSubmitting(false);
+      return;
+    }
+
+    // If email confirmation is enabled, session can be null here.
+    // In that case, profile row is created by SQL trigger on auth.users.
+    if (data.user && data.session) {
+      await ensureUserProfile(data.user, {
+        role,
+        interests,
+        displayName,
+      });
+    }
+
+    if (!data.session) {
+      setInfo("Account created. Please confirm your email first, then sign in.");
+    }
+
+    await supabase.auth.signOut();
+    router.push("/sign-in?registered=1");
+  };
+
   const canNext =
-    (step === 1 && email && password && confirmPassword && acceptedTerms) ||
+    (step === 1 && email && password && confirmPassword && password === confirmPassword && acceptedTerms) ||
     (step === 2 && role) ||
     (step === 3 && interests.length > 0);
 
@@ -105,6 +191,18 @@ export default function GetStartedPage() {
             </div>
 
             <form onSubmit={onSubmit} className="rounded-3xl border border-white/8 bg-[#060913] p-6 sm:p-8 space-y-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)]">
+              {info ? (
+                <div className="rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                  {info}
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="rounded-2xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                  {error}
+                </div>
+              ) : null}
+
               {step === 1 && (
                 <div className="space-y-6">
                   <div>
@@ -116,13 +214,14 @@ export default function GetStartedPage() {
 
                   <button
                     type="button"
-                    className="w-full h-14 rounded-2xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 transition-colors flex items-center justify-between px-4"
+                    disabled
+                    className="w-full h-14 rounded-2xl border border-purple-500/20 bg-purple-500/5 opacity-60 cursor-not-allowed flex items-center justify-between px-4"
                   >
                     <span className="w-8 h-8 rounded-md bg-white inline-flex items-center justify-center">
                       <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" className="w-5 h-5" />
                     </span>
                     <span className="text-lg font-bold text-white">Continue with Google</span>
-                    <span className="text-xs font-bold text-purple-200 bg-purple-500/20 px-2 py-1 rounded-full">Recommended</span>
+                    <span className="text-xs font-bold text-purple-200 bg-purple-500/20 px-2 py-1 rounded-full">Coming soon</span>
                   </button>
 
                   <div className="flex items-center gap-3 text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">
@@ -157,7 +256,7 @@ export default function GetStartedPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-slate-500">Use a mix of letters, numbers and symbols</p>
+                    <p className="text-xs text-slate-500">At least 8 chars, with uppercase, lowercase, and number</p>
                   </div>
 
                   <div className="space-y-3">
@@ -278,7 +377,7 @@ export default function GetStartedPage() {
                   <button
                     type="button"
                     onClick={() => canNext && setStep((s) => Math.min(3, s + 1))}
-                    disabled={!canNext}
+                    disabled={!canNext || submitting}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
                     Initiate Next Step <ArrowRight className="w-4 h-4" />
@@ -286,11 +385,11 @@ export default function GetStartedPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => router.push("/get-started/bonus")}
-                    disabled={!canNext}
+                    onClick={handleRegister}
+                    disabled={!canNext || submitting || retryAfterSec > 0}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
-                    Claim Bonus & Launch <Rocket className="w-4 h-4" />
+                    {submitting ? "Creating Account..." : retryAfterSec > 0 ? `Retry in ${retryAfterSec}s` : "Create Account"} <Rocket className="w-4 h-4" />
                   </button>
                 )}
               </div>

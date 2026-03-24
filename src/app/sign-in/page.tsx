@@ -1,25 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Rocket, Shield, Globe } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthProvider";
+import { ensureUserProfile, isValidEmail, sanitizeEmail, toAuthMessage } from "@/lib/auth";
 
-export default function SignInPage() {
+function SignInContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      const next = searchParams.get("next") || "/home-v5";
+      router.replace(next);
+    }
+  }, [loading, isAuthenticated, router, searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("registered") === "1") {
+      setSuccess("Account created. Please sign in with your email and password.");
+    }
+  }, [searchParams]);
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Placeholder submit action for frontend flow.
-    console.log("Sign in", { email, password });
+    setSubmitting(true);
+    setError(null);
+
+    const cleanEmail = sanitizeEmail(email);
+    if (!isValidEmail(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      setSubmitting(false);
+      return;
+    }
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    if (signInError) {
+      setError(toAuthMessage(signInError.message || "", "signin"));
+      setSubmitting(false);
+      return;
+    }
+
+    if (data.user) {
+      await ensureUserProfile(data.user);
+    }
+
+    const next = searchParams.get("next") || "/home-v5";
+    router.replace(next);
   };
 
   return (
     <main className="min-h-dvh bg-[#0a0a0f] text-white selection:bg-purple-500/30 selection:text-white">
       <div className="grid min-h-dvh lg:grid-cols-[40%_60%]">
         <aside className="relative hidden lg:flex flex-col justify-between p-12 border-r border-white/5 bg-[#0f0f1a]">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
 
           <div className="relative z-10 space-y-8">
             <Link href="/home-v5" className="inline-flex items-center gap-3">
@@ -57,8 +105,8 @@ export default function SignInPage() {
         </aside>
 
         <section className="relative p-6 sm:p-10 lg:p-14 flex items-center justify-center bg-[#07070b] min-h-dvh">
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:32px_32px] pointer-events-none" />
-          <div className="w-full max-w-[560px] space-y-8">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] bg-size-[32px_32px] pointer-events-none" />
+          <div className="w-full max-w-140 space-y-8">
             <div className="space-y-2">
               <h1 className="text-5xl font-black tracking-tight text-white">Sign In</h1>
               <p className="text-slate-400">Welcome back to PromptVault.</p>
@@ -68,6 +116,18 @@ export default function SignInPage() {
               onSubmit={onSubmit}
               className="rounded-3xl border border-white/8 bg-[#060913] p-6 sm:p-8 space-y-5 shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
             >
+              {success ? (
+                <div className="rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                  {success}
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="rounded-2xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                  {error}
+                </div>
+              ) : null}
+
               <div className="space-y-2">
                 <label htmlFor="email" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                   Email
@@ -100,9 +160,10 @@ export default function SignInPage() {
 
               <button
                 type="submit"
-                className="w-full h-12 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] hover:bg-purple-500 transition-all"
+                disabled={submitting}
+                className="w-full h-12 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] hover:bg-purple-500 transition-all disabled:opacity-50"
               >
-                Sign In
+                {submitting ? "Signing In..." : "Sign In"}
               </button>
 
               <p className="text-xs text-slate-500 text-center">
@@ -116,5 +177,19 @@ export default function SignInPage() {
         </section>
         </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }
