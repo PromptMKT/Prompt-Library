@@ -62,7 +62,7 @@ export function ExplorePromptCard({
 
   if (mode === "list") {
     return (
-      <motion.article layout transition={{ duration: 0.2, ease: "easeOut" }} className="w-full">
+      <motion.article transition={{ duration: 0.2, ease: "easeOut" }} className="w-full">
         <Link href={`/prompt/${id}`} className="block w-full py-5 hover:bg-transparent">
           <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_180px_160px] gap-3 md:gap-6 items-start">
             <div className="min-w-0">
@@ -84,7 +84,6 @@ export function ExplorePromptCard({
 
   return (
     <motion.article
-      layout
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(

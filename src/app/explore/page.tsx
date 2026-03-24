@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, Suspense, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import {
   AUDIENCE_TABS,
   CATEGORY_SECTION,
   OUTPUT_FORMAT_SECTION,
+  PLATFORM_SECTION,
   TARGET_AUDIENCE_SECTION,
 } from "./components/filter-config";
 import exploreData from "./data/explore-data.json";
@@ -191,6 +193,7 @@ function ExploreContent() {
 
   const [selectedFilters, setSelectedFilters] = useState<FilterSelections>({});
   const [openSections, setOpenSections] = useState<OpenSections>({
+    platform: false,
     category: false,
     targetAudience: false,
     outputFormat: false,
@@ -297,6 +300,7 @@ function ExploreContent() {
 
   const optionCounts = useMemo(() => {
     const sections = [
+      PLATFORM_SECTION,
       CATEGORY_SECTION,
       TARGET_AUDIENCE_SECTION,
       OUTPUT_FORMAT_SECTION,
@@ -333,7 +337,7 @@ function ExploreContent() {
           if (!difficulty.includes(target)) return false;
         }
 
-        for (const sectionId of ["category", "targetAudience", "outputFormat"]) {
+        for (const sectionId of ["platform", "category", "targetAudience", "outputFormat"]) {
           const options = selectedFilters[sectionId] || [];
           if (options.length === 0) continue;
           const sectionMatch = options.some((option) => matchesOption(sectionId, option, prompt, text));
@@ -459,24 +463,24 @@ function ExploreContent() {
       <div className="max-w-470 mx-auto grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 lg:gap-6">
         <div className="hidden lg:block" />
 
-        <section className="space-y-7 min-w-0">
-          <div className="pt-4 lg:pt-8 pb-2">
-            <div className="inline-flex flex-col items-start gap-4">
+        <section className="space-y-4 min-w-0">
+          <div className="pt-1 lg:pt-2 pb-0.5">
+            <div className="inline-flex flex-col items-start gap-2">
               <ExploreAppleMark />
-              <h1 className="text-5xl sm:text-6xl lg:text-[72px] leading-none font-black tracking-tight text-foreground">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-none font-black tracking-tight text-foreground">
                 Explore Prompt
               </h1>
-              <p className="text-sm sm:text-base text-muted-foreground max-w-3xl">Prompt systems that ship outcomes, not guesses.</p>
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-3xl">Prompt systems that ship outcomes, not guesses.</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/40 bg-card/40 p-4 lg:p-5">
-            <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-3 lg:p-3.5">
+            <div className="flex flex-col gap-2.5">
               {/* <div className="flex items-center justify-end gap-4">
                 
               </div> */}
 
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
                 {AUDIENCE_TABS.map((tab) => {
                   const count = tab === "All prompts"
                     ? prompts.length
@@ -490,7 +494,7 @@ function ExploreContent() {
                       key={tab}
                       onClick={() => handleTabChange(tab)}
                       className={cn(
-                        "shrink-0 rounded-full border px-4 py-2 text-sm font-black transition-colors",
+                        "shrink-0 rounded-full border px-3 py-1.5 text-xs font-black transition-colors",
                         activeTab === tab
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background/70 text-muted-foreground border-border/60 hover:text-foreground"
@@ -502,8 +506,8 @@ function ExploreContent() {
                 })}
               </div>
 
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.14em] text-primary shrink-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em] text-primary shrink-0">
                   <Flame className="w-3.5 h-3.5" /> Trending
                 </span>
                 {trendTags.map((trend) => (
@@ -512,7 +516,7 @@ function ExploreContent() {
                     key={trend}
                     onClick={() => handleTrendChange(trend)}
                     className={cn(
-                      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                      "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors",
                       activeTrend === trend
                         ? "bg-primary/10 text-primary border-primary/40"
                         : "bg-background/70 text-muted-foreground border-border/60 hover:text-foreground"
@@ -540,8 +544,8 @@ function ExploreContent() {
                   <SlidersHorizontal className="w-4 h-4" /> Filters
                 </Button>
 
-                <div className="relative w-full">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="relative w-full rounded-xl bg-linear-to-r from-violet-500/45 via-purple-500/35 to-indigo-500/45 p-[1.5px] shadow-[0_0_0_1px_rgba(124,58,237,0.16)]">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     value={cardSearch}
                     onChange={(e) => {
@@ -549,7 +553,7 @@ function ExploreContent() {
                       setVisibleCount(16);
                     }}
                     placeholder="Search Prompts"
-                    className="h-10 w-full rounded-xl border border-border/60 bg-background pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50"
+                    className="h-10 w-full rounded-[11px] border-0 bg-background/95 pl-10 pr-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/35"
                   />
                 </div>
               </div>
@@ -633,25 +637,34 @@ function ExploreContent() {
                 <span>Product</span>
               </div>
             ) : null}
-            <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
-              {trendingPrompts.map((prompt) => (
-                <ExplorePromptCard
-                  key={prompt.id}
-                  id={prompt.id}
-                  title={prompt.title}
-                  description={prompt.short_description || prompt.full_description || prompt.title}
-                  image={prompt.images?.[0] || ""}
-                  rating={prompt.rating || 4.8}
-                  usageCount={prompt.sales || 0}
-                  tags={prompt.tags || [prompt.category || "Prompt"]}
-                  creator={prompt.seller || "Unknown creator"}
-                  price={prompt.price || 0}
-                  category={prompt.category || "Prompt"}
-                  platform={prompt.platform || "AI"}
-                  mode={layoutMode}
-                />
-              ))}
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`trending-${layoutMode}`}
+                initial={{ opacity: 0, y: 18, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.99 }}
+                transition={{ duration: 0.24, ease: "easeOut" }}
+                className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}
+              >
+                {trendingPrompts.map((prompt) => (
+                  <ExplorePromptCard
+                    key={prompt.id}
+                    id={prompt.id}
+                    title={prompt.title}
+                    description={prompt.short_description || prompt.full_description || prompt.title}
+                    image={prompt.images?.[0] || ""}
+                    rating={prompt.rating || 4.8}
+                    usageCount={prompt.sales || 0}
+                    tags={prompt.tags || [prompt.category || "Prompt"]}
+                    creator={prompt.seller || "Unknown creator"}
+                    price={prompt.price || 0}
+                    category={prompt.category || "Prompt"}
+                    platform={prompt.platform || "AI"}
+                    mode={layoutMode}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </section>
 
           <section className="space-y-4">
@@ -666,25 +679,34 @@ function ExploreContent() {
                 <span>Product</span>
               </div>
             ) : null}
-            <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
-              {newArrivals.map((prompt) => (
-                <ExplorePromptCard
-                  key={prompt.id}
-                  id={prompt.id}
-                  title={prompt.title}
-                  description={prompt.short_description || prompt.full_description || prompt.title}
-                  image={prompt.images?.[0] || ""}
-                  rating={prompt.rating || 4.8}
-                  usageCount={prompt.sales || 0}
-                  tags={prompt.tags || [prompt.category || "Prompt"]}
-                  creator={prompt.seller || "Unknown creator"}
-                  price={prompt.price || 0}
-                  category={prompt.category || "Prompt"}
-                  platform={prompt.platform || "AI"}
-                  mode={layoutMode}
-                />
-              ))}
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`new-${layoutMode}`}
+                initial={{ opacity: 0, y: 18, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.99 }}
+                transition={{ duration: 0.24, ease: "easeOut" }}
+                className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}
+              >
+                {newArrivals.map((prompt) => (
+                  <ExplorePromptCard
+                    key={prompt.id}
+                    id={prompt.id}
+                    title={prompt.title}
+                    description={prompt.short_description || prompt.full_description || prompt.title}
+                    image={prompt.images?.[0] || ""}
+                    rating={prompt.rating || 4.8}
+                    usageCount={prompt.sales || 0}
+                    tags={prompt.tags || [prompt.category || "Prompt"]}
+                    creator={prompt.seller || "Unknown creator"}
+                    price={prompt.price || 0}
+                    category={prompt.category || "Prompt"}
+                    platform={prompt.platform || "AI"}
+                    mode={layoutMode}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </section>
 
           <section className="space-y-4">
@@ -708,25 +730,34 @@ function ExploreContent() {
                     <span>Product</span>
                   </div>
                 ) : null}
-                <div className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}>
-                {visiblePrompts.map((prompt) => (
-                  <ExplorePromptCard
-                    key={prompt.id}
-                    id={prompt.id}
-                    title={prompt.title}
-                    description={prompt.short_description || prompt.full_description || prompt.title}
-                    image={prompt.images?.[0] || ""}
-                    rating={prompt.rating || 4.8}
-                    usageCount={prompt.sales || 0}
-                    tags={prompt.tags || [prompt.category || "Prompt"]}
-                    creator={prompt.seller || "Unknown creator"}
-                    price={prompt.price || 0}
-                    category={prompt.category || "Prompt"}
-                    platform={prompt.platform || "AI"}
-                    mode={layoutMode}
-                  />
-                ))}
-                </div>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={`all-${layoutMode}`}
+                    initial={{ opacity: 0, y: 18, scale: 0.985 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.99 }}
+                    transition={{ duration: 0.24, ease: "easeOut" }}
+                    className={cn(sectionGridClass, layoutMode === "list" && "border-y border-border/45")}
+                  >
+                    {visiblePrompts.map((prompt) => (
+                      <ExplorePromptCard
+                        key={prompt.id}
+                        id={prompt.id}
+                        title={prompt.title}
+                        description={prompt.short_description || prompt.full_description || prompt.title}
+                        image={prompt.images?.[0] || ""}
+                        rating={prompt.rating || 4.8}
+                        usageCount={prompt.sales || 0}
+                        tags={prompt.tags || [prompt.category || "Prompt"]}
+                        creator={prompt.seller || "Unknown creator"}
+                        price={prompt.price || 0}
+                        category={prompt.category || "Prompt"}
+                        platform={prompt.platform || "AI"}
+                        mode={layoutMode}
+                      />
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
               </>
             )}
           </section>

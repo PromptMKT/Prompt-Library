@@ -45,6 +45,12 @@ export const PLATFORM_FILTER_SECTIONS: FilterSection[] = [
   },
 ];
 
+export const PLATFORM_SECTION: FilterSection = {
+  id: "platform",
+  title: "Platform",
+  options: Array.from(new Set(PLATFORM_FILTER_SECTIONS.flatMap((section) => section.options))).slice(0, 12),
+};
+
 export const CATEGORY_SECTION: FilterSection = {
   id: "category",
   title: "Category",

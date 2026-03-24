@@ -9,6 +9,7 @@ import { FilterDropdown } from "./FilterDropdown";
 import {
   CATEGORY_SECTION,
   OUTPUT_FORMAT_SECTION,
+  PLATFORM_SECTION,
   TARGET_AUDIENCE_SECTION,
 } from "./filter-config";
 
@@ -81,11 +82,12 @@ function SidebarBody({
   isMobile = false,
 }: SidebarBodyProps) {
   const sections = useMemo(
-    () => [CATEGORY_SECTION, OUTPUT_FORMAT_SECTION, TARGET_AUDIENCE_SECTION],
+    () => [PLATFORM_SECTION, CATEGORY_SECTION, OUTPUT_FORMAT_SECTION, TARGET_AUDIENCE_SECTION],
     []
   );
 
   const titleMap: Record<string, string> = {
+    platform: "Platform",
     category: "Category",
     outputFormat: "Output type",
     targetAudience: "Audience",
