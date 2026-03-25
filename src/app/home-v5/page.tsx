@@ -438,7 +438,7 @@ export default function HomeV5() {
             .from('prompts')
             .select(`
               id, title, price, average_rating, purchases_count, cover_image_url,
-              creator:user_profiles(display_name, username),
+              creator:users(display_name, username),
               platform:platforms(name)
             `)
             .eq('is_published', true)

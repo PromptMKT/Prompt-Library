@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, Link as LinkIcon, AlertCircle, Plus, X, File } from "lucide-react";
+import { Check, Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, Link as LinkIcon, AlertCircle, Plus, X, File } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { uploadToCloudinary } from "@/app/actions/upload-cloudinary";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
@@ -61,6 +62,49 @@ const SUBCATS: Record<string, string[]> = {
   'Agriculture & environment':['Crop management','Sustainability reports','Environmental impact']
 };
 
+const TAXONOMY_DATA = [
+  {
+    name: 'Writing & Content',
+    slug: 'writing-content',
+    subcategories: [
+      { name: 'Blogging', slug: 'blogging', useCases: ['SEO articles', 'Listicles', 'How-to guides', 'Thought leadership'] },
+      { name: 'Copywriting', slug: 'copywriting', useCases: ['Ad copy', 'Landing pages', 'Sales pages', 'Headlines'] },
+      { name: 'Social Media', slug: 'social-media', useCases: ['LinkedIn posts', 'Twitter threads', 'Instagram captions', 'TikTok scripts'] },
+      { name: 'Email', slug: 'email', useCases: ['Cold emails', 'Newsletters', 'Drip campaigns', 'Welcome sequences'] },
+      { name: 'Scripts', slug: 'scripts', useCases: ['Video scripts', 'Podcast scripts', 'Webinar scripts', 'Presentation scripts'] },
+    ],
+  },
+  {
+    name: 'Marketing',
+    slug: 'marketing',
+    subcategories: [
+      { name: 'SEO', slug: 'seo', useCases: ['Keyword research', 'Meta descriptions', 'Content briefs', 'SEO audits'] },
+      { name: 'Branding', slug: 'branding', useCases: ['Brand naming', 'Taglines', 'Brand voice', 'Positioning'] },
+      { name: 'Ads', slug: 'ads', useCases: ['Google Ads', 'Meta ads', 'LinkedIn ads', 'Display ads'] },
+      { name: 'Market Research', slug: 'market-research', useCases: ['Competitor analysis', 'Industry briefs', 'TAM/SAM/SOM', 'Trend analysis'] },
+    ],
+  },
+  {
+    name: 'Coding & Dev',
+    slug: 'coding-dev',
+    subcategories: [
+      { name: 'Web Dev', slug: 'web-dev', useCases: ['React components', 'HTML/CSS layouts', 'Next.js pages', 'Vue components'] },
+      { name: 'Backend', slug: 'backend', useCases: ['API generation', 'Database queries', 'Authentication', 'Server config'] },
+      { name: 'Debugging', slug: 'debugging', useCases: ['Bug fixing', 'Code review', 'Performance optimization', 'Error handling'] },
+    ],
+  },
+  {
+    name: 'Image Generation',
+    slug: 'image-generation',
+    subcategories: [
+      { name: 'Art & Illustration', slug: 'art-illustration', useCases: ['Digital art', 'Concept art', 'Illustrations', 'Abstract art'] },
+      { name: 'Character Design', slug: 'character-design', useCases: ['Game characters', 'Avatars', 'Mascots', 'Portraits'] },
+      { name: 'Product Visualization', slug: 'product-viz', useCases: ['Product mockups', 'Packaging design', 'E-commerce photos', 'Brand assets'] },
+    ],
+  }
+];
+
+
 export default function PromptUploadPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -99,20 +143,36 @@ export default function PromptUploadPage() {
   const [subCategory, setSubCategory] = useState("");
   const [targetAudience, setTargetAudience] = useState<string[]>([]);
   const [outputFormat, setOutputFormat] = useState("");
+  const [selectedUseCase, setSelectedUseCase] = useState("");
+  const [useCaseSuggestions, setUseCaseSuggestions] = useState<string[]>([]);
+  const [dbUseCases, setDbUseCases] = useState<string[]>([]);
+
 
   // ── S4 ──
   const [screenshots, setScreenshots] = useState<string[]>([]);
 
-  // ── S5 ──
+  // ── S5: USER GUIDE ──
+  const [quickSetup, setQuickSetup] = useState("");
+  const [guideSteps, setGuideSteps] = useState([{ id: 1, text: "" }, { id: 2, text: "" }, { id: 3, text: "" }]);
+  const [fillVariables, setFillVariables] = useState("");
+  const [whatToExpect, setWhatToExpect] = useState("");
+  
+  const [proTips, setProTips] = useState("");
+  const [commonMistakes, setCommonMistakes] = useState("");
+  const [howToAdapt, setHowToAdapt] = useState("");
+  
+
+  // ── S6 ──
   const [tagsInput, setTagsInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [complexity, setComplexity] = useState("");
   const [sellerNote, setSellerNote] = useState("");
 
-  // ── S6 ──
+  // ── S7 ──
   const [price, setPrice] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [publishedPromptId, setPublishedPromptId] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -134,7 +194,43 @@ export default function PromptUploadPage() {
     } else {
       setSubcatsData([]);
     }
+    // Reset use case when category changes
+    setSubCategory("");
+    setSelectedUseCase("");
   }, [category]);
+
+  // Fetch use cases from DB and match with taxonomy data
+  useEffect(() => {
+    if (subCategory) {
+      // 1. Get current category and subcategory names to match with taxonomy
+      const currentCat = categoriesData.find(c => c.id === category);
+      const currentSub = subcatsData.find(s => s.id === subCategory);
+      
+      if (currentCat && currentSub) {
+        // 2. Find matches in TAXONOMY_DATA
+        const catMatch = TAXONOMY_DATA.find(c => c.name.toLowerCase() === currentCat.name.toLowerCase());
+        const subMatch = catMatch?.subcategories.find(s => s.name.toLowerCase() === currentSub.name.toLowerCase());
+        
+        const staticSuggestions = subMatch?.useCases || [];
+        
+        // 3. Fetch from DB
+        supabase.from('use_cases')
+          .select('name')
+          .eq('subcategory_id', subCategory)
+          .then(({data}) => {
+            const dbNames = data?.map(d => d.name) || [];
+            // Merge suggestions, avoiding duplicates
+            const allSuggestions = Array.from(new Set([...staticSuggestions, ...dbNames]));
+            setUseCaseSuggestions(allSuggestions);
+          });
+      } else {
+        setUseCaseSuggestions([]);
+      }
+    } else {
+      setUseCaseSuggestions([]);
+    }
+    setSelectedUseCase("");
+  }, [subCategory, category, categoriesData, subcatsData]);
 
   useEffect(() => {
     if (platform) {
@@ -223,11 +319,27 @@ export default function PromptUploadPage() {
          is_published: true,
          is_multi_step: isMultiStep,
          step_count: stepCount,
-         cover_image_provider: 'cloudinary',
-         input_types: actualInputTypes,
-         input_data: processedInputData,
-         prompt_file_urls: promptFileUrls
+         cover_image_provider: 'cloudinary'
       };
+
+      // Save new use case to DB if it doesn't exist
+      if (selectedUseCase && subCategory) {
+        supabase.from('use_cases')
+          .select('id')
+          .eq('subcategory_id', subCategory)
+          .eq('name', selectedUseCase)
+          .single()
+          .then(({data: existingUseCase}) => {
+            if (!existingUseCase) {
+              supabase.from('use_cases').insert([{
+                name: selectedUseCase,
+                category_id: category,
+                subcategory_id: subCategory,
+                is_custom: true
+              }]).then(() => {});
+            }
+          });
+      }
       
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
@@ -237,12 +349,17 @@ export default function PromptUploadPage() {
 
       if (promptError) throw promptError;
       const promptId = promptData.id;
+      
+      if (promptId) {
+        setPublishedPromptId(promptId);
+      }
 
       // 4. Insert Prompt Steps
       if (isMultiStep) {
         const stepsToInsert = chainSteps.map((s, idx) => ({
           prompt_id: promptId,
           step_number: idx + 1,
+          title: `Step ${idx + 1}`,
           instruction: s.text,
           step_type: 'prompt'
         }));
@@ -256,6 +373,7 @@ export default function PromptUploadPage() {
         const { error: stepError } = await supabase.from('prompt_steps').insert([{
           prompt_id: promptId,
           step_number: 1,
+          title: 'Main Prompt',
           instruction: instruction,
           step_type: 'prompt'
         }]);
@@ -287,7 +405,6 @@ export default function PromptUploadPage() {
       
       setIsPublished(true);
       toast?.success("Prompt successfully published!");
-      router.push('/explore');
     } catch (err: any) {
       console.error("Error publishing:", err);
       alert("Error publishing: " + err.message);
@@ -338,6 +455,7 @@ export default function PromptUploadPage() {
     { label: "Title", done: title.length > 2 },
     { label: "Platform selected", done: platform !== "" },
     { label: "Category selected", done: category !== "" },
+    { label: "Use case set", done: selectedUseCase.length > 2 },
     { label: "Target audience", done: targetAudience.length > 0 },
     { label: "Output format", done: outputFormat !== "" },
     { label: "1+ screenshot", done: screenshots.length >= 1 },
@@ -793,6 +911,7 @@ export default function PromptUploadPage() {
                         </div>
 
                         {subcatsData.length > 0 && (
+                          <>
                            <div className="mt-6 p-4 bg-slate-50 border border-slate-100 rounded-xl animate-in fade-in slide-in-from-top-2">
                              <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block flex items-center gap-2">Subcategory <span className="text-[9px] text-slate-400 font-bold bg-white px-2 py-0.5 rounded-full border border-slate-200 normal-case tracking-normal">OPTIONAL</span></label>
                              <div className="flex flex-wrap gap-2">
@@ -831,8 +950,43 @@ export default function PromptUploadPage() {
                              </div>
                              <p className="text-[11px] font-medium text-slate-500 mt-2">Deeply categorizing helps buyers find your prompt faster in filtered searches.</p>
                            </div>
-                        )}
-                      </div>
+
+                        {/* USE CASE FIELD */}
+                        <div className="mt-8 space-y-4">
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">Use Case <span className="text-rose-500">*</span></label>
+                          <div className="space-y-4">
+                            <input
+                              type="text"
+                              value={selectedUseCase}
+                              onChange={(e) => setSelectedUseCase(e.target.value)}
+                              placeholder="e.g. SEO blog articles, LinkedIn thought leadership, API generation..."
+                              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500"
+                            />
+                            
+                            {useCaseSuggestions.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {useCaseSuggestions.map((uc) => (
+                                  <button
+                                    key={uc}
+                                    type="button"
+                                    onClick={() => setSelectedUseCase(uc)}
+                                    className={cn(
+                                      "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border",
+                                      selectedUseCase === uc 
+                                        ? "bg-purple-600 text-white border-purple-600" 
+                                        : "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100"
+                                    )}
+                                  >
+                                    {uc}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                       <div className="pt-6 border-t border-slate-100">
                         <label className="text-[13px] font-bold text-slate-800 mb-1 block flex items-center gap-2">Target audience <span className="text-rose-500 text-xs">*</span></label>
@@ -937,11 +1091,113 @@ export default function PromptUploadPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* --- 5. DETAILS & TAGS --- */}
-            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 5 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
-              <SectionHeader num={5} titleStr="Details & tags" desc="Complexity and best uses" />
+            {/* --- 5. USER GUIDE --- */}
+            <motion.div className={cn("bg-white dark:bg-[#111] rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 5 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80 dark:border-slate-800/80")}>
+              <SectionHeader num={5} titleStr="User guide & configurations" desc="Instructions, seller notes, and model testing" />
               <AnimatePresence>
                 {activeSection === 5 && (
+                  <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                    <div className="p-5 md:p-6 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2 space-y-8">
+                      
+                      <div className="p-4 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                        This section is shown to buyers <strong className="font-bold text-slate-900 dark:text-white">after purchase</strong> on their Purchases page — alongside the unlocked prompt. It is never shown publicly on the listing card. Think of it as the instruction manual that comes with the product.
+                      </div>
+
+                      {/* --- 5A. User Guide --- */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white">User guide</h3>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-100/50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 text-amber-700 dark:text-amber-500 font-bold tracking-wide">RECOMMENDED</span>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">Quick setup — what the buyer needs before running</label>
+                          <textarea value={quickSetup} onChange={e=>setQuickSetup(e.target.value)} rows={3} placeholder="Tell buyers what to have ready before they start." className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-purple-500 dark:focus:border-purple-500 resize-y" />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">Step-by-step instructions</label>
+                          <div className="space-y-2 mb-3">
+                            {guideSteps.map((step, idx) => (
+                              <div key={step.id} className="flex gap-3 group items-start">
+                                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-[#222] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-300 mt-1.5 shrink-0">
+                                  {idx + 1}
+                                </div>
+                                <div className="relative flex-1">
+                                  <input type="text" value={step.text} onChange={e => {
+                                    const next = [...guideSteps]; next[idx].text = e.target.value; setGuideSteps(next);
+                                  }} placeholder={`Describe step ${idx + 1}...`} className="w-full pl-4 pr-10 py-2 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-purple-500" />
+                                  <button onClick={() => setGuideSteps(guideSteps.filter(s => s.id !== step.id))} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100">
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button onClick={() => setGuideSteps([...guideSteps, { id: Date.now(), text: "" }])} className="w-full py-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-[#1a1a1a] transition-all">+ Add step</button>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">How to fill the variables</label>
+                          <textarea value={fillVariables} onChange={e=>setFillVariables(e.target.value)} rows={3} placeholder="Explain each variable so buyers know exactly what to replace." className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-purple-500 resize-y" />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block">What to expect from the output</label>
+                          <textarea value={whatToExpect} onChange={e=>setWhatToExpect(e.target.value)} rows={2} placeholder="Describe what a good output looks like so buyers know if the prompt worked." className="w-full px-4 py-3 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-purple-500 resize-y" />
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-100 dark:bg-slate-800" />
+
+                      {/* --- 5B. Seller Notes --- */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white">Seller notes</h3>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold tracking-wide">OPTIONAL</span>
+                        </div>
+
+                        {[{
+                          c: "bg-amber-500", lbl: "Pro tips", hnt: "what makes this prompt perform best", 
+                          state: proTips, set: setProTips, ph: "Share what you have learned from using this prompt..."
+                        }, {
+                          c: "bg-rose-500", lbl: "Common mistakes to avoid", hnt: "gotchas buyers will run into", 
+                          state: commonMistakes, set: setCommonMistakes, ph: "What do buyers get wrong? What breaks the prompt?..."
+                        }, {
+                          c: "bg-indigo-500", lbl: "How to adapt this prompt", hnt: "customisation ideas for different use cases", 
+                          state: howToAdapt, set: setHowToAdapt, ph: "How can buyers modify this for their specific situation?..."
+                        }].map((nb, i) => (
+                          <div key={i} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                            <div className="px-3 py-2 bg-slate-50 dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                              <div className={cn("w-2 h-2 rounded-full", nb.c)} />
+                              <div className="text-xs font-bold dark:text-white">{nb.lbl}</div>
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium ml-1">{nb.hnt}</div>
+                            </div>
+                            <div className="p-2 dark:bg-[#111]">
+                              <textarea value={nb.state} onChange={e=>nb.set(e.target.value)} rows={2} placeholder={nb.ph} className="w-full px-2 py-1 bg-white dark:bg-[#111] border-0 outline-none text-xs text-slate-700 dark:text-slate-300 resize-y placeholder:dark:text-slate-600" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+
+
+                      <div className="pt-5 flex items-center gap-3 border-t border-slate-100 dark:border-slate-800 mt-4">
+                        <button className="px-6 py-3 bg-white dark:bg-[#111] border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-[#1a1a1a] transition-colors shadow-sm">Save draft</button>
+                        <button onClick={() => { setCompletedSections(prev => [...prev.filter(x => x!==5), 5]); setActiveSection(6); }} className="flex-1 py-3 bg-purple-600 dark:bg-purple-700 text-white text-sm font-bold rounded-xl hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors shadow-sm">Save & continue →</button>
+                      </div>
+
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* --- 6. DETAILS & TAGS --- */}
+            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 6 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
+              <SectionHeader num={6} titleStr="Details & tags" desc="Complexity and best uses" />
+              <AnimatePresence>
+                {activeSection === 6 && (
                   <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                     <div className="p-5 md:p-6 pt-0 border-t border-slate-100 mt-2 space-y-6">
                       
@@ -967,14 +1223,9 @@ export default function PromptUploadPage() {
                         </select>
                       </div>
 
-                      <div>
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Seller note</label>
-                        <textarea value={sellerNote} onChange={e=>setSellerNote(e.target.value)} placeholder="Describe a specific scenario where this prompt shines..." className="w-full min-h-[100px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500 resize-y" />
-                      </div>
-
                       <div className="pt-5 flex items-center gap-3 border-t border-slate-100 mt-4">
                         <button className="px-6 py-3 bg-white border border-slate-200 text-slate-500 text-xs font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-sm">Save draft</button>
-                        <button onClick={() => { setCompletedSections(prev => [...prev.filter(x => x!==5), 5]); setActiveSection(6); }} className="flex-1 py-3 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm">Save & continue →</button>
+                        <button onClick={() => { setCompletedSections(prev => [...prev.filter(x => x!==6), 6]); setActiveSection(7); }} className="flex-1 py-3 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm">Save & continue →</button>
                       </div>
 
                     </div>
@@ -983,11 +1234,11 @@ export default function PromptUploadPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* --- 6. PRICE --- */}
-            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 6 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
-              <SectionHeader num={6} titleStr="Set your price" desc={price ? `◈ ${price} coins` : "Coin value per purchase"} />
+            {/* --- 7. PRICE --- */}
+            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 7 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
+              <SectionHeader num={7} titleStr="Set your price" desc={price ? `◈ ${price} coins` : "Coin value per purchase"} />
               <AnimatePresence>
-                {activeSection === 6 && (
+                {activeSection === 7 && (
                   <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                     <div className="p-5 md:p-6 pt-0 border-t border-slate-100 mt-2 space-y-6">
                       
@@ -1138,22 +1389,64 @@ export default function PromptUploadPage() {
           {/* ── SUCCESS SCREEN OVERLAY ── */}
           <AnimatePresence>
             {isPublished && (
-              <motion.div initial={{opacity:0}} animate={{opacity:1}} className="fixed inset-0 z-50 bg-[#f8f9fc] flex items-center justify-center p-6 text-center">
-                <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} className="max-w-md bg-white p-10 rounded-[40px] shadow-2xl border border-slate-100 relative overflow-hidden">
-                   <div className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-                   <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-                   
-                   <div className="w-24 h-24 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                      <CheckCircle2 className="w-12 h-12 stroke-[3px]" />
-                   </div>
-                   
-                   <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Prompt Published!</h2>
-                   <p className="text-slate-500 font-medium mb-10 leading-relaxed text-sm">Your prompt <strong>"{title}"</strong> is now live on the marketplace. Sellers can start earning coins immediately.</p>
-                   
-                   <div className="flex flex-col gap-3">
-                      <button onClick={() => window.location.reload()} className="w-full py-4 bg-purple-600 text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-500/20 active:scale-[0.98]">View listings</button>
-                      <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-100 text-slate-600 font-bold text-sm rounded-2xl hover:bg-slate-200 transition-all">List another prompt</button>
-                   </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/80 backdrop-blur-md">
+                <motion.div 
+                  initial={{ scale: 0.9, y: 20, opacity: 0 }} 
+                  animate={{ scale: 1, y: 0, opacity: 1 }} 
+                  className="bg-white rounded-[40px] p-10 max-w-[480px] w-full text-center shadow-2xl shadow-slate-200 border border-slate-100"
+                >
+                  <div className="flex flex-col items-center">
+                    {/* Green Checkmark Circle */}
+                    <div className="w-20 h-20 rounded-full bg-[#f0f9f1] flex items-center justify-center mb-8">
+                       <div className="w-12 h-12 rounded-full bg-[#e3f2e5] flex items-center justify-center">
+                          <Check className="w-6 h-6 text-[#4caf50]" strokeWidth={3} />
+                       </div>
+                    </div>
+
+                    <h2 className="text-[28px] font-bold text-slate-900 mb-4 tracking-tight">Your prompt is live!</h2>
+                    <p className="text-slate-500 font-medium mb-10 leading-relaxed text-[15px] px-2">
+                      It's now visible on the Explore page. Share it to get your first buyers — sellers who share on day 1 get 3x more sales in their first week.
+                    </p>
+                    
+                    {/* Action Buttons Grid */}
+                    <div className="w-full space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={() => {
+                            const text = encodeURIComponent(`Check out my new prompt: "${title}" on PromptLibrary!`);
+                            const url = encodeURIComponent(`${window.location.origin}/prompt/${publishedPromptId}`);
+                            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                          }}
+                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
+                        >
+                          Share on X
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const text = encodeURIComponent(`Check out my new prompt: "${title}" \n\n ${window.location.origin}/prompt/${publishedPromptId}`);
+                            window.open(`https://wa.me/?text=${text}`, '_blank');
+                          }}
+                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
+                        >
+                          Share on WhatsApp
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Link 
+                          href={`/prompt/${publishedPromptId}`}
+                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
+                        >
+                          View my prompt <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                        <Link 
+                          href="/dashboard"
+                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
+                        >
+                          Go to dashboard <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               </motion.div>
             )}

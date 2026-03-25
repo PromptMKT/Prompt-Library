@@ -268,7 +268,7 @@ function mapDbPrompt(row: any, images: any[] = [], steps: any[] = []): PromptIte
     : (row.cover_image_url ? [row.cover_image_url] : []);
 
   // Handle both aliased and unaliased versions from Supabase
-  const profile = row.user_profiles || row.creator;
+  const profile = row.users || row.creator;
   const platformData = row.platforms || row.platform;
   const categoryData = row.categories || row.category;
 
@@ -326,7 +326,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
         if (mainData) {
           // 2. Fetch joins separately to be safer
           const [userRes, platformRes, categoryRes, imagesRes, stepsRes] = await Promise.all([
-            supabase.from("user_profiles").select("*").eq("id", mainData.creator_id).maybeSingle(),
+            supabase.from("users").select("*").eq("id", mainData.creator_id).maybeSingle(),
             supabase.from("platforms").select("*").eq("id", mainData.platform_id).maybeSingle(),
             supabase.from("categories").select("*").eq("id", mainData.category_id).maybeSingle(),
             supabase.from("prompt_images").select("*").eq("prompt_id", params.id).order('sort_order'),
@@ -336,7 +336,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           // Combine data
           const enrichedData = {
             ...mainData,
-            user_profiles: userRes.data,
+            creator: userRes.data,
             platforms: platformRes.data,
             categories: categoryRes.data
           };

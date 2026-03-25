@@ -3,9 +3,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { ensureUserProfile } from "@/lib/auth";
 
-const PRIMARY_PROFILE_TABLE = "user_profiles";
-const LEGACY_PROFILE_TABLE = "users";
+const PRIMARY_PROFILE_TABLE = "users";
+const LEGACY_PROFILE_TABLE = "user_profiles";
 
 export type UserProfile = {
   id?: string;
@@ -42,29 +43,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let fetchedProfile = null;
+
+    // Try users table first, querying by the auth user UUID column
     const primary = await supabase
-      .from(PRIMARY_PROFILE_TABLE)
-      .select("id, auth_user_id, email, display_name, role, interests, created_at, updated_at")
+      .from("users")
+      .select("*")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    if (!primary.error) {
-      setProfile((primary.data as UserProfile | null) ?? null);
-      return;
+    if (primary.data) {
+      fetchedProfile = primary.data;
+    } 
+
+    // If we can't find a record in the users table, 
+    // provide a fallback object from metadata so the UI doesn't break.
+    // This allows the user to browse the site even if their profile 
+    // is being created in the background by a DB trigger or if a sync is delayed.
+    if (!fetchedProfile && user) {
+      fetchedProfile = {
+        id: user.id, // Auth UUID as fallback id
+        auth_user_id: user.id,
+        email: user.email || "",
+        display_name: (user.user_metadata?.display_name as string) || (user.email?.split("@")[0] || "User"),
+        role: "buyer",
+        is_temporary: true,
+      };
     }
 
-    if (primary.error.code === "42P01") {
-      const legacy = await supabase
-        .from(LEGACY_PROFILE_TABLE)
-        .select("id, auth_user_id, email, display_name, role, interests, created_at, updated_at")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      setProfile((legacy.data as UserProfile | null) ?? null);
-      return;
-    }
-
-    setProfile(null);
+    setProfile(fetchedProfile as UserProfile | null);
   };
 
   useEffect(() => {
