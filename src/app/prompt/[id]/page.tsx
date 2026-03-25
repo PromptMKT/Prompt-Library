@@ -13,12 +13,9 @@ import { PurchaseSidebar } from "./components/PurchaseSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import exploreData from "@/app/explore/data/explore-data.json";
-<<<<<<< HEAD
 import Link from "next/link";
-=======
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
->>>>>>> ayush
 
 type PromptItem = {
   id: string;
@@ -120,7 +117,6 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
     const rawType = (p.outputType || "").toLowerCase();
     const text = (p.promptText || p.tagline || p.title || "").toLowerCase();
 
-    // 1. Check raw type overrides
     if (rawType.includes("image") || rawType.includes("visual")) return "Image / Visual Output";
     if (rawType.includes("video") || rawType.includes("audio") || rawType.includes("film") || rawType.includes("music")) return "Audio / Video";
     if (rawType.includes("code")) return "Code Output";
@@ -129,7 +125,6 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
     if (rawType.includes("step") || rawType.includes("chain")) return "Multi-step / Chain";
     if (rawType.includes("text") || rawType.includes("copy") || rawType.includes("long-form") || rawType.includes("short copy")) return "Text Output";
 
-    // 2. Classify based on category and textual content
     if (rawCategory.includes("image") || text.includes("image") || text.includes("generator") && text.includes("art")) return "Image / Visual Output";
     if (rawCategory.includes("video") || rawCategory.includes("audio") || text.includes("video") || text.includes("audio") || text.includes("podcast")) return "Audio / Video";
     if (rawCategory.includes("code") || text.includes("react") || text.includes("python") || text.includes("generate code") || text.includes("api integration")) return "Code Output";
@@ -138,7 +133,7 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
     if (text.includes("chain") || text.includes("step-by-step")) return "Multi-step / Chain";
     if (rawCategory.includes("text") || rawCategory.includes("copy") || rawCategory.includes("role") || text.includes("write") || text.includes("email") || text.includes("draft") || text.includes("report")) return "Text Output";
 
-    return "Text Output"; // Default Fallback
+    return "Text Output";
   };
 
   const activeType = getMappedOutputType(prompt);
@@ -357,7 +352,6 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
       try {
         console.log("Fetching prompt for ID:", params.id, "Type:", typeof params.id);
         
-        // 1. Fetch main prompt data WITHOUT joins first to isolate the issue
         const { data: mainData, error: mainError } = await supabase
           .from("prompts")
           .select(`

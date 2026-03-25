@@ -8,11 +8,15 @@ import { cn } from "@/lib/utils";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === "/sign-in" || pathname.startsWith("/get-started");
+  const isAuthPage = 
+    pathname === "/sign-in" || 
+    pathname === "/sign_in" || 
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/get-started");
   
-  // Define which pages should show the sidebar
   const showSidebar = 
     pathname === "/profile" || 
+    pathname.startsWith("/u/") ||
     pathname === "/dashboard" || 
     pathname === "/wallet" || 
     pathname === "/wishlist" || 
@@ -27,8 +31,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         isAuthPage && "min-h-dvh bg-[#0a0a0f]",
         showSidebar && "lg:ml-60"
       )}>
-        <Navbar />
-        <main className={cn("grow pt-16", isAuthPage && "bg-[#0a0a0f]")}>
+        {!isAuthPage && <Navbar />}
+        <main className={cn("grow", !isAuthPage && "pt-16", isAuthPage && "bg-[#0a0a0f]")}>
           <AuthGate>{children}</AuthGate>
         </main>
       </div>

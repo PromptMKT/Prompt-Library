@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Coins, Sparkles, Rocket, LayoutDashboard, Store } from "lucide-react";
 
-export default function GetStartedBonusPage() {
+export default function WelcomePage() {
   return (
     <main className="min-h-dvh bg-[#080b17] text-white flex items-center justify-center px-6 py-12">
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] bg-size-[30px_30px] pointer-events-none" />

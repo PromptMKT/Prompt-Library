@@ -30,7 +30,7 @@ import {
 
 export const Navbar = () => {
   const { theme, setTheme } = useTheme();
-  const { isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated, signOut, profile } = useAuth();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -61,11 +61,11 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     await signOut();
-    router.push("/home-v5");
+    router.push("/home");
   };
 
   const uploadHref = isAuthenticated ? "/upload" : "/sign-in?next=%2Fupload";
-  const profileHref = isAuthenticated ? "/profile" : "/sign-in?next=%2Fprofile";
+  const profileHref = isAuthenticated && profile?.username ? `/u/${profile.username}` : (isAuthenticated ? "/u/profile" : "/sign-in?next=%2Fprofile");
 
   return (
     <>
@@ -177,13 +177,13 @@ export const Navbar = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/coins" className="cursor-pointer">
+                    <Link href="/wallet" className="cursor-pointer">
                       <Coins className="mr-2 h-4 w-4" />
                       Coin
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile#settings" className="cursor-pointer">
+                    <Link href="/settings" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
                     </Link>
@@ -232,7 +232,7 @@ export const Navbar = () => {
                     ]
                   : [
                       { label: "Sign In", href: "/sign-in" },
-                      { label: "Get Started", href: "/get-started" },
+                      { label: "Get Started", href: "/register" },
                     ]),
               ].map((item) => (
                 <Link

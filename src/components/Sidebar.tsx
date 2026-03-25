@@ -17,7 +17,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: User, label: "Profile", href: "/profile" },
+  { icon: User, label: "Profile", href: "/u" },
   { icon: Heart, label: "Wishlist", href: "/wishlist" },
   { icon: Upload, label: "Upload", href: "/upload" },
   { icon: Wallet, label: "Wallet", href: "/wallet" },
@@ -27,16 +27,18 @@ const sidebarLinks = [
 
 export const Sidebar = () => {
   const pathname = usePathname();
+  const { profile, user, loading } = useAuth();
 
   const Navigation = () => {
     return (
       <nav className="grow space-y-1">
         {sidebarLinks.map((item) => {
-          const isActive = pathname === item.href;
+          const href = item.label === "Profile" && profile?.username ? `/u/${profile.username}` : item.href;
+          const isActive = pathname === href;
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.label}
+              href={href}
               className={cn(
                 "flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                 isActive 
@@ -63,7 +65,6 @@ export const Sidebar = () => {
   };
 
   const UserSection = () => {
-    const { profile, user, loading } = useAuth();
 
     if (loading) return <div className="p-4 animate-pulse bg-secondary/20 rounded-2xl h-16" />;
     if (!user) return null;
@@ -74,9 +75,11 @@ export const Sidebar = () => {
 
     const name = profile?.display_name || user.email?.split('@')[0] || "User";
 
+    const profileLink = profile?.username ? `/u/${profile.username}` : "/u/profile";
+
     return (
       <div className="pt-6 border-t border-border/40 mt-auto">
-        <Link href="/profile" className="p-4 rounded-2xl bg-secondary/30 border border-border/40 flex items-center gap-3 hover:bg-secondary/50 transition-all">
+        <Link href={profileLink} className="p-4 rounded-2xl bg-secondary/30 border border-border/40 flex items-center gap-3 hover:bg-secondary/50 transition-all">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs uppercase">
             {initials}
           </div>

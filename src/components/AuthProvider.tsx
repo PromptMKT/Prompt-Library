@@ -4,14 +4,17 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-const PRIMARY_PROFILE_TABLE = "user_profiles";
-const LEGACY_PROFILE_TABLE = "users";
+const PRIMARY_PROFILE_TABLE = "users";
+const LEGACY_PROFILE_TABLE = "user_profiles";
 
 export type UserProfile = {
   id?: string;
   auth_user_id: string;
   email: string;
+  username?: string | null;
   display_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
   role?: string | null;
   interests?: string[] | null;
   created_at?: string;
@@ -44,23 +47,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const primary = await supabase
       .from(PRIMARY_PROFILE_TABLE)
-      .select("id, auth_user_id, email, display_name, role, interests, created_at, updated_at")
+      .select("id, auth_user_id, email, username, display_name, avatar_url, bio, role, interests, created_at, updated_at")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    if (!primary.error) {
-      setProfile((primary.data as UserProfile | null) ?? null);
+    if (primary.data) {
+      setProfile(primary.data as UserProfile);
       return;
     }
 
-    if (primary.error.code === "42P01") {
-      const legacy = await supabase
-        .from(LEGACY_PROFILE_TABLE)
-        .select("id, auth_user_id, email, display_name, role, interests, created_at, updated_at")
+    // SILENT MIGRATION: If not found in primary, try legacy and sync
+    console.log("Profile not found in 'users', checking 'user_profiles' for migration...");
+    const legacy = await supabase
+      .from(LEGACY_PROFILE_TABLE)
+      .select("display_name, role, interests")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (legacy.data) {
+      console.log("Legacy profile found! Migrating to 'users' table...");
+      // Import dynamically or use standard ensureUserProfile
+      // For simplicity in this provider, we call the same payload logic
+      const { ensureUserProfile } = await import("@/lib/auth");
+      await ensureUserProfile(user, {
+        displayName: legacy.data.display_name,
+        role: legacy.data.role,
+        interests: legacy.data.interests
+      });
+      
+      // Re-fetch from primary now that it's synced
+      const retry = await supabase
+        .from(PRIMARY_PROFILE_TABLE)
+        .select("id, auth_user_id, email, username, display_name, avatar_url, bio, role, interests, created_at, updated_at")
         .eq("auth_user_id", user.id)
         .maybeSingle();
-
-      setProfile((legacy.data as UserProfile | null) ?? null);
+      
+      setProfile((retry.data as UserProfile | null) ?? null);
       return;
     }
 

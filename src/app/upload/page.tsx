@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, Link as LinkIcon, AlertCircle } from "lucide-react";
+import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { uploadToCloudinary } from "@/app/actions/upload-cloudinary";
@@ -170,13 +170,15 @@ export default function PromptUploadPage() {
       }
 
       // 3. Prepare Prompt Data
-      // Must use profile.id to satisfy the foreign key constraint to consumer_profiles/users
-      if (!profile?.id) {
-        alert("User profile not found. Please try logging out and back in to sync your profile.");
-        setIsPublishing(false);
-        return;
-      }
-      const creatorId = profile.id;
+      const { data: legacyProfile, error: profileErr } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+        
+      if (profileErr) console.error("Profile lookup error:", profileErr);
+
+      const creatorId = legacyProfile?.id || user.id;
 
       const isMultiStep = promptTab === 'chain';
       const stepCount = isMultiStep ? chainSteps.length : 1;
@@ -203,7 +205,12 @@ export default function PromptUploadPage() {
         .select('id')
         .single();
 
-      if (promptError) throw promptError;
+      if (promptError) {
+         console.error("Supabase insert error:", promptError);
+         alert(`Error publishing: ${promptError.message}\n\nDetails: ${promptError.details || 'None'}\nHint: ${promptError.hint || 'None'}`);
+         setIsPublishing(false);
+         return;
+      }
       const promptId = promptData.id;
 
       // 4. Insert Prompt Steps

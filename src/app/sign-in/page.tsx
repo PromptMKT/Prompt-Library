@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Rocket, Shield, Globe } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-import { ensureUserProfile, isValidEmail, sanitizeEmail, toAuthMessage } from "@/lib/auth";
+import { ensureUserProfile, isValidEmail, sanitizeEmail, signInWithGoogle, signInWithGithub, toAuthMessage } from "@/lib/auth";
+import { Github } from "lucide-react";
+import { pepperPassword } from "@/app/actions/auth-actions";
 
 function SignInContent() {
   const router = useRouter();
@@ -20,7 +22,7 @@ function SignInContent() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      const next = searchParams.get("next") || "/home-v5";
+      const next = searchParams.get("next") || "/home";
       router.replace(next);
     }
   }, [loading, isAuthenticated, router, searchParams]);
@@ -43,9 +45,11 @@ function SignInContent() {
       return;
     }
 
+    const finalPassword = await pepperPassword(password);
+
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
-      password,
+      password: finalPassword,
     });
 
     if (signInError) {
@@ -63,7 +67,7 @@ function SignInContent() {
       await ensureUserProfile(data.user);
     }
 
-    const next = searchParams.get("next") || "/home-v5";
+    const next = searchParams.get("next") || "/home";
     router.replace(next);
   };
 
@@ -75,7 +79,7 @@ function SignInContent() {
           <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
 
           <div className="relative z-10 space-y-8">
-            <Link href="/home-v5" className="inline-flex items-center gap-3">
+            <Link href="/home" className="inline-flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-900/30">
                 <Sparkles className="w-4 h-4" />
               </span>
@@ -133,6 +137,38 @@ function SignInContent() {
                 </div>
               ) : null}
 
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithGoogle();
+                    if (error) setError(error.message);
+                  }}
+                  className="h-12 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                >
+                  <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" className="w-4 h-4" />
+                  <span className="text-xs font-bold text-white">Google</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithGithub();
+                    if (error) setError(error.message);
+                  }}
+                  className="h-12 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Github className="w-4 h-4 text-white" />
+                  <span className="text-xs font-bold text-white">GitHub</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 text-slate-500 text-[10px] font-bold tracking-[0.2em] uppercase">
+                <span className="h-px bg-white/10 flex-1" />
+                or use credentials
+                <span className="h-px bg-white/10 flex-1" />
+              </div>
+
               <div className="space-y-2">
                 <label htmlFor="email" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                   Email
@@ -173,7 +209,7 @@ function SignInContent() {
 
               <p className="text-xs text-slate-500 text-center">
                 New here?{" "}
-                <Link href="/get-started" className="text-purple-400 font-bold hover:underline">
+                <Link href="/register" className="text-purple-400 font-bold hover:underline">
                   Get Started
                 </Link>
               </p>

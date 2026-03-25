@@ -425,7 +425,7 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
-export default function HomeV5() {
+export default function HomePage() {
   const [liked, setLiked] = useState<number[]>([]);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
@@ -438,14 +438,21 @@ export default function HomeV5() {
             .from('prompts')
             .select(`
               id, title, price, average_rating, purchases_count, cover_image_url,
-              creator:user_profiles(display_name, username),
-              platform:platforms(name)
+              creator:users!prompts_creator_id_fkey(display_name, username),
+              platform:platforms!prompts_platform_id_fkey(name)
             `)
             .eq('is_published', true)
             .order('purchases_count', { ascending: false })
             .limit(10),
           supabase.from('categories').select('*').limit(5)
         ]);
+        
+        if (promptsRes.error) {
+          console.error("Supabase prompts query error (home):", promptsRes.error);
+        }
+        if (catsRes.error) {
+          console.error("Supabase categories query error (home):", catsRes.error);
+        }
         
         if (promptsRes.data) {
           setDbPrompts(promptsRes.data.map(p => ({

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { ChevronRight as ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Components
 import { ProfileHeader } from "./components/ProfileHeader";
 import { ProfileStats } from "./components/ProfileStats";
 import { ProfileTabs } from "./components/ProfileTabs";
@@ -31,35 +30,43 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
   useEffect(() => {
     const fetchUserAndPrompts = async () => {
       try {
-        const currentUser = profile || authUser;
-        if (!currentUser) {
-          // Fallback to dummy data
+        setLoading(true);
+        const { data: targetUser, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("username", params.username)
+          .maybeSingle();
+
+        if (userError) throw userError;
+
+        let userData = targetUser;
+        if (!userData && profile && profile.username === params.username) {
+          userData = profile as any;
+        }
+
+        if (!userData) {
           setDummyData();
           return;
         }
 
-        // 1. Set User Data
-        const email = currentUser.email || "";
-        const emailPrefix = email.split('@')[0];
-        
         setUser({
-          username: (profile as any)?.display_name?.toLowerCase().replace(/\s+/g, '') || emailPrefix || "user",
-          name: (profile as any)?.display_name || emailPrefix || "User",
-          email: email,
-          avatar: (profile as any)?.avatar_url || null,
-          bio: (profile as any)?.bio || (profile?.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "AI prompt engineer."),
-          coins: 240, // Static for now
+          id: userData.id,
+          username: userData.username,
+          name: userData.display_name || userData.username,
+          email: userData.email,
+          avatar: userData.avatar_url,
+          bio: userData.bio || (userData.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "AI prompt engineer."),
+          coins: 240,
           followers: 1204,
           following: 89,
-          verified: true,
-          location: (profile as any)?.location || "Global",
+          verified: userData.is_verified || false,
+          location: userData.location || "Global",
           website: "vault.io",
-          avgRating: 4.9,
-          memberSince: "Jan 2026"
+          avgRating: userData.average_rating || 4.9,
+          memberSince: userData.created_at ? new Date(userData.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : "Jan 2026"
         });
 
-        // 2. Fetch User Prompts
-        const { data, error } = await supabase
+        const { data: promptsData, error: promptsError } = await supabase
           .from("prompts")
           .select(`
             id, 
@@ -74,20 +81,20 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             platforms(name),
             categories(name)
           `)
-          .eq("creator_id", currentUser.id)
+          .eq("creator_id", userData.id || (userData as any).auth_user_id)
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (promptsError) throw promptsError;
 
-        if (data) {
-          const mapped = data.map((p: any) => ({
+        if (promptsData) {
+          const mapped = promptsData.map((p: any) => ({
             id: String(p.id),
             title: p.title || "Untitled Prompt",
             price: Number(p.price || 0),
             sales: Number(p.purchases_count || 0),
             platform: p.platforms?.name || "AI",
             category: p.categories?.name || "Prompt",
-            reviewsCount: 0, // Need reviews join if count is wanted
+            reviewsCount: 0, 
             rating: Number(p.average_rating || 0),
             status: p.is_published ? "live" : "draft",
             image: p.cover_image_url || null,
@@ -158,14 +165,11 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         onCopyLink={copyLink} 
       />
 
-      {/* ── STATS ROW ── */}
       <ProfileStats onTabChange={setActiveTab} />
 
-      {/* ── MAIN CONTENT (Two Columns) ── */}
       <div className="max-w-[1400px] mx-auto p-7 pb-[60px]">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
           
-          {/* LEFT: TABS + CONTENT */}
           <div className="space-y-6 min-w-0">
             <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -203,7 +207,6 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                       ))}
                     </div>
 
-                    {/* Pagination */}
                     <div className="flex items-center justify-center gap-2 pt-10">
                       <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-[11px] font-black uppercase tracking-[0.12em] shadow-lg shadow-primary/20">1</div>
                       {[2, 3, "...", 7].map((num, i) => (
@@ -217,7 +220,6 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             </div>
           </div>
 
-          {/* RIGHT: SIDEBAR WIDGETS */}
           <ProfileSidebarContent />
           
         </div>

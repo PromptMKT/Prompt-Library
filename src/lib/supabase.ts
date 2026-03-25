@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Using the provided publishable key for anon requests
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Use createBrowserClient for consistent cookie management between client and server
+export const supabase = createBrowserClient(supabaseUrl, supabaseKey);

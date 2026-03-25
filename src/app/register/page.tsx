@@ -4,17 +4,19 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { ensureUserProfile, isRegisteredEmail, isRegisteredUsername, isValidEmail, sanitizeEmail, signInWithGoogle, signInWithGithub, toAuthMessage, validatePassword } from "@/lib/auth";
+import { Github, ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { ensureUserProfile, isRegisteredEmail, isValidEmail, sanitizeEmail, toAuthMessage, validatePassword } from "@/lib/auth";
+import { pepperPassword } from "@/app/actions/auth-actions";
 
-export default function GetStartedPage() {
+export default function RegisterPage() {
   const duplicateEmailMessage = "This email is already registered. Please sign in instead.";
   const mismatchMessage = "Create Password and Confirm Password must match.";
   const passwordRuleHint = "At least 8 chars, with uppercase, lowercase, and number";
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,11 +25,12 @@ export default function GetStartedPage() {
   const [role, setRole] = useState("buyer");
   const [interests, setInterests] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [retryAfterSec, setRetryAfterSec] = useState(0);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [termsError, setTermsError] = useState<string | null>(null);
@@ -64,25 +67,31 @@ export default function GetStartedPage() {
     e.preventDefault();
   };
 
-  const username = email.includes("@") ? email.split("@")[0] : "newuser";
-  const displayName = username.replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const displayName = (username || (email.includes("@") ? email.split("@")[0] : "newuser"))
+    .replace(/[._-]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   const passwordRulesNotMet = password.length > 0 && Boolean(validatePassword(password));
 
   const validateStepOneWithInlineErrors = (): boolean => {
     const cleanEmail = sanitizeEmail(email);
     const nextEmailError = !isValidEmail(cleanEmail) ? "Please enter a valid email address." : null;
+    const nextUsernameError = username.trim().length === 0 ? "Username is required." : (username.trim().length < 3 ? "Username must be at least 3 characters." : null);
     const nextPasswordError = validatePassword(password);
     const nextConfirmError = password !== confirmPassword ? mismatchMessage : null;
     const nextTermsError = !acceptedTerms ? "Please accept terms before continuing." : null;
 
     setEmailError(nextEmailError);
+    setUsernameError(nextUsernameError);
     setPasswordError(nextPasswordError);
     setConfirmPasswordError(nextConfirmError);
     setTermsError(nextTermsError);
 
-    // Keep password requirement feedback in the top banner, while mismatch stays inline below confirm password.
     if (nextEmailError) {
       setError(nextEmailError);
+      return false;
+    }
+    if (nextUsernameError) {
+      setError(nextUsernameError);
       return false;
     }
     if (nextPasswordError) {
@@ -132,20 +141,20 @@ export default function GetStartedPage() {
         return;
       }
 
-      setCheckingEmail(true);
-      const check = await isRegisteredEmail(email);
-      setCheckingEmail(false);
+      setCheckingAvailability(true);
+      const [emailCheck, userCheck] = await Promise.all([
+        isRegisteredEmail(email),
+        isRegisteredUsername(username)
+      ]);
+      setCheckingAvailability(false);
 
-      if (check.error) {
-        // Do not block new-user flow if backend email-check RPC is temporarily unavailable.
-        // Final signup will still enforce uniqueness and return a clear message.
-        setEmailError(null);
-        setError(null);
-      }
-
-      if (!check.error && check.exists) {
+      if (emailCheck.exists) {
         setEmailError(duplicateEmailMessage);
-        setError(null);
+        return;
+      }
+      
+      if (userCheck.exists) {
+        setUsernameError("This username is already taken. Please try another one.");
         return;
       }
     } else {
@@ -192,13 +201,16 @@ export default function GetStartedPage() {
     setError(null);
     setInfo(null);
 
+    const finalPassword = await pepperPassword(password);
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: cleanEmail,
-      password,
+      password: finalPassword,
       options: {
         data: {
           role,
           interests,
+          username: username.trim().toLowerCase(),
           display_name: displayName,
         },
       },
@@ -221,8 +233,6 @@ export default function GetStartedPage() {
       return;
     }
 
-    // If email confirmation is enabled, session can be null here.
-    // In that case, profile row is created by SQL trigger on auth.users.
     if (data.user && data.session) {
       await ensureUserProfile(data.user, {
         role,
@@ -232,7 +242,7 @@ export default function GetStartedPage() {
     }
 
     if (data.session && data.user) {
-      router.push("/get-started/bonus");
+      router.push("/register/welcome");
       return;
     }
 
@@ -247,7 +257,7 @@ export default function GetStartedPage() {
           <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
           <div className="relative z-10 space-y-8">
-            <Link href="/home-v5" className="inline-flex items-center gap-3">
+            <Link href="/home" className="inline-flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-900/30">
                 <Sparkles className="w-4 h-4" />
               </span>
@@ -315,17 +325,31 @@ export default function GetStartedPage() {
                     <p className="text-slate-400 mt-3">Join 48,000+ creators. Sign up with Google for the fastest experience, or use your email.</p>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full h-14 rounded-2xl border border-purple-500/20 bg-purple-500/5 opacity-60 cursor-not-allowed flex items-center justify-between px-4"
-                  >
-                    <span className="w-8 h-8 rounded-md bg-white inline-flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { error } = await signInWithGoogle();
+                        if (error) setError(error.message);
+                      }}
+                      className="h-14 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                    >
                       <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" className="w-5 h-5" />
-                    </span>
-                    <span className="text-lg font-bold text-white">Continue with Google</span>
-                    <span className="text-xs font-bold text-purple-200 bg-purple-500/20 px-2 py-1 rounded-full">Coming soon</span>
-                  </button>
+                      <span className="text-sm font-bold text-white">Google</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { error } = await signInWithGithub();
+                        if (error) setError(error.message);
+                      }}
+                      className="h-14 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Github className="w-5 h-5 text-white" />
+                      <span className="text-sm font-bold text-white">GitHub</span>
+                    </button>
+                  </div>
 
                   <div className="flex items-center gap-3 text-slate-500 text-xs font-bold tracking-[0.2em] uppercase">
                     <span className="h-px bg-white/10 flex-1" />
@@ -342,9 +366,7 @@ export default function GetStartedPage() {
                       onChange={(e) => {
                         setEmail(e.target.value);
                         setEmailError(null);
-                        if (error === duplicateEmailMessage || error === "Please enter a valid email address.") {
-                          setError(null);
-                        }
+                        setError(null);
                       }}
                       className={cn(
                         "w-full h-12 rounded-2xl bg-white/5 border px-4 text-sm text-white outline-none focus:border-purple-500/50",
@@ -354,6 +376,27 @@ export default function GetStartedPage() {
                       required
                     />
                     {emailError ? <p className="text-xs text-rose-300">{emailError}</p> : null}
+                  </div>
+
+                  <div className="space-y-3">
+                    <label htmlFor="username-input" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Username</label>
+                    <input
+                      id="username-input"
+                      type="text"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setUsernameError(null);
+                        setError(null);
+                      }}
+                      className={cn(
+                        "w-full h-12 rounded-2xl bg-white/5 border px-4 text-sm text-white outline-none focus:border-purple-500/50",
+                        usernameError ? "border-rose-500/70 focus:border-rose-500/70" : "border-white/10"
+                      )}
+                      placeholder="e.g. promptmaster"
+                      required
+                    />
+                    {usernameError ? <p className="text-xs text-rose-300">{usernameError}</p> : null}
                   </div>
 
                   <div className="space-y-3">
@@ -527,10 +570,10 @@ export default function GetStartedPage() {
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    disabled={submitting || checkingEmail}
+                    disabled={submitting || checkingAvailability}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
-                    {checkingEmail ? "Validating Email..." : "Initiate Next Step"} <ArrowRight className="w-4 h-4" />
+                    {checkingAvailability ? "Checking Records..." : "Initiate Next Step"} <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
