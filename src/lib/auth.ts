@@ -119,38 +119,16 @@ export async function ensureUserProfile(
     email: user.email || "",
     username,
     display_name: displayName,
-    role,
-    interests,
-    avatar_url: metadata.avatar_url || metadata.picture || null,
+    role: "seller", // Matches your table's existing roles
+    interests: [],
   };
 
-  let finalError;
-  if (existingUser) {
-    // Update
-    const { error: updateError } = await supabaseClient
-      .from(PRIMARY_PROFILE_TABLE)
-      .update({
-        ...payload,
-        updated_at: new Date().toISOString()
-      })
-      .eq('auth_user_id', user.id);
-    finalError = updateError;
-  } else {
-    // Insert
-    const { error: insertError } = await supabaseClient
-      .from(PRIMARY_PROFILE_TABLE)
-      .insert({
-        id: user.id, // Ensure id matches auth_user_id for RLS/FK consistency
-        ...payload,
-      });
-    finalError = insertError;
-  }
+  const { error } = await supabaseClient.from(PRIMARY_PROFILE_TABLE).upsert(
+    payload,
+    { onConflict: "auth_user_id" }
+  );
 
-  if (finalError) {
-    console.error(`Error syncing to ${PRIMARY_PROFILE_TABLE}:`, finalError);
-  }
-
-  return { error: finalError };
+  return { error };
 }
 
 export async function isRegisteredEmail(email: string, client?: SupabaseClient): Promise<{ exists: boolean; error: string | null }> {

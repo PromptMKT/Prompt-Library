@@ -22,10 +22,18 @@ type ExplorePromptCardProps = {
 };
 
 function withPromptPrefix(rawTitle: string): string {
-  const prefix = "prompt to generate";
+  const basePrefix = "prompt to";
+  const oldPrefix = "prompt to generate";
   const trimmed = rawTitle.trim();
-  if (trimmed.toLowerCase().startsWith(prefix)) return trimmed;
-  return `Prompt to Generate ${trimmed}`;
+  const lowered = trimmed.toLowerCase();
+
+  if (lowered.startsWith(oldPrefix)) {
+    const rest = trimmed.slice(oldPrefix.length).trimStart();
+    return rest ? `Prompt to ${rest}` : "Prompt to";
+  }
+
+  if (lowered.startsWith(basePrefix)) return trimmed;
+  return `Prompt to ${trimmed}`;
 }
 
 function ratingStars(value: number): string {
