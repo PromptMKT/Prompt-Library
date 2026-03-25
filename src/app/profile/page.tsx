@@ -14,6 +14,7 @@ import { ProfileTabs } from "./components/ProfileTabs";
 import { ProfileSidebarContent } from "./components/ProfileSidebarContent";
 import { SellerPromptCard } from "./components/SellerPromptCard";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 type TabType = "published" | "purchased" | "wishlist" | "activity" | "reviews";
 
@@ -26,66 +27,108 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("published");
   const [isFollowing, setIsFollowing] = useState(false);
-
+  
   useEffect(() => {
-    if (authLoading) return;
+    const fetchUserAndPrompts = async () => {
+      try {
+        const currentUser = profile || authUser;
+        if (!currentUser) {
+          // Fallback to dummy data
+          setDummyData();
+          return;
+        }
 
-    // Determine which user to display
-    // In a real app, we'd fetch by username if params.username exists
-    // for now we prioritize logged-in user if it's their page or generic /profile
-    
-    if (profile || authUser) {
-      const email = profile?.email || authUser?.email || "";
-      const emailPrefix = email.split('@')[0];
-      
-      const userData = {
-        username: profile?.display_name?.toLowerCase().replace(/\s+/g, '') || emailPrefix || "user",
-        name: profile?.display_name || emailPrefix || "User",
-        email: email,
+        // 1. Set User Data
+        const email = currentUser.email || "";
+        const emailPrefix = email.split('@')[0];
+        
+        setUser({
+          username: (profile as any)?.display_name?.toLowerCase().replace(/\s+/g, '') || emailPrefix || "user",
+          name: (profile as any)?.display_name || emailPrefix || "User",
+          email: email,
+          avatar: (profile as any)?.avatar_url || null,
+          bio: (profile as any)?.bio || (profile?.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "AI prompt engineer."),
+          coins: 240, // Static for now
+          followers: 1204,
+          following: 89,
+          verified: true,
+          location: (profile as any)?.location || "Global",
+          website: "vault.io",
+          avgRating: 4.9,
+          memberSince: "Jan 2026"
+        });
+
+        // 2. Fetch User Prompts
+        const { data, error } = await supabase
+          .from("prompts")
+          .select(`
+            id, 
+            title, 
+            description, 
+            price, 
+            cover_image_url, 
+            purchases_count, 
+            average_rating, 
+            is_published,
+            created_at,
+            platforms(name),
+            categories(name)
+          `)
+          .eq("creator_id", currentUser.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const mapped = data.map((p: any) => ({
+            id: String(p.id),
+            title: p.title || "Untitled Prompt",
+            price: Number(p.price || 0),
+            sales: Number(p.purchases_count || 0),
+            platform: p.platforms?.name || "AI",
+            category: p.categories?.name || "Prompt",
+            reviewsCount: 0, // Need reviews join if count is wanted
+            rating: Number(p.average_rating || 0),
+            status: p.is_published ? "live" : "draft",
+            image: p.cover_image_url || null,
+            promptText: p.description
+          }));
+          setSellerPrompts(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading profile data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const setDummyData = () => {
+      const dummyUser = {
+        username: "priyanair",
+        name: "Priya Nair",
         avatar: null,
-        bio: profile?.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "B2B marketer turned AI prompt engineer. I write prompts that actually work for real sales teams.",
+        bio: "B2B marketer turned AI prompt engineer. I write prompts that actually work for real sales teams.",
         coins: 240,
         followers: 1204,
         following: 89,
         verified: true,
-        location: profile?.interests?.[0] || "Global",
-        website: "vault.io",
+        location: "Mumbai, India",
+        website: "priyanair.in",
         avgRating: 4.9,
         memberSince: "Jan 2026"
       };
-      setUser(userData);
-      setLoading(false);
-      return;
-    }
 
-    // fallback to dummy data only for demonstration
-    const dummyUser = {
-      username: "priyanair",
-      name: "Priya Nair",
-      avatar: null,
-      bio: "B2B marketer turned AI prompt engineer. I write prompts that actually work for real sales teams — tested across 200+ client campaigns.",
-      coins: 240,
-      followers: 1204,
-      following: 89,
-      verified: true,
-      location: "Mumbai, India",
-      website: "priyanair.in",
-      avgRating: 4.9,
-      memberSince: "Jan 2026"
+      const dummyPrompts = [
+        { id: "1", title: "Cold Email that Converts — B2B Framework", price: 30, sales: 489, platform: "ChatGPT", category: "Email", reviewsCount: 127, rating: 4.9, status: "live", trending: true, promptText: "Act as a B2B sales expert and write a sequence..." },
+        { id: "2", title: "LinkedIn Post Engine", price: 22, sales: 334, platform: "ChatGPT", category: "LinkedIn", reviewsCount: 112, rating: 4.7, status: "live", trending: false, promptText: "Generate 10 LinkedIn post ideas for SaaS founders..." },
+      ];
+
+      setUser(dummyUser);
+      setSellerPrompts(dummyPrompts);
+      setLoading(false);
     };
 
-    const dummyPrompts = [
-      { id: "1", title: "Cold Email that Converts — B2B Framework", price: 30, sales: 489, platform: "ChatGPT", category: "Email", reviewsCount: 127, rating: 4.9, status: "live", trending: true, promptText: "Act as a B2B sales expert and write a sequence..." },
-      { id: "2", title: "LinkedIn Post Engine", price: 22, sales: 334, platform: "ChatGPT", category: "LinkedIn", reviewsCount: 112, rating: 4.7, status: "live", trending: false, promptText: "Generate 10 LinkedIn post ideas for SaaS founders..." },
-      { id: "3", title: "Food Photography Hero", price: 32, sales: 112, platform: "FLUX", category: "Food", reviewsCount: 38, rating: 4.6, status: "live", trending: false, image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=150&fit=crop&auto=format" },
-      { id: "4", title: "SEO Blog Post Architect", price: 28, sales: 0, platform: "ChatGPT", category: "SEO", reviewsCount: 0, rating: 0, status: "draft", trending: false, promptText: "SEO-optimised blog post framework for [TOPIC]..." },
-      { id: "5", title: "Competitor Deep Dive Report", price: 55, sales: 0, platform: "Claude", category: "Research", reviewsCount: 0, rating: 0, status: "review", trending: false, promptText: "You are a market research analyst for [INDUSTRY]..." },
-      { id: "6", title: "Viral Twitter Thread Framework", price: 25, sales: 445, platform: "ChatGPT", category: "Twitter", reviewsCount: 201, rating: 4.6, status: "live", trending: true },
-    ];
-
-    setUser(dummyUser);
-    setSellerPrompts(dummyPrompts);
-    setLoading(false);
+    fetchUserAndPrompts();
   }, [params.username, authLoading, profile, authUser]);
 
   if (loading) {

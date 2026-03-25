@@ -293,7 +293,6 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
   };
 }
 
-<<<<<<< HEAD
 function mapDbPrompt(row: any): PromptItem {
   const seller = row.users || row.creator || {};
   return {
@@ -336,33 +335,6 @@ function mapDbPrompt(row: any): PromptItem {
     steps: row.prompt_steps || [],
     reviews: row.reviews || [],
     created_at: row.created_at
-=======
-function mapDbPrompt(row: any, images: any[] = [], steps: any[] = []): PromptItem {
-  // Use the first image from prompt_images if available, otherwise fallback to cover_image_url
-  const allImages = images.length > 0 
-    ? images.map(img => img.image_url) 
-    : (row.cover_image_url ? [row.cover_image_url] : []);
-
-  // Handle both aliased and unaliased versions from Supabase
-  const profile = row.user_profiles || row.creator;
-  const platformData = row.platforms || row.platform;
-  const categoryData = row.categories || row.category;
-
-  return {
-    id: String(row.id),
-    title: row.title || "Untitled Prompt",
-    tagline: row.tagline || row.short_description || "Ready-to-use prompt",
-    platform: platformData?.name || (typeof platformData === 'string' ? platformData : "AI"),
-    category: categoryData?.name || (typeof categoryData === 'string' ? categoryData : "Prompt"),
-    price: Number(row.price || 0),
-    promptText: row.prompt_text || (steps.length > 0 ? steps[0].content : "No preview available."),
-    images: allImages,
-    seller: {
-      username: profile?.display_name || profile?.username || "creator",
-      avatar: profile?.avatar_url || "",
-    },
-    outputType: row.output_type || undefined,
->>>>>>> upload-prompt-page
   };
 }
 
@@ -381,7 +353,6 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
         // 1. Fetch main prompt data WITHOUT joins first to isolate the issue
         const { data: mainData, error: mainError } = await supabase
           .from("prompts")
-<<<<<<< HEAD
           .select(`
             *,
             users!prompts_creator_id_fkey(*),
@@ -395,47 +366,10 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           .eq("id", params.id)
           .maybeSingle();
 
-        if (data) {
-          const mapped = mapDbPrompt(data);
+        if (mainData) {
+          const mapped = mapDbPrompt(mainData);
           setPrompt(mapped);
           fetchRelated(mapped);
-=======
-          .select("*")
-          .eq("id", params.id)
-          .maybeSingle();
-
-        if (mainError) {
-          console.error("Supabase Error [Main]:", {
-            message: mainError.message,
-            code: mainError.code,
-            details: mainError.details,
-            hint: mainError.hint
-          });
-          throw mainError;
-        }
-
-        console.log("Main prompt data fetched:", mainData);
-
-        if (mainData) {
-          // 2. Fetch joins separately to be safer
-          const [userRes, platformRes, categoryRes, imagesRes, stepsRes] = await Promise.all([
-            supabase.from("user_profiles").select("*").eq("id", mainData.creator_id).maybeSingle(),
-            supabase.from("platforms").select("*").eq("id", mainData.platform_id).maybeSingle(),
-            supabase.from("categories").select("*").eq("id", mainData.category_id).maybeSingle(),
-            supabase.from("prompt_images").select("*").eq("prompt_id", params.id).order('sort_order'),
-            supabase.from("prompt_steps").select("*").eq("prompt_id", params.id).order('step_number')
-          ]);
-
-          // Combine data
-          const enrichedData = {
-            ...mainData,
-            user_profiles: userRes.data,
-            platforms: platformRes.data,
-            categories: categoryRes.data
-          };
-
-          setPrompt(mapDbPrompt(enrichedData, imagesRes.data || [], stepsRes.data || []));
->>>>>>> upload-prompt-page
           return;
         }
 
@@ -448,16 +382,11 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           return;
         }
 
-<<<<<<< HEAD
         const def = mapDefaultFallbackPrompt(params.id);
         setPrompt(def);
         fetchRelated(def);
-      } catch {
-=======
-        setPrompt(mapDefaultFallbackPrompt(params.id));
       } catch (err: any) {
         console.error("Critical error fetching prompt detail:", err);
->>>>>>> upload-prompt-page
         const fallbackPrompt = mapFallbackPrompt(params.id);
         setPrompt(fallbackPrompt || mapDefaultFallbackPrompt(params.id));
       } finally {
@@ -465,25 +394,35 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
       }
     };
 
-<<<<<<< HEAD
     const fetchRelated = async (p: PromptItem) => {
       try {
         const { data } = await supabase
           .from("prompts")
-          .select("id, title, images, cover_image, screenshots, price")
-          .eq("category", p.category)
-          .neq("id", p.id)
+          .select(`
+            id, 
+            title, 
+            description, 
+            price, 
+            cover_image_url, 
+            purchases_count, 
+            average_rating, 
+            created_at,
+            platforms!prompts_platform_id_fkey(name),
+            categories!prompts_category_id_fkey(name),
+            users!prompts_creator_id_fkey(display_name, username)
+          `)
+          .order('purchases_count', { ascending: false })
           .limit(4);
-        if (data) setRelatedPrompts(data.map(mapDbPrompt));
+          
+        if (data) {
+           setRelatedPrompts(data.map(row => mapDbPrompt(row)));
+        }
       } catch (err) {
         console.error("Error fetching related:", err);
       }
     };
 
-    fetchPrompt();
-=======
     fetchPromptData();
->>>>>>> upload-prompt-page
   }, [params.id]);
 
   const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
