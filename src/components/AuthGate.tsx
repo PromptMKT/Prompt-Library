@@ -4,12 +4,10 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
-const PUBLIC_ROUTES = ["/", "/home-v5", "/sign-in", "/get-started", "/explore"];
+const PROTECTED_PREFIXES = ["/profile", "/upload"];
 
-function isPublicRoute(pathname: string): boolean {
-  if (pathname.startsWith("/get-started")) return true;
-  if (pathname.startsWith("/prompt/")) return true;
-  return PUBLIC_ROUTES.includes(pathname);
+function requiresAuth(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -17,15 +15,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { loading, isAuthenticated } = useAuth();
 
-  const publicRoute = isPublicRoute(pathname);
+  const protectedRoute = requiresAuth(pathname);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && !publicRoute) {
+    if (!loading && !isAuthenticated && protectedRoute) {
       router.replace(`/sign-in?next=${encodeURIComponent(pathname)}`);
     }
-  }, [loading, isAuthenticated, publicRoute, pathname, router]);
+  }, [loading, isAuthenticated, protectedRoute, pathname, router]);
 
-  if (!publicRoute && (loading || !isAuthenticated)) {
+  if (protectedRoute && (loading || !isAuthenticated)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />

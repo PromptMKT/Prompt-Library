@@ -87,3 +87,14 @@ export async function ensureUserProfile(user: User, fallback?: { role?: string; 
 
   return { error };
 }
+
+export async function isRegisteredEmail(email: string): Promise<{ exists: boolean; error: string | null }> {
+  const inputEmail = sanitizeEmail(email);
+  const { data, error } = await supabase.rpc("is_registered_email", { input_email: inputEmail });
+
+  if (error) {
+    return { exists: false, error: error.message || "Unable to verify email." };
+  }
+
+  return { exists: Boolean(data), error: null };
+}

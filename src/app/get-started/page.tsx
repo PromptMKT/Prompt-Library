@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { ensureUserProfile, isValidEmail, sanitizeEmail, toAuthMessage, validatePassword } from "@/lib/auth";
+import { ensureUserProfile, isRegisteredEmail, isValidEmail, sanitizeEmail, toAuthMessage, validatePassword } from "@/lib/auth";
 
 export default function GetStartedPage() {
+  const duplicateEmailMessage = "This email is already registered. Please sign in instead.";
+  const mismatchMessage = "Create Password and Confirm Password must match.";
+  const passwordRuleHint = "At least 8 chars, with uppercase, lowercase, and number";
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
@@ -20,9 +23,14 @@ export default function GetStartedPage() {
   const [role, setRole] = useState("buyer");
   const [interests, setInterests] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [retryAfterSec, setRetryAfterSec] = useState(0);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (retryAfterSec <= 0) return;
@@ -58,6 +66,100 @@ export default function GetStartedPage() {
 
   const username = email.includes("@") ? email.split("@")[0] : "newuser";
   const displayName = username.replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const passwordRulesNotMet = password.length > 0 && Boolean(validatePassword(password));
+
+  const validateStepOneWithInlineErrors = (): boolean => {
+    const cleanEmail = sanitizeEmail(email);
+    const nextEmailError = !isValidEmail(cleanEmail) ? "Please enter a valid email address." : null;
+    const nextPasswordError = validatePassword(password);
+    const nextConfirmError = password !== confirmPassword ? mismatchMessage : null;
+    const nextTermsError = !acceptedTerms ? "Please accept terms before continuing." : null;
+
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    setConfirmPasswordError(nextConfirmError);
+    setTermsError(nextTermsError);
+
+    // Keep password requirement feedback in the top banner, while mismatch stays inline below confirm password.
+    if (nextEmailError) {
+      setError(nextEmailError);
+      return false;
+    }
+    if (nextPasswordError) {
+      setError(nextPasswordError);
+      return false;
+    }
+    if (nextConfirmError) {
+      setError(null);
+      return false;
+    }
+    if (nextTermsError) {
+      setError(nextTermsError);
+      return false;
+    }
+
+    setError(null);
+    return true;
+  };
+
+  const validateStep = (phase: number): string | null => {
+    if (phase === 1) {
+      const cleanEmail = sanitizeEmail(email);
+      if (!isValidEmail(cleanEmail)) return "Please enter a valid email address.";
+      const passwordError = validatePassword(password);
+      if (passwordError) return passwordError;
+      if (password !== confirmPassword) return "Create Password and Confirm Password must match.";
+      if (!acceptedTerms) return "Please accept terms before continuing.";
+      return null;
+    }
+
+    if (phase === 2) {
+      if (!role) return "Please select your path before continuing.";
+      return null;
+    }
+
+    if (phase === 3) {
+      if (interests.length === 0) return "Please select at least one interest before creating account.";
+      return null;
+    }
+
+    return null;
+  };
+
+  const handleNextStep = async () => {
+    if (step === 1) {
+      if (!validateStepOneWithInlineErrors()) {
+        return;
+      }
+
+      setCheckingEmail(true);
+      const check = await isRegisteredEmail(email);
+      setCheckingEmail(false);
+
+      if (check.error) {
+        // Do not block new-user flow if backend email-check RPC is temporarily unavailable.
+        // Final signup will still enforce uniqueness and return a clear message.
+        setEmailError(null);
+        setError(null);
+      }
+
+      if (!check.error && check.exists) {
+        setEmailError(duplicateEmailMessage);
+        setError(null);
+        return;
+      }
+    } else {
+      const validationError = validateStep(step);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+
+    setError(null);
+    setInfo(null);
+    setStep((current) => Math.min(3, current + 1));
+  };
 
   const handleRegister = async () => {
     if (retryAfterSec > 0) {
@@ -65,28 +167,26 @@ export default function GetStartedPage() {
       return;
     }
 
+    if (!validateStepOneWithInlineErrors()) {
+      setStep(1);
+      return;
+    }
+
+    const stepTwoError = validateStep(2);
+    if (stepTwoError) {
+      setError(stepTwoError);
+      setStep(2);
+      return;
+    }
+
+    const stepThreeError = validateStep(3);
+    if (stepThreeError) {
+      setError(stepThreeError);
+      setStep(3);
+      return;
+    }
+
     const cleanEmail = sanitizeEmail(email);
-
-    if (!isValidEmail(cleanEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (!acceptedTerms) {
-      setError("Please accept terms before creating your account.");
-      return;
-    }
 
     setSubmitting(true);
     setError(null);
@@ -106,6 +206,13 @@ export default function GetStartedPage() {
 
     if (signUpError) {
       const authMessage = toAuthMessage(signUpError.message || "", "signup");
+      if (authMessage === duplicateEmailMessage) {
+        setEmailError(authMessage);
+        setStep(1);
+        setError(null);
+        setSubmitting(false);
+        return;
+      }
       if (authMessage.toLowerCase().includes("too many attempts")) {
         setRetryAfterSec(60);
       }
@@ -122,29 +229,16 @@ export default function GetStartedPage() {
         interests,
         displayName,
       });
-      // User is automatically signed in, redirect to home
-      router.push("/home-v5");
+    }
+
+    if (data.session && data.user) {
+      router.push("/get-started/bonus");
       return;
     }
 
-    if (!data.session) {
-      // If session is null, it typically means email confirmation is required
-      setInfo("Account created. Please confirm your email first.");
-      // Redirect to sign-in with the success message after a brief delay or immediately
-      setTimeout(() => {
-        router.push("/sign-in?registered=1");
-      }, 3000);
-    } else {
-      // This case should ideally not be reached if we handle session above,
-      // but for safety, if there was a session but we're here:
-      router.push("/home-v5");
-    }
+    setInfo("Account created. Please sign in to continue.");
+    router.push("/sign-in?registered=1");
   };
-
-  const canNext =
-    (step === 1 && email && password && confirmPassword && password === confirmPassword && acceptedTerms) ||
-    (step === 2 && role) ||
-    (step === 3 && interests.length > 0);
 
   return (
     <main className="min-h-dvh bg-[#0a0a0f] text-white selection:bg-purple-500/30 selection:text-white">
@@ -241,7 +335,25 @@ export default function GetStartedPage() {
 
                   <div className="space-y-3">
                     <label htmlFor="email" className="text-xs font-black tracking-[0.16em] uppercase text-slate-500">Email Address</label>
-                    <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 px-4 text-sm text-white outline-none focus:border-purple-500/50" placeholder="you@example.com" required />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError(null);
+                        if (error === duplicateEmailMessage || error === "Please enter a valid email address.") {
+                          setError(null);
+                        }
+                      }}
+                      className={cn(
+                        "w-full h-12 rounded-2xl bg-white/5 border px-4 text-sm text-white outline-none focus:border-purple-500/50",
+                        emailError ? "border-rose-500/70 focus:border-rose-500/70" : "border-white/10"
+                      )}
+                      placeholder="you@example.com"
+                      required
+                    />
+                    {emailError ? <p className="text-xs text-rose-300">{emailError}</p> : null}
                   </div>
 
                   <div className="space-y-3">
@@ -251,8 +363,20 @@ export default function GetStartedPage() {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 pl-4 pr-11 text-sm text-white outline-none focus:border-purple-500/50"
+                        onChange={(e) => {
+                          const nextPassword = e.target.value;
+                          setPassword(nextPassword);
+                          setPasswordError(null);
+                          if (confirmPassword && nextPassword !== confirmPassword) {
+                            setConfirmPasswordError(mismatchMessage);
+                          } else {
+                            setConfirmPasswordError(null);
+                          }
+                        }}
+                        className={cn(
+                          "w-full h-12 rounded-2xl bg-white/5 border pl-4 pr-11 text-sm text-white outline-none focus:border-purple-500/50",
+                          passwordError || passwordRulesNotMet ? "border-rose-500/70 focus:border-rose-500/70" : "border-white/10"
+                        )}
                         placeholder="********"
                         required
                       />
@@ -265,7 +389,7 @@ export default function GetStartedPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-slate-500">At least 8 chars, with uppercase, lowercase, and number</p>
+                    <p className={cn("text-xs", passwordRulesNotMet || passwordError ? "text-rose-300" : "text-slate-500")}>{passwordRuleHint}</p>
                   </div>
 
                   <div className="space-y-3">
@@ -275,8 +399,19 @@ export default function GetStartedPage() {
                         id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full h-12 rounded-2xl bg-white/5 border border-white/10 pl-4 pr-11 text-sm text-white outline-none focus:border-purple-500/50"
+                        onChange={(e) => {
+                          const nextConfirmPassword = e.target.value;
+                          setConfirmPassword(nextConfirmPassword);
+                          if (password && nextConfirmPassword && password !== nextConfirmPassword) {
+                            setConfirmPasswordError(mismatchMessage);
+                          } else {
+                            setConfirmPasswordError(null);
+                          }
+                        }}
+                        className={cn(
+                          "w-full h-12 rounded-2xl bg-white/5 border pl-4 pr-11 text-sm text-white outline-none focus:border-purple-500/50",
+                          confirmPasswordError ? "border-rose-500/70 focus:border-rose-500/70" : "border-white/10"
+                        )}
                         placeholder="********"
                         required
                       />
@@ -291,11 +426,17 @@ export default function GetStartedPage() {
                     </div>
                   </div>
 
+                  {confirmPasswordError ? <p className="text-xs text-rose-300 -mt-2">{confirmPasswordError}</p> : null}
+                  {termsError ? <p className="text-xs text-rose-300 -mt-2">{termsError}</p> : null}
+
                   <label className="inline-flex items-center gap-2.5 text-sm text-slate-400 select-none">
                     <input
                       type="checkbox"
                       checked={acceptedTerms}
-                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      onChange={(e) => {
+                        setAcceptedTerms(e.target.checked);
+                        setTermsError(null);
+                      }}
                       className="w-4 h-4 rounded border-white/20 bg-white/5 accent-purple-500"
                     />
                     I agree to the <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span>
@@ -385,17 +526,17 @@ export default function GetStartedPage() {
                 {step < 3 ? (
                   <button
                     type="button"
-                    onClick={() => canNext && setStep((s) => Math.min(3, s + 1))}
-                    disabled={!canNext || submitting}
+                    onClick={handleNextStep}
+                    disabled={submitting || checkingEmail}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
-                    Initiate Next Step <ArrowRight className="w-4 h-4" />
+                    {checkingEmail ? "Validating Email..." : "Initiate Next Step"} <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleRegister}
-                    disabled={!canNext || submitting || retryAfterSec > 0}
+                    disabled={submitting || retryAfterSec > 0}
                     className="h-12 px-6 rounded-2xl bg-purple-600 text-white text-xs font-black uppercase tracking-[0.16em] disabled:opacity-40 inline-flex items-center gap-2 hover:bg-purple-500"
                   >
                     {submitting ? "Creating Account..." : retryAfterSec > 0 ? `Retry in ${retryAfterSec}s` : "Create Account"} <Rocket className="w-4 h-4" />
