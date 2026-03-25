@@ -13,10 +13,12 @@ import { ProfileStats } from "./components/ProfileStats";
 import { ProfileTabs } from "./components/ProfileTabs";
 import { ProfileSidebarContent } from "./components/ProfileSidebarContent";
 import { SellerPromptCard } from "./components/SellerPromptCard";
+import { useAuth } from "@/components/AuthProvider";
 
 type TabType = "published" | "purchased" | "wishlist" | "activity" | "reviews";
 
 export default function SellerProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
+  const { profile, user: authUser, loading: authLoading } = useAuth();
   const params = React.use(paramsPromise);
   
   const [user, setUser] = useState<any>(null);
@@ -26,7 +28,37 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
   const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
-    // DEMO MODE: Hardcoded dummy data
+    if (authLoading) return;
+
+    // Determine which user to display
+    // In a real app, we'd fetch by username if params.username exists
+    // for now we prioritize logged-in user if it's their page or generic /profile
+    
+    if (profile || authUser) {
+      const email = profile?.email || authUser?.email || "";
+      const emailPrefix = email.split('@')[0];
+      
+      const userData = {
+        username: profile?.display_name?.toLowerCase().replace(/\s+/g, '') || emailPrefix || "user",
+        name: profile?.display_name || emailPrefix || "User",
+        email: email,
+        avatar: null,
+        bio: profile?.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "B2B marketer turned AI prompt engineer. I write prompts that actually work for real sales teams.",
+        coins: 240,
+        followers: 1204,
+        following: 89,
+        verified: true,
+        location: profile?.interests?.[0] || "Global",
+        website: "vault.io",
+        avgRating: 4.9,
+        memberSince: "Jan 2026"
+      };
+      setUser(userData);
+      setLoading(false);
+      return;
+    }
+
+    // fallback to dummy data only for demonstration
     const dummyUser = {
       username: "priyanair",
       name: "Priya Nair",
@@ -41,7 +73,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
       avgRating: 4.9,
       memberSince: "Jan 2026"
     };
-    
+
     const dummyPrompts = [
       { id: "1", title: "Cold Email that Converts — B2B Framework", price: 30, sales: 489, platform: "ChatGPT", category: "Email", reviewsCount: 127, rating: 4.9, status: "live", trending: true, promptText: "Act as a B2B sales expert and write a sequence..." },
       { id: "2", title: "LinkedIn Post Engine", price: 22, sales: 334, platform: "ChatGPT", category: "LinkedIn", reviewsCount: 112, rating: 4.7, status: "live", trending: false, promptText: "Generate 10 LinkedIn post ideas for SaaS founders..." },
@@ -54,7 +86,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     setUser(dummyUser);
     setSellerPrompts(dummyPrompts);
     setLoading(false);
-  }, [params.username]);
+  }, [params.username, authLoading, profile, authUser]);
 
   if (loading) {
     return (

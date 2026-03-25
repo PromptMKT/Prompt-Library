@@ -28,7 +28,11 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink }: Profi
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="relative mt-[-56px] mb-4">
             <div className="w-[108px] h-[108px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-[36px] font-black tracking-[-0.04em] text-white border-[4px] border-background shadow-[0_0_0_1px_var(--border2)] relative z-10 overflow-hidden">
-               PN
+               {user.display_name 
+                 ? user.display_name.split(' ').map((n: any) => n[0]).join('').slice(0, 2).toUpperCase()
+                 : user.name
+                 ? user.name.split(' ').map((n: any) => n[0]).join('').slice(0, 2).toUpperCase()
+                 : (user.username || user.email || "?")[0].toUpperCase()}
                <div 
                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer z-[11] text-[10px] font-black text-white uppercase tracking-widest"
                  onClick={() => toast("Photo updated!")}

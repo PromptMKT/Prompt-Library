@@ -122,14 +122,23 @@ export default function GetStartedPage() {
         interests,
         displayName,
       });
+      // User is automatically signed in, redirect to home
+      router.push("/home-v5");
+      return;
     }
 
     if (!data.session) {
-      setInfo("Account created. Please confirm your email first, then sign in.");
+      // If session is null, it typically means email confirmation is required
+      setInfo("Account created. Please confirm your email first.");
+      // Redirect to sign-in with the success message after a brief delay or immediately
+      setTimeout(() => {
+        router.push("/sign-in?registered=1");
+      }, 3000);
+    } else {
+      // This case should ideally not be reached if we handle session above,
+      // but for safety, if there was a session but we're here:
+      router.push("/home-v5");
     }
-
-    await supabase.auth.signOut();
-    router.push("/sign-in?registered=1");
   };
 
   const canNext =

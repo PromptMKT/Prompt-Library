@@ -216,9 +216,19 @@ function ExploreContent() {
       try {
         const { data } = await supabase
           .from("prompts")
-          .select(
-            "id, title, short_description, tagline, images, screenshots, cover_image, rating, sales, tags, seller, price, platform, category, prompt_text, output_type, complexity, created_at"
-          )
+          .select(`
+            id, 
+            title, 
+            description, 
+            price, 
+            cover_image_url, 
+            purchases_count, 
+            average_rating, 
+            created_at,
+            platforms!prompts_platform_id_fkey(name),
+            categories!prompts_category_id_fkey(name),
+            users!prompts_creator_id_fkey(display_name, username)
+          `)
           .order("created_at", { ascending: false })
           .limit(400);
 
@@ -227,18 +237,15 @@ function ExploreContent() {
         const mappedPrompts: PromptRecord[] = data.map((row: any) => ({
           id: String(row.id),
           title: row.title || "Untitled Prompt",
-          short_description: row.short_description || row.tagline || "",
-          images: row.images?.length ? row.images : row.screenshots?.length ? row.screenshots : row.cover_image ? [row.cover_image] : [],
-          rating: Number(row.rating || 4.8),
-          sales: Number(row.sales || 0),
-          tags: Array.isArray(row.tags) ? row.tags : [],
-          seller: row.seller || "Creator",
+          short_description: row.description || "Prompt system that ships outcomes.",
+          images: row.cover_image_url ? [row.cover_image_url] : [],
+          rating: Number(row.average_rating || 4.8),
+          sales: Number(row.purchases_count || 0),
+          tags: [], // Using empty tags as they are not defined in the new prompts schema yet
+          seller: row.users?.display_name || row.users?.username || "Creator",
           price: Number(row.price || 0),
-          platform: row.platform || "AI",
-          category: row.category || "Prompt",
-          prompt_text: row.prompt_text,
-          output_type: row.output_type,
-          difficulty: row.complexity || "Mid",
+          platform: row.platforms?.name || "AI",
+          category: row.categories?.name || "Prompt",
           createdAt: row.created_at,
         }));
 

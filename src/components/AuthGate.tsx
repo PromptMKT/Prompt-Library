@@ -4,10 +4,11 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
-const PUBLIC_ROUTES = ["/", "/home-v5", "/sign-in", "/get-started"];
+const PUBLIC_ROUTES = ["/", "/home-v5", "/sign-in", "/get-started", "/explore"];
 
 function isPublicRoute(pathname: string): boolean {
   if (pathname.startsWith("/get-started")) return true;
+  if (pathname.startsWith("/prompt/")) return true;
   return PUBLIC_ROUTES.includes(pathname);
 }
 

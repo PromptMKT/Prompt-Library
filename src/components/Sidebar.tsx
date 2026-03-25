@@ -10,10 +10,10 @@ import {
   Wallet, 
   ShoppingBag, 
   Settings,
-  Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useAuth } from "@/components/AuthProvider";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -28,12 +28,8 @@ const sidebarLinks = [
 export const Sidebar = () => {
   const pathname = usePathname();
 
-  return (
-    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-60 bg-background border-r border-border/50 z-[100] hidden lg:flex flex-col p-5 overflow-y-auto scrollbar-hide dark:bg-[#0B0B0F]">
-      <div className="mb-4 px-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Overview</p>
-      </div>
-
+  const Navigation = () => {
+    return (
       <nav className="grow space-y-1">
         {sidebarLinks.map((item) => {
           const isActive = pathname === item.href;
@@ -63,19 +59,45 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+    );
+  };
 
+  const UserSection = () => {
+    const { profile, user, loading } = useAuth();
+
+    if (loading) return <div className="p-4 animate-pulse bg-secondary/20 rounded-2xl h-16" />;
+    if (!user) return null;
+
+    const initials = profile?.display_name 
+      ? profile.display_name.split(' ').map((n: any) => n[0]).join('').slice(0, 2).toUpperCase()
+      : (profile?.email || user.email || "?")[0].toUpperCase();
+
+    const name = profile?.display_name || user.email?.split('@')[0] || "User";
+
+    return (
       <div className="pt-6 border-t border-border/40 mt-auto">
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">PN</div>
-            <div>
-              <p className="text-xs font-bold text-foreground truncate max-w-[100px]">Priya Nair</p>
-              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Creator</p>
-            </div>
+        <Link href="/profile" className="p-4 rounded-2xl bg-secondary/30 border border-border/40 flex items-center gap-3 hover:bg-secondary/50 transition-all">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs uppercase">
+            {initials}
           </div>
-        </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-foreground truncate max-w-[100px]">{name}</p>
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{profile?.role || "Creator"}</p>
+          </div>
+        </Link>
       </div>
+    );
+  };
+
+  return (
+    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-60 bg-background border-r border-border/50 z-[100] hidden lg:flex flex-col p-5 overflow-y-auto scrollbar-hide dark:bg-[#0B0B0F]">
+      <div className="mb-4 px-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Overview</p>
+      </div>
+
+      <Navigation />
+
+      <UserSection />
     </aside>
   );
 };
-

@@ -10,11 +10,36 @@ interface PurchaseSidebarProps {
   isPurchased: boolean;
   handlePurchase: () => void;
   seller: any;
+  platform?: string;
+  category?: string;
+  subcategory?: string;
+  model?: string;
+  tags?: string[];
+  complexity?: string;
+  sales?: number;
+  lastTested?: string;
+  imageCount?: number;
+  review_count?: number;
 }
 
-export function PurchaseSidebar({ price, isPurchased, handlePurchase, seller }: PurchaseSidebarProps) {
+export function PurchaseSidebar({ 
+  price, 
+  isPurchased, 
+  handlePurchase, 
+  seller,
+  platform = "AI",
+  category = "Prompt",
+  subcategory,
+  model,
+  tags = [],
+  complexity = "Mid",
+  sales = 0,
+  lastTested = "Recent",
+  imageCount = 0,
+  review_count = 0
+}: PurchaseSidebarProps) {
   const sellerData = typeof seller === 'object' ? seller : { username: seller };
-  const username = sellerData.username || sellerData.name || "anonymous";
+  const username = sellerData.username || sellerData.display_name || "anonymous";
   const avatar = sellerData.avatar || `https://avatar.iran.liara.run/public/boy?username=${username}`;
 
   return (
@@ -53,27 +78,30 @@ export function PurchaseSidebar({ price, isPurchased, handlePurchase, seller }: 
         <div className="p-4 px-5 space-y-3">
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
             <span className="text-muted-foreground">Platform</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">ChatGPT</span>
+            <span className="text-foreground font-medium font-mono text-[12px]">{platform} {model ? `(${model})` : ''}</span>
           </div>
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
             <span className="text-muted-foreground">Category</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">Email Copy</span>
+            <div className="text-right">
+              <span className="block text-foreground font-medium font-mono text-[12px]">{category}</span>
+              {subcategory && <span className="block text-[10px] text-muted-foreground italic">{subcategory}</span>}
+            </div>
           </div>
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
-            <span className="text-muted-foreground">Variables</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">5 variables</span>
+            <span className="text-muted-foreground">Complexity</span>
+            <span className="text-foreground font-medium font-mono text-[12px]">{complexity}</span>
           </div>
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
             <span className="text-muted-foreground">Last tested</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">Feb 2025</span>
+            <span className="text-foreground font-medium font-mono text-[12px]">{lastTested}</span>
           </div>
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
             <span className="text-muted-foreground">Outputs</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">3 screenshots</span>
+            <span className="text-foreground font-medium font-mono text-[12px]">{imageCount} images</span>
           </div>
           <div className="flex justify-between items-center text-[13px]">
             <span className="text-muted-foreground">Total sales</span>
-            <span className="text-foreground font-medium font-mono text-[12px]">489</span>
+            <span className="text-foreground font-medium font-mono text-[12px]">{sales}</span>
           </div>
         </div>
 
@@ -96,29 +124,29 @@ export function PurchaseSidebar({ price, isPurchased, handlePurchase, seller }: 
           </div>
           <div>
             <div className="text-sm font-bold text-foreground">@{username}</div>
-            <div className="text-[11px] text-muted-foreground">⭐ 4.9 seller · Top Creator</div>
+            <div className="text-[11px] text-muted-foreground">⭐ {sellerData.average_rating || 4.9} seller · {sellerData.role || 'Top Creator'}</div>
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="bg-background/50 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-primary font-mono">41</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">prompts listed</div>
+            <div className="text-base font-bold text-primary font-mono">{sellerData.total_prompts || (sales > 0 ? Math.ceil(sales/10) : 1)}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">prompts</div>
           </div>
           <div className="bg-background/50 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-primary font-mono">2.1k</div>
+            <div className="text-base font-bold text-primary font-mono">{sellerData.total_sales || (sales > 1000 ? (sales/1000).toFixed(1)+'k' : sales)}</div>
             <div className="text-[10px] text-muted-foreground mt-0.5">total sales</div>
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground leading-relaxed mb-3">
-          Specialises in AI engineering and conversion copy.
+        <div className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+          {sellerData.bio || "Specialises in AI engineering and conversion copy."}
         </div>
 
         <div className="flex gap-2">
           <Link href={`/explore?q=${encodeURIComponent(username)}`} className="flex-2">
             <Button variant="outline" className="w-full h-9 rounded-lg border-border/40 bg-transparent text-muted-foreground text-xs hover:border-primary hover:text-primary transition-colors">
-              View all prompts →
+              View store →
             </Button>
           </Link>
           <Button variant="outline" className="flex-1 h-9 rounded-lg border-border/40 bg-transparent text-muted-foreground text-xs hover:border-primary hover:text-primary transition-colors">
