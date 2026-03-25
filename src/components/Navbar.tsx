@@ -64,6 +64,9 @@ export const Navbar = () => {
     router.push("/home-v5");
   };
 
+  const uploadHref = isAuthenticated ? "/upload" : "/sign-in?next=%2Fupload";
+  const profileHref = isAuthenticated ? "/profile" : "/sign-in?next=%2Fprofile";
+
   return (
     <>
       <nav
@@ -122,11 +125,9 @@ export const Navbar = () => {
           </div>
 
           <div className="ml-auto flex items-center gap-3 shrink-0">
-            {isAuthenticated ? (
-              <Link href="/upload" className="hidden md:inline-flex items-center text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
-                Upload Prompt
-              </Link>
-            ) : null}
+            <Link href={uploadHref} className="hidden md:inline-flex items-center text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
+              Upload Prompt
+            </Link>
 
             {isAuthenticated ? (
               <Link href="/wallet" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 text-xs font-black text-foreground hover:border-primary/50 hover:text-primary transition-colors">
@@ -164,7 +165,7 @@ export const Navbar = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 border border-border/70 p-2 z-9999">
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer font-bold text-primary">
+                    <Link href={profileHref} className="cursor-pointer font-bold text-primary">
                       Profile
                     </Link>
                   </DropdownMenuItem>
@@ -221,11 +222,11 @@ export const Navbar = () => {
               {[
                 { label: "Home", href: "/" },
                 { label: "Explore", href: "/explore" },
+                { label: "Upload Prompt", href: uploadHref },
+                { label: "Profile", href: profileHref },
                 ...(isAuthenticated
                   ? [
-                      { label: "Profile", href: "/profile" },
                       { label: "Wallet", href: "/wallet" },
-                      { label: "Upload Prompt", href: "/upload" },
                       { label: "Dashboard", href: "/dashboard" },
                       { label: "Coin", href: "/coins" },
                     ]
@@ -267,12 +268,20 @@ export const Navbar = () => {
                   </Button>
                 </>
               ) : (
+                <Link href={uploadHref} onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full h-12 rounded-xl border-border/60 font-black uppercase tracking-wide">
+                    Upload Prompt
+                  </Button>
+                </Link>
+              )}
+
+              {!isAuthenticated ? (
                 <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
                   <Button className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase tracking-wide hover:bg-primary/90">
                     Sign In
                   </Button>
                 </Link>
-              )}
+              ) : null}
             </div>
           </nav>
         </div>

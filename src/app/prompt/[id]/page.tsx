@@ -13,6 +13,8 @@ import { PurchaseSidebar } from "./components/PurchaseSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import exploreData from "@/app/explore/data/explore-data.json";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 
 type PromptItem = {
   id: string;
@@ -157,7 +159,7 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
-              className="fixed top-[42%] left-1/2 -translate-x-1/2 md:-ml-[170px] -translate-y-1/2 z-[100] w-[90%] max-w-sm bg-card border border-border/60 shadow-2xl rounded-2xl overflow-hidden"
+              className="fixed top-[42%] left-1/2 -translate-x-1/2 md:-ml-42.5 -translate-y-1/2 z-100 w-[90%] max-w-sm bg-card border border-border/60 shadow-2xl rounded-2xl overflow-hidden"
             >
               <div className="p-4 bg-muted/40 border-b border-border/40">
                 <div className="flex items-center gap-2 mb-2">
@@ -177,7 +179,7 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
                   <ul className="space-y-2">
                     {activeTypeData.popup?.checks.map((check, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-sm text-foreground">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         {check}
                       </li>
                     ))}
@@ -284,6 +286,8 @@ function mapDbPrompt(row: any): PromptItem {
 
 export default function PromptDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [prompt, setPrompt] = useState<PromptItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
@@ -338,6 +342,10 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   }
 
   const handlePurchase = async () => {
+    if (!isAuthenticated) {
+      router.push(`/sign-in?next=${encodeURIComponent(`/prompt/${params.id}`)}`);
+      return;
+    }
     setIsPurchased(true);
     toast.success("Prompt unlocked for preview mode");
   };

@@ -91,6 +91,29 @@ for update
 using ((select auth.uid()) = auth_user_id)
 with check ((select auth.uid()) = auth_user_id);
 
+create or replace function public.is_registered_email(input_email text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return exists(
+    select 1
+    from auth.users
+    where lower(email) = lower(input_email)
+  )
+  or exists(
+    select 1
+    from public.user_profiles
+    where lower(email) = lower(input_email)
+  );
+end;
+$$;
+
+revoke all on function public.is_registered_email(text) from public;
+grant execute on function public.is_registered_email(text) to anon, authenticated;
+
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql

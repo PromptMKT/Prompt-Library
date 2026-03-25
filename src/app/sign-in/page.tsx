@@ -49,7 +49,12 @@ function SignInContent() {
     });
 
     if (signInError) {
-      setError(toAuthMessage(signInError.message || "", "signin"));
+      const raw = (signInError.message || "").toLowerCase();
+      if (raw.includes("invalid login credentials")) {
+        setError("Wrong credentials.");
+      } else {
+        setError(toAuthMessage(signInError.message || "", "signin"));
+      }
       setSubmitting(false);
       return;
     }
