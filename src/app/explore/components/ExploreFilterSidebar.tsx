@@ -31,6 +31,7 @@ type ExploreFilterSidebarProps = {
   clearAll: () => void;
   mobileOpen: boolean;
   setMobileOpen: (value: boolean) => void;
+  dynamicSections?: { id: string; title: string; options: string[] }[];
 };
 
 type SidebarBodyProps = Omit<ExploreFilterSidebarProps, "mobileOpen" | "setMobileOpen"> & {
@@ -78,43 +79,44 @@ function SidebarBody({
   optionCounts,
   priceRange,
   setPriceRange,
-  clearAll,
   isMobile = false,
+  dynamicSections = [],
 }: SidebarBodyProps) {
-  const sections = useMemo(
-    () => [PLATFORM_SECTION, CATEGORY_SECTION, OUTPUT_FORMAT_SECTION, TARGET_AUDIENCE_SECTION],
-    []
-  );
+  const sections = useMemo(() => {
+    if (dynamicSections && dynamicSections.length > 0) return dynamicSections;
+    return [PLATFORM_SECTION, CATEGORY_SECTION, OUTPUT_FORMAT_SECTION, TARGET_AUDIENCE_SECTION];
+  }, [dynamicSections]);
 
   const titleMap: Record<string, string> = {
     platform: "Platform",
     category: "Category",
+    subcategory: "Subcategory",
     outputFormat: "Output type",
     targetAudience: "Audience",
   };
 
   return (
     <div className={cn("space-y-1 pr-1 pb-0", isMobile && "overflow-y-auto max-h-[calc(100vh-15rem)]")}>
-      {sections.map((section) => (
-          <FilterDropdown
-            key={section.id}
-            title={titleMap[section.id] || section.title}
-            isOpen={Boolean(openSections[section.id])}
-            onToggle={() => toggleSection(section.id)}
-          >
-            <div className="space-y-0.5">
-              {section.options.map((option) => (
-                <OptionRow
-                  key={option}
-                  checked={selectedFilters[section.id]?.includes(option) ?? false}
-                  label={option}
-                  count={optionCounts[`${section.id}:${option}`]}
-                  onToggle={() => toggleFilterOption(section.id, option)}
-                />
-              ))}
-            </div>
-          </FilterDropdown>
-        ))}
+      {sections.map((section: any) => (
+        <FilterDropdown
+          key={section.id}
+          title={titleMap[section.id] || section.title}
+          isOpen={Boolean(openSections[section.id])}
+          onToggle={() => toggleSection(section.id)}
+        >
+          <div className="space-y-0.5">
+            {(section.options || []).map((option: any) => (
+              <OptionRow
+                key={option}
+                checked={selectedFilters[section.id]?.includes(option) ?? false}
+                label={option}
+                count={optionCounts[`${section.id}:${option}`]}
+                onToggle={() => toggleFilterOption(section.id, option)}
+              />
+            ))}
+          </div>
+        </FilterDropdown>
+      ))}
 
       <FilterDropdown
         title="Pricing"
@@ -124,7 +126,7 @@ function SidebarBody({
       >
         <div className="pt-3 pb-1 space-y-4">
           <Slider
-            min={10}
+            min={0}
             max={500}
             step={5}
             value={priceRange}

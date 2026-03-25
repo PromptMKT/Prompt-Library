@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, Link as LinkIcon, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -63,7 +63,7 @@ const SUBCATS: Record<string, string[]> = {
 };
 
 export default function PromptUploadPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeSection, setActiveSection] = useState<number>(1);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
 
@@ -111,7 +111,7 @@ export default function PromptUploadPage() {
   const [price, setPrice] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
-  
+
   useEffect(() => {
     async function init() {
       const [cats, plats] = await Promise.all([
@@ -147,7 +147,126 @@ export default function PromptUploadPage() {
     }
   }, [platform]);
 
-  // Constants & Helpers
+  // Functions
+  const handlePublish = async () => {
+    if (completenessPct < 100 || !user) return;
+    setIsPublishing(true);
+    try {
+      // 1. Upload Cover Image
+      let coverUrl = "";
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('file', coverFile);
+        coverUrl = await uploadToCloudinary(fd);
+      }
+      
+      // 2. Upload Screenshots
+      const screenshotUrls = [];
+      for (const file of screenshotFiles) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const url = await uploadToCloudinary(fd);
+        screenshotUrls.push(url);
+      }
+
+      // 3. Prepare Prompt Data
+      // Must use profile.id to satisfy the foreign key constraint to consumer_profiles/users
+      if (!profile?.id) {
+        alert("User profile not found. Please try logging out and back in to sync your profile.");
+        setIsPublishing(false);
+        return;
+      }
+      const creatorId = profile.id;
+
+      const isMultiStep = promptTab === 'chain';
+      const stepCount = isMultiStep ? chainSteps.length : 1;
+
+      const promptInsert = {
+         creator_id: creatorId,
+         title,
+         description: tagline || title,
+         price: parseInt(price),
+         category_id: category || null,
+         subcategory_id: subCategory ? parseInt(subCategory) : null,
+         platform_id: platform || null,
+         model_id: selectedModels.length > 0 ? selectedModels[0] : null,
+         cover_image_url: coverUrl,
+         is_published: true,
+         is_multi_step: isMultiStep,
+         step_count: stepCount,
+         cover_image_provider: 'cloudinary'
+      };
+      
+      const { data: promptData, error: promptError } = await supabase
+        .from('prompts')
+        .insert([promptInsert])
+        .select('id')
+        .single();
+
+      if (promptError) throw promptError;
+      const promptId = promptData.id;
+
+      // 4. Insert Prompt Steps
+      if (isMultiStep) {
+        const stepsToInsert = chainSteps.map((s, idx) => ({
+          prompt_id: promptId,
+          step_number: idx + 1,
+          instruction: s.text,
+          step_type: 'prompt'
+        }));
+        const { error: stepsError } = await supabase.from('prompt_steps').insert(stepsToInsert);
+        if (stepsError) throw stepsError;
+      } else {
+        const instruction = promptTab === 'system' 
+          ? `System: ${systemText}\n\nUser: ${promptText}`
+          : promptText;
+          
+        const { error: stepError } = await supabase.from('prompt_steps').insert([{
+          prompt_id: promptId,
+          step_number: 1,
+          instruction: instruction,
+          step_type: 'prompt'
+        }]);
+        if (stepError) throw stepError;
+      }
+
+      // 5. Insert Prompt Images (Screenshots)
+      if (screenshotUrls.length > 0) {
+        const imagesToInsert = screenshotUrls.map((url, idx) => ({
+          prompt_id: promptId,
+          image_url: url,
+          provider: 'cloudinary',
+          sort_order: idx + 1
+        }));
+        const { error: imagesError } = await supabase.from('prompt_images').insert(imagesToInsert);
+        if (imagesError) throw imagesError;
+      }
+
+      // 6. Insert Prompt Models (if multiple models selected)
+      if (selectedModels.length > 0) {
+        const modelsToInsert = selectedModels.map(mId => ({
+          prompt_id: promptId,
+          model_id: mId,
+          platform_id: platform
+        }));
+        const { error: modelsError } = await supabase.from('prompt_models').insert(modelsToInsert);
+        if (modelsError) throw modelsError;
+      }
+      
+      setIsPublished(true);
+    } catch (err: any) {
+      console.error("Error publishing:", err);
+      alert("Error publishing: " + err.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+  const toggleInputNeed = (need: string) => {
+    if (need === 'none') return setInputNeeds(['none']);
+    setInputNeeds(prev => prev.includes('none') ? [need] : prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need]);
+  };
+  const toggleAudience = (aud: string) => setTargetAudience(prev => prev.includes(aud) ? prev.filter(a => a !== aud) : [...prev, aud]);
+  const handleTagAdd = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && tagsInput.trim()) { setTags([...tags, tagsInput.trim()]); setTagsInput(""); } };
   const getVarsCount = () => (promptText.match(/\[[A-Z_]+\]/g) || []).filter((v,i,a) => a.indexOf(v)===i).length;
 
   const checks = [
@@ -157,120 +276,10 @@ export default function PromptUploadPage() {
     { label: "Category selected", done: category !== "" },
     { label: "Target audience", done: targetAudience.length > 0 },
     { label: "Output format", done: outputFormat !== "" },
-    { label: "1+ screenshot", done: screenshots.length >= 1 }, // Changed from screenshotFiles to match UI state better
+    { label: "1+ screenshot", done: screenshots.length >= 1 },
     { label: "Price set", done: parseInt(price) >= 10 }
   ];
   const completenessPct = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
-
-  // Functions
-  const handlePublish = async () => {
-    if (completenessPct < 100) return;
-    setIsPublishing(true);
-    try {
-      if (!user) {
-        alert("You must be logged in to publish a prompt.");
-        return;
-      }
-
-      let coverUrl = "";
-      if (coverFile) {
-        const fd = new FormData();
-        fd.append('file', coverFile);
-        coverUrl = await uploadToCloudinary(fd);
-      }
-      
-      const screenshotUrls: string[] = [];
-      for (const file of screenshotFiles) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const url = await uploadToCloudinary(fd);
-        screenshotUrls.push(url);
-      }
-
-      const isMulti = promptTab === 'chain';
-      const stepsCount = isMulti ? chainSteps.length : 1;
-
-      // Prepare main prompt data
-      const submitData = {
-         creator_id: user.id,
-         title,
-         description: tagline || title,
-         price: parseInt(price),
-         category_id: category ? parseInt(category) : null,
-         subcategory_id: subCategory ? parseInt(subCategory) : null,
-         platform_id: platform ? parseInt(platform) : null,
-         model_id: selectedModels.length > 0 ? selectedModels[0] : null,
-         cover_image_url: coverUrl,
-         is_published: true,
-         is_multi_step: isMulti,
-         step_count: stepsCount,
-      };
-      
-      const { data: newPrompt, error: promptErr } = await supabase
-        .from('prompts')
-        .insert([submitData])
-        .select()
-        .single();
-
-      if (promptErr) throw promptErr;
-      
-      // Handle steps
-      if (newPrompt) {
-        const stepsToInsert = [];
-        if (isMulti) {
-          chainSteps.forEach((s, idx) => {
-            stepsToInsert.push({
-              prompt_id: newPrompt.id,
-              step_number: idx + 1,
-              step_type: 'prompt',
-              content: s.text
-            });
-          });
-        } else {
-          // Single step
-          let content = promptText;
-          let type = 'prompt';
-          if (promptTab === 'system') {
-            content = `System: ${systemText}\n\nUser: ${promptText}`;
-            type = 'system';
-          }
-          stepsToInsert.push({
-            prompt_id: newPrompt.id,
-            step_number: 1,
-            step_type: type,
-            content: content
-          });
-        }
-
-        if (stepsToInsert.length > 0) {
-          const { error: stepsErr } = await supabase.from('prompt_steps').insert(stepsToInsert);
-          if (stepsErr) throw stepsErr;
-        }
-
-        if (screenshotUrls.length > 0) {
-           const imagesToInsert = screenshotUrls.map((url, idx) => ({
-             prompt_id: newPrompt.id,
-             image_url: url,
-             sort_order: idx
-           }));
-           await supabase.from('prompt_images').insert(imagesToInsert);
-        }
-      }
-
-      setIsPublished(true);
-    } catch (err: any) {
-      alert("Error publishing: " + (err.message || JSON.stringify(err)));
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const toggleInputNeed = (need: string) => {
-    if (need === 'none') return setInputNeeds(['none']);
-    setInputNeeds(prev => prev.includes('none') ? [need] : prev.includes(need) ? prev.filter(n => n !== need) : [...prev, need]);
-  };
-  const toggleAudience = (aud: string) => setTargetAudience(prev => prev.includes(aud) ? prev.filter(a => a !== aud) : [...prev, aud]);
-  const handleTagAdd = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && tagsInput.trim()) { setTags([...tags, tagsInput.trim()]); setTagsInput(""); } };
 
   const SectionHeader = ({ num, titleStr, desc }: { num: number; titleStr: string; desc: string }) => {
     const isActive = activeSection === num;
