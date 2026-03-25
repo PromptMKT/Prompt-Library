@@ -1,8 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-const PRIMARY_PROFILE_TABLE = "user_profiles";
-const LEGACY_PROFILE_TABLE = "users";
+const PRIMARY_PROFILE_TABLE = "users";
+const LEGACY_PROFILE_TABLE = "user_profiles";
 
 export function sanitizeEmail(email: string): string {
   return email.trim().toLowerCase().replace(/\s+/g, "");
@@ -64,26 +64,14 @@ export async function ensureUserProfile(user: User, fallback?: { role?: string; 
     auth_user_id: user.id,
     email: user.email || "",
     display_name: displayName,
-    role,
-    interests,
+    role: "seller", // Matches your table's existing roles
+    interests: [],
   };
 
   const { error } = await supabase.from(PRIMARY_PROFILE_TABLE).upsert(
-    {
-      ...payload,
-    },
+    payload,
     { onConflict: "auth_user_id" }
   );
-
-  if (error && error.code === "42P01") {
-    const legacy = await supabase.from(LEGACY_PROFILE_TABLE).upsert(
-      {
-        ...payload,
-      },
-      { onConflict: "auth_user_id" }
-    );
-    return { error: legacy.error };
-  }
 
   return { error };
 }

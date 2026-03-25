@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Database, ListTree, Bot, Video } from "lucide-react";
+import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Database, ListTree, Bot, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -27,6 +27,9 @@ type PromptItem = {
   images: string[];
   seller: { username: string; avatar?: string };
   outputType?: string;
+  inputTypes?: string[];
+  inputData?: Record<string, any[]>;
+  promptFileUrls?: string[];
 };
 
 const OUTPUT_TYPES = [
@@ -260,27 +263,34 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
   };
 }
 
-function mapDbPrompt(row: any): PromptItem {
+function mapDbPrompt(row: any, images: any[] = [], steps: any[] = []): PromptItem {
+  // Use the first image from prompt_images if available, otherwise fallback to cover_image_url
+  const allImages = images.length > 0 
+    ? images.map(img => img.image_url) 
+    : (row.cover_image_url ? [row.cover_image_url] : []);
+
+  // Handle both aliased and unaliased versions from Supabase
+  const profile = row.users || row.creator;
+  const platformData = row.platforms || row.platform;
+  const categoryData = row.categories || row.category;
+
   return {
     id: String(row.id),
     title: row.title || "Untitled Prompt",
     tagline: row.tagline || row.short_description || "Ready-to-use prompt",
-    platform: row.platform || "AI",
-    category: row.category || "Prompt",
+    platform: platformData?.name || (typeof platformData === 'string' ? platformData : "AI"),
+    category: categoryData?.name || (typeof categoryData === 'string' ? categoryData : "Prompt"),
     price: Number(row.price || 0),
-    promptText: row.prompt_text || row.promptText || "No preview available.",
-    images: row.images?.length
-      ? row.images
-      : row.screenshots?.length
-        ? row.screenshots
-        : row.cover_image
-          ? [row.cover_image]
-          : [],
+    promptText: row.prompt_text || (steps.length > 0 ? steps[0].content : "No preview available."),
+    images: allImages,
     seller: {
-      username: row.seller || "creator",
-      avatar: row.seller_avatar || "",
+      username: profile?.display_name || profile?.username || "creator",
+      avatar: profile?.avatar_url || "",
     },
-    outputType: row.output_type || row.outputType || undefined,
+    outputType: row.output_type || undefined,
+    inputTypes: row.input_types || [],
+    inputData: row.input_data || {},
+    promptFileUrls: row.prompt_file_urls || [],
   };
 }
 
@@ -294,19 +304,53 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   const [activeTab, setActiveTab] = useState("prompt");
 
   useEffect(() => {
-    const fetchPrompt = async () => {
+    const fetchPromptData = async () => {
       try {
-        const { data } = await supabase
+        console.log("Fetching prompt for ID:", params.id, "Type:", typeof params.id);
+        
+        // 1. Fetch main prompt data WITHOUT joins first to isolate the issue
+        const { data: mainData, error: mainError } = await supabase
           .from("prompts")
-          .select("id, title, tagline, short_description, platform, category, price, prompt_text, images, screenshots, cover_image, seller, seller_avatar")
+          .select("*")
           .eq("id", params.id)
           .maybeSingle();
 
-        if (data) {
-          setPrompt(mapDbPrompt(data));
+        if (mainError) {
+          console.error("Supabase Error [Main]:", {
+            message: mainError.message,
+            code: mainError.code,
+            details: mainError.details,
+            hint: mainError.hint
+          });
+          throw mainError;
+        }
+
+        console.log("Main prompt data fetched:", mainData);
+
+        if (mainData) {
+          // 2. Fetch joins separately to be safer
+          const [userRes, platformRes, categoryRes, imagesRes, stepsRes] = await Promise.all([
+            supabase.from("users").select("*").eq("id", mainData.creator_id).maybeSingle(),
+            supabase.from("platforms").select("*").eq("id", mainData.platform_id).maybeSingle(),
+            supabase.from("categories").select("*").eq("id", mainData.category_id).maybeSingle(),
+            supabase.from("prompt_images").select("*").eq("prompt_id", params.id).order('sort_order'),
+            supabase.from("prompt_steps").select("*").eq("prompt_id", params.id).order('step_number')
+          ]);
+
+          // Combine data
+          const enrichedData = {
+            ...mainData,
+            creator: userRes.data,
+            platforms: platformRes.data,
+            categories: categoryRes.data
+          };
+
+          setPrompt(mapDbPrompt(enrichedData, imagesRes.data || [], stepsRes.data || []));
           return;
         }
 
+        console.warn("No prompt found in database for ID:", params.id);
+        // Fallback for demo IDs or non-existent database entries
         const fallbackPrompt = mapFallbackPrompt(params.id);
         if (fallbackPrompt) {
           setPrompt(fallbackPrompt);
@@ -314,19 +358,16 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
         }
 
         setPrompt(mapDefaultFallbackPrompt(params.id));
-      } catch {
+      } catch (err: any) {
+        console.error("Critical error fetching prompt detail:", err);
         const fallbackPrompt = mapFallbackPrompt(params.id);
-        if (fallbackPrompt) {
-          setPrompt(fallbackPrompt);
-        } else {
-          setPrompt(mapDefaultFallbackPrompt(params.id));
-        }
+        setPrompt(fallbackPrompt || mapDefaultFallbackPrompt(params.id));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPrompt();
+    fetchPromptData();
   }, [params.id]);
 
   if (loading) {
@@ -404,9 +445,70 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
                 transition={{ duration: 0.2 }}
               >
                 {activeTab === "prompt" && (
-                  <div className="space-y-4 mb-10">
-                    <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono mb-3">Prompt Preview</div>
-                    <LogicEngine isPurchased={isPurchased} promptText={prompt.promptText} price={prompt.price} handlePurchase={handlePurchase} />
+                  <div className="space-y-8 mb-10">
+                    <div className="space-y-4">
+                      <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono mb-3">Prompt Preview</div>
+                      <LogicEngine isPurchased={isPurchased} promptText={prompt.promptText} price={prompt.price} handlePurchase={handlePurchase} />
+                    </div>
+
+                    {((prompt.inputTypes && prompt.inputTypes.length > 0) || (prompt.promptFileUrls && prompt.promptFileUrls.length > 0)) && (
+                      <div className="pt-6 border-t border-border/40 space-y-6">
+                        {prompt.inputTypes && prompt.inputTypes.length > 0 && (
+                          <div className="space-y-4">
+                            <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Required Inputs</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {prompt.inputTypes.map((type) => {
+                                const items = prompt.inputData?.[type] || [];
+                                const labelMap: Record<string, string> = {
+                                  text: "Text / Variables", image: "Images", doc: "Documents / PDFs",
+                                  audio: "Audio", url: "URLs", data: "Data (CSV/JSON)", code: "Code / Repos"
+                                };
+                                return (
+                                  <div key={type} className="p-4 bg-muted/30 border border-border/40 rounded-xl space-y-2">
+                                    <div className="text-[12px] font-bold text-foreground">{labelMap[type] || type}</div>
+                                    {items.length > 0 ? (
+                                      <ul className="space-y-1.5">
+                                        {items.map((item: any, idx: number) => (
+                                          <li key={idx} className="text-[11px] text-muted-foreground break-all">
+                                            {typeof item === "string" && item.startsWith("http") ? (
+                                              <a href={item} target="_blank" rel="noreferrer" className="text-primary hover:underline">View File / Link</a>
+                                            ) : (
+                                              <span>• {String(item)}</span>
+                                            )}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <div className="text-[10px] text-muted-foreground">User requested this input type</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {prompt.promptFileUrls && prompt.promptFileUrls.length > 0 && (
+                          <div className="space-y-4">
+                            <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Attached Prompt Files</div>
+                            <div className="flex flex-wrap gap-2">
+                              {prompt.promptFileUrls.map((url, idx) => (
+                                <a 
+                                  key={idx} 
+                                  href={url} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 transition-colors text-[11px] font-bold"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  Prompt File {idx + 1}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
