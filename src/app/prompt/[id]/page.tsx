@@ -12,7 +12,6 @@ import { LogicEngine } from "./components/LogicEngine";
 import { PurchaseSidebar } from "./components/PurchaseSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import exploreData from "@/app/explore/data/explore-data.json";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -225,7 +224,8 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
 }
 
 function mapFallbackPrompt(id: string): PromptItem | null {
-  const fallback = (exploreData as any)?.prompts?.find((p: any) => String(p.id) === id);
+  const fallbackPrompts: any[] = [];
+  const fallback = fallbackPrompts.find((p) => String(p.id) === id);
   if (!fallback) return null;
 
   return {
@@ -252,47 +252,26 @@ function mapFallbackPrompt(id: string): PromptItem | null {
 }
 
 function mapDefaultFallbackPrompt(id: string): PromptItem {
-  const firstPrompt = (exploreData as any)?.prompts?.[0];
-
-  if (!firstPrompt) {
-    return {
-      id,
-      title: "Demo Prompt",
-      tagline: "Ready-to-use prompt",
-      platform: "AI",
-      category: "Prompt",
-      price: 0,
-      promptText: "No preview available.",
-      images: [],
-      seller: {
-        id: "default-none",
-        username: "creator",
-        avatar: "",
-      },
-      outputType: undefined,
-    };
-  }
-
   return {
     id,
-    title: firstPrompt.title || "Demo Prompt",
-    tagline: firstPrompt.short_description || "Ready-to-use prompt",
-    platform: firstPrompt.platform || "AI",
-    category: firstPrompt.category || "Prompt",
-    price: Number(firstPrompt.price || 0),
-    promptText: firstPrompt.promptText || firstPrompt.prompt_text || "No preview available.",
-    images: Array.isArray(firstPrompt.images) ? firstPrompt.images : [],
+    title: "Demo Prompt",
+    tagline: "Ready-to-use prompt",
+    platform: "AI",
+    category: "Prompt",
+    price: 0,
+    promptText: "No preview available.",
+    images: [],
     seller: {
-      id: "default-id",
-      username: firstPrompt.seller || "creator",
+      id: "default-none",
+      username: "creator",
       avatar: "",
     },
-    outputType: firstPrompt.output_type || firstPrompt.outputType || undefined,
-    tags: Array.isArray(firstPrompt.tags) ? firstPrompt.tags : [],
-    complexity: firstPrompt.complexity || firstPrompt.difficulty || "Intermediate",
-    sales: Number(firstPrompt.sales || 0),
-    rating: Number(firstPrompt.rating || 4.9),
-    lastTested: firstPrompt.last_tested || "Recent",
+    outputType: undefined,
+    tags: [],
+    complexity: "Intermediate",
+    sales: 0,
+    rating: 4.9,
+    lastTested: "Recent",
   };
 }
 

@@ -32,6 +32,7 @@ type ExploreFilterSidebarProps = {
   mobileOpen: boolean;
   setMobileOpen: (value: boolean) => void;
   dynamicSections?: { id: string; title: string; options: string[] }[];
+  categorySubcategoryMap?: Record<string, string[]>;
 };
 
 type SidebarBodyProps = Omit<ExploreFilterSidebarProps, "mobileOpen" | "setMobileOpen"> & {
@@ -81,6 +82,7 @@ function SidebarBody({
   setPriceRange,
   isMobile = false,
   dynamicSections = [],
+  categorySubcategoryMap = {},
 }: SidebarBodyProps) {
   const sections = useMemo(() => {
     if (dynamicSections && dynamicSections.length > 0) return dynamicSections;
@@ -97,26 +99,71 @@ function SidebarBody({
 
   return (
     <div className={cn("space-y-1 pr-1 pb-0", isMobile && "overflow-y-auto max-h-[calc(100vh-15rem)]")}>
-      {sections.map((section: any) => (
-        <FilterDropdown
-          key={section.id}
-          title={titleMap[section.id] || section.title}
-          isOpen={Boolean(openSections[section.id])}
-          onToggle={() => toggleSection(section.id)}
-        >
-          <div className="space-y-0.5">
-            {(section.options || []).map((option: any) => (
-              <OptionRow
-                key={option}
-                checked={selectedFilters[section.id]?.includes(option) ?? false}
-                label={option}
-                count={optionCounts[`${section.id}:${option}`]}
-                onToggle={() => toggleFilterOption(section.id, option)}
-              />
-            ))}
-          </div>
-        </FilterDropdown>
-      ))}
+      {sections.map((section: any) => {
+        if (section.id === "category") {
+          return (
+            <FilterDropdown
+              key={section.id}
+              title={titleMap[section.id] || section.title}
+              isOpen={Boolean(openSections[section.id])}
+              onToggle={() => toggleSection(section.id)}
+            >
+              <div className="space-y-0.5">
+                {(section.options || []).map((option: string) => {
+                  const isCategoryChecked = selectedFilters.category?.includes(option) ?? false;
+                  const subcategories = categorySubcategoryMap[option] || [];
+
+                  return (
+                    <div key={option} className="space-y-1">
+                      <OptionRow
+                        checked={isCategoryChecked}
+                        label={option}
+                        count={optionCounts[`category:${option}`]}
+                        onToggle={() => toggleFilterOption("category", option)}
+                      />
+
+                      {isCategoryChecked && subcategories.length > 0 ? (
+                        <div className="ml-6 space-y-0.5 border-l border-border/60 pl-3">
+                          {subcategories.map((subcategory) => (
+                            <OptionRow
+                              key={`${option}:${subcategory}`}
+                              checked={selectedFilters.subcategory?.includes(subcategory) ?? false}
+                              label={subcategory}
+                              count={optionCounts[`subcategory:${subcategory}`]}
+                              onToggle={() => toggleFilterOption("subcategory", subcategory)}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </FilterDropdown>
+          );
+        }
+
+        return (
+          <FilterDropdown
+            key={section.id}
+            title={titleMap[section.id] || section.title}
+            isOpen={Boolean(openSections[section.id])}
+            onToggle={() => toggleSection(section.id)}
+          >
+            <div className="space-y-0.5">
+              {(section.options || []).map((option: any) => (
+                <OptionRow
+                  key={option}
+                  checked={selectedFilters[section.id]?.includes(option) ?? false}
+                  label={option}
+                  count={optionCounts[`${section.id}:${option}`]}
+                  onToggle={() => toggleFilterOption(section.id, option)}
+                />
+              ))}
+            </div>
+          </FilterDropdown>
+        );
+      })}
 
       <FilterDropdown
         title="Pricing"

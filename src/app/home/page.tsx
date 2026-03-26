@@ -433,36 +433,76 @@ export default function HomePage() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [promptsRes, catsRes] = await Promise.all([
+        const [joinedPromptsRes, catsRes] = await Promise.all([
           supabase
             .from('prompts')
             .select(`
-              id, title, price, average_rating, purchases_count, cover_image_url,
-              creator:users!prompts_creator_id_fkey(display_name, username),
-              platform:platforms!prompts_platform_id_fkey(name)
+              id,
+              title,
+              price,
+              average_rating,
+              purchases_count,
+              cover_image_url,
+              creator_id,
+              platform_id,
+              users(display_name, username),
+              platforms(name)
             `)
             .eq('is_published', true)
             .order('purchases_count', { ascending: false })
             .limit(10),
           supabase.from('categories').select('*').limit(5)
         ]);
-        
-        if (promptsRes.error) {
-          console.error("Supabase prompts query error (home):", promptsRes.error);
+
+        let promptRows: any[] = [];
+
+        if (joinedPromptsRes.error) {
+          const plainPromptsRes = await supabase
+            .from('prompts')
+            .select('id, title, price, average_rating, purchases_count, cover_image_url, creator_id, platform_id')
+            .eq('is_published', true)
+            .order('purchases_count', { ascending: false })
+            .limit(10);
+
+          if (plainPromptsRes.error) {
+            promptRows = [];
+          } else {
+            const [usersRes, platformsRes] = await Promise.all([
+              supabase.from('users').select('id, auth_user_id, display_name, username'),
+              supabase.from('platforms').select('id, name'),
+            ]);
+
+            const userMap = new Map<string, { display_name?: string; username?: string }>();
+            for (const row of usersRes.data || []) {
+              const payload = { display_name: row.display_name || undefined, username: row.username || undefined };
+              userMap.set(String(row.id), payload);
+              if (row.auth_user_id) userMap.set(String(row.auth_user_id), payload);
+            }
+
+            const platformMap = new Map<string, string>();
+            for (const row of platformsRes.data || []) {
+              platformMap.set(String(row.id), row.name || String(row.id));
+            }
+
+            promptRows = (plainPromptsRes.data || []).map((p: any) => ({
+              ...p,
+              users: userMap.get(String(p.creator_id)) || null,
+              platforms: { name: platformMap.get(String(p.platform_id)) || String(p.platform_id || 'AI') },
+            }));
+          }
+        } else {
+          promptRows = joinedPromptsRes.data || [];
         }
-        if (catsRes.error) {
-          console.error("Supabase categories query error (home):", catsRes.error);
-        }
-        
-        if (promptsRes.data) {
-          setDbPrompts(promptsRes.data.map(p => ({
+
+        if (promptRows.length > 0) {
+          setDbPrompts(promptRows.map(p => ({
             id: p.id,
             title: p.title,
             price: p.price,
             rating: p.average_rating || 4.8,
             sales: p.purchases_count || 0,
-            author: (p.creator as any)?.display_name || (p.creator as any)?.username || "Creator",
-            platform: (p.platform as any)?.name || "AI",
+            author: (p.users as any)?.display_name || (p.users as any)?.username || "Creator",
+            platform: (p.platforms as any)?.name || "AI",
             image: p.cover_image_url
           })));
         }

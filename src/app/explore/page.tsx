@@ -18,8 +18,6 @@ import {
   PLATFORM_SECTION,
   TARGET_AUDIENCE_SECTION,
 } from "./components/filter-config";
-import exploreData from "./data/explore-data.json";
-
 type PromptRecord = {
   id: string;
   title: string;
@@ -32,6 +30,7 @@ type PromptRecord = {
   price?: number;
   platform?: string;
   category?: string;
+  subcategory?: string;
   promptText?: string;
   prompt_text?: string;
   output_type?: string;
@@ -43,7 +42,6 @@ type PromptRecord = {
 };
 
 type ExploreDataset = {
-  website: { name: string; idea: string; tagline: string };
   topCreators: { name: string; prompts: number; sales: number; score: number }[];
   trendingTags: string[];
   prompts: PromptRecord[];
@@ -52,7 +50,11 @@ type ExploreDataset = {
 type FilterSelections = Record<string, string[]>;
 type OpenSections = Record<string, boolean>;
 
-const FALLBACK_DATA = exploreData as ExploreDataset;
+const EMPTY_DATASET: ExploreDataset = {
+  topCreators: [],
+  trendingTags: ["All"],
+  prompts: [],
+};
 
 const PLATFORM_SECTION_IDS = new Set([
   "platform",
@@ -103,6 +105,7 @@ function getPromptText(prompt: PromptRecord): string {
       prompt.promptText,
       prompt.platform,
       prompt.category,
+      prompt.subcategory,
       prompt.output_type,
       prompt.difficulty,
       ...(prompt.tags || []),
@@ -136,7 +139,13 @@ function matchesOption(sectionId: string, option: string, prompt: PromptRecord, 
 
   if (sectionId === "outputFormat") {
     const words = OUTPUT_KEYWORDS[option] || [];
-    return words.some((word) => promptText.includes(word));
+    if (words.length > 0) return words.some((word) => promptText.includes(word));
+    return outputType.includes(value) || promptText.includes(value);
+  }
+
+  if (sectionId === "subcategory") {
+    const subcategory = normalize(prompt.subcategory || "");
+    return subcategory === value || promptText.includes(value);
   }
 
   return promptText.includes(value);
@@ -189,7 +198,7 @@ function ExploreContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
 
-  const [dataset, setDataset] = useState<ExploreDataset>(FALLBACK_DATA);
+  const [dataset, setDataset] = useState<ExploreDataset>(EMPTY_DATASET);
 
   const [selectedFilters, setSelectedFilters] = useState<FilterSelections>({});
   const [openSections, setOpenSections] = useState<OpenSections>({
@@ -200,7 +209,7 @@ function ExploreContent() {
     priceRange: false,
   });
 
-  const [priceRange, setPriceRange] = useState<[number, number]>([10, 500]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [minRating, setMinRating] = useState<number | null>(null);
   const [complexity, setComplexity] = useState("All");
   const [activeTab, setActiveTab] = useState<(typeof AUDIENCE_TABS)[number]>("All prompts");
@@ -214,38 +223,101 @@ function ExploreContent() {
   useEffect(() => {
     const loadPrompts = async () => {
       try {
-        const { data } = await supabase
+        const baseSelect = `
+          id,
+          title,
+          description,
+          price,
+          cover_image_url,
+          purchases_count,
+          average_rating,
+          created_at,
+          platform_id,
+          category_id,
+          subcategory_id,
+          creator_id
+        `;
+
+        const joinedQuery = await supabase
           .from("prompts")
           .select(`
-            id, 
-            title, 
-            description, 
-            price, 
-            cover_image_url, 
-            purchases_count, 
-            average_rating, 
-            created_at,
-            platforms!prompts_platform_id_fkey(name),
-            categories!prompts_category_id_fkey(name),
-            users!prompts_creator_id_fkey(display_name, username)
+            ${baseSelect},
+            platforms(name),
+            categories(name),
+            subcategories(name),
+            users(display_name, username)
           `)
           .order("created_at", { ascending: false })
           .limit(400);
 
-        if (!data || data.length === 0) return;
+        let rows: any[] = [];
 
-        const mappedPrompts: PromptRecord[] = data.map((row: any) => ({
+        if (joinedQuery.error) {
+          const plainQuery = await supabase
+            .from("prompts")
+            .select(baseSelect)
+            .order("created_at", { ascending: false })
+            .limit(400);
+
+          if (plainQuery.error) throw plainQuery.error;
+
+          const [platformsRes, categoriesRes, subcategoriesRes, usersRes] = await Promise.all([
+            supabase.from("platforms").select("id, name"),
+            supabase.from("categories").select("id, name"),
+            supabase.from("subcategories").select("id, name"),
+            supabase.from("users").select("id, auth_user_id, display_name, username"),
+          ]);
+
+          const platformMap = new Map<string, string>();
+          for (const row of platformsRes.data || []) platformMap.set(String(row.id), row.name || String(row.id));
+
+          const categoryMap = new Map<string, string>();
+          for (const row of categoriesRes.data || []) categoryMap.set(String(row.id), row.name || String(row.id));
+
+          const subcategoryMap = new Map<string, string>();
+          for (const row of subcategoriesRes.data || []) subcategoryMap.set(String(row.id), row.name || String(row.id));
+
+          const userMap = new Map<string, { display_name?: string; username?: string }>();
+          for (const row of usersRes.data || []) {
+            const payload = { display_name: row.display_name || undefined, username: row.username || undefined };
+            userMap.set(String(row.id), payload);
+            if (row.auth_user_id) userMap.set(String(row.auth_user_id), payload);
+          }
+
+          rows = (plainQuery.data || []).map((row: any) => ({
+            ...row,
+            platforms: { name: platformMap.get(String(row.platform_id)) || String(row.platform_id || "AI") },
+            categories: { name: categoryMap.get(String(row.category_id)) || String(row.category_id || "Prompt") },
+            subcategories: row.subcategory_id
+              ? { name: subcategoryMap.get(String(row.subcategory_id)) || String(row.subcategory_id) }
+              : null,
+            users: userMap.get(String(row.creator_id)) || null,
+          }));
+        } else {
+          rows = joinedQuery.data || [];
+        }
+
+        if (!rows || rows.length === 0) {
+          setDataset(EMPTY_DATASET);
+          return;
+        }
+
+        const mappedPrompts: PromptRecord[] = rows.map((row: any) => ({
           id: String(row.id),
           title: row.title || "Untitled Prompt",
           short_description: row.description || "Prompt system that ships outcomes.",
           images: row.cover_image_url ? [row.cover_image_url] : [],
           rating: Number(row.average_rating || 4.8),
           sales: Number(row.purchases_count || 0),
-          tags: [], // Using empty tags as they are not defined in the new prompts schema yet
+          tags: [],
           seller: row.users?.display_name || row.users?.username || "Creator",
           price: Number(row.price || 0),
-          platform: row.platforms?.name || "AI",
-          category: row.categories?.name || "Prompt",
+          platform: row.platforms?.name || String(row.platform_id || "AI"),
+          category: row.categories?.name || String(row.category_id || "Prompt"),
+          subcategory: row.subcategories?.name || (row.subcategory_id ? String(row.subcategory_id) : undefined),
+          output_type: undefined,
+          difficulty: undefined,
+          prompt_text: undefined,
           createdAt: row.created_at,
         }));
 
@@ -268,22 +340,20 @@ function ExploreContent() {
           .sort((a, b) => b.score - a.score)
           .slice(0, 6);
 
-        const trendingTags = Array.from(
-          new Set(mappedPrompts.flatMap((prompt) => prompt.tags || []))
-        ).slice(0, 12);
+        const trendingTags = Array.from(new Set(
+          mappedPrompts
+            .flatMap((prompt) => [prompt.category, prompt.subcategory, prompt.platform].filter(Boolean) as string[])
+            .map((value) => value.trim())
+            .filter(Boolean)
+        )).slice(0, 12);
 
         setDataset({
-          website: {
-            name: "PromptVault",
-            idea: "Prompt marketplace",
-            tagline: "Prompt systems that ship outcomes, not guesses.",
-          },
-          topCreators: topCreators.length > 0 ? topCreators : FALLBACK_DATA.topCreators,
-          trendingTags: ["All", ...(trendingTags.length > 0 ? trendingTags : FALLBACK_DATA.trendingTags)],
+          topCreators,
+          trendingTags: ["All", ...trendingTags],
           prompts: mappedPrompts,
         });
       } catch {
-        // Keep fallback explore dataset when database query is unavailable.
+        setDataset(EMPTY_DATASET);
       }
     };
 
@@ -305,13 +375,47 @@ function ExploreContent() {
     return tags.length > 0 ? tags : ["All"];
   }, [dataset]);
 
-  const optionCounts = useMemo(() => {
-    const sections = [
-      PLATFORM_SECTION,
-      CATEGORY_SECTION,
+  const dynamicSections = useMemo(() => {
+    const uniquePlatforms = Array.from(new Set(prompts.map((prompt) => prompt.platform).filter(Boolean) as string[]));
+    const uniqueCategories = Array.from(new Set(prompts.map((prompt) => prompt.category).filter(Boolean) as string[]));
+    const uniqueOutputTypes = Array.from(new Set(prompts.map((prompt) => prompt.output_type).filter(Boolean) as string[]));
+
+    return [
+      {
+        ...PLATFORM_SECTION,
+        options: uniquePlatforms.length > 0 ? uniquePlatforms : PLATFORM_SECTION.options,
+      },
+      {
+        ...CATEGORY_SECTION,
+        options: uniqueCategories.length > 0 ? uniqueCategories : CATEGORY_SECTION.options,
+      },
+      {
+        ...OUTPUT_FORMAT_SECTION,
+        options: uniqueOutputTypes.length > 0 ? uniqueOutputTypes : OUTPUT_FORMAT_SECTION.options,
+      },
       TARGET_AUDIENCE_SECTION,
-      OUTPUT_FORMAT_SECTION,
     ];
+  }, [prompts]);
+
+  const categorySubcategoryMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const prompt of prompts) {
+      const category = (prompt.category || "").trim();
+      const subcategory = (prompt.subcategory || "").trim();
+      if (!category || !subcategory) continue;
+      if (!map[category]) map[category] = [];
+      if (!map[category].includes(subcategory)) {
+        map[category].push(subcategory);
+      }
+    }
+    Object.keys(map).forEach((category) => {
+      map[category] = map[category].sort((a, b) => a.localeCompare(b));
+    });
+    return map;
+  }, [prompts]);
+
+  const optionCounts = useMemo(() => {
+    const sections = dynamicSections;
 
     const counts: Record<string, number> = {};
 
@@ -325,8 +429,16 @@ function ExploreContent() {
       }
     }
 
+    const selectedCategories = selectedFilters.category || [];
+    const subcategoryOptions = selectedCategories.flatMap((category) => categorySubcategoryMap[category] || []);
+    for (const subcategory of subcategoryOptions) {
+      const subcategoryValue = normalize(subcategory);
+      const count = prompts.filter((prompt) => normalize(prompt.subcategory || "") === subcategoryValue).length;
+      counts[`subcategory:${subcategory}`] = count;
+    }
+
     return counts;
-  }, [prompts, promptTexts]);
+  }, [prompts, promptTexts, dynamicSections, selectedFilters.category, categorySubcategoryMap]);
 
   const filteredPrompts = useMemo(() => {
     return prompts
@@ -344,7 +456,7 @@ function ExploreContent() {
           if (!difficulty.includes(target)) return false;
         }
 
-        for (const sectionId of ["platform", "category", "targetAudience", "outputFormat"]) {
+        for (const sectionId of ["platform", "category", "targetAudience", "outputFormat", "subcategory"]) {
           const options = selectedFilters[sectionId] || [];
           if (options.length === 0) continue;
           const sectionMatch = options.some((option) => matchesOption(sectionId, option, prompt, text));
@@ -428,9 +540,18 @@ function ExploreContent() {
     setSelectedFilters((prev) => {
       const current = prev[sectionId] || [];
       const next = current.includes(option) ? current.filter((item) => item !== option) : [...current, option];
+      let nextSubcategories = prev.subcategory || [];
+
+      if (sectionId === "category") {
+        const activeCategories = next;
+        const allowed = new Set(activeCategories.flatMap((category) => categorySubcategoryMap[category] || []));
+        nextSubcategories = nextSubcategories.filter((subcategory) => allowed.has(subcategory));
+      }
+
       return {
         ...prev,
         [sectionId]: next,
+        subcategory: nextSubcategories,
       };
     });
     setVisibleCount(16);
@@ -445,7 +566,7 @@ function ExploreContent() {
 
   const clearAll = () => {
     setSelectedFilters({});
-    setPriceRange([10, 500]);
+    setPriceRange([0, 500]);
     setMinRating(null);
     setComplexity("All");
     setActiveTrend("All");
@@ -628,6 +749,8 @@ function ExploreContent() {
           clearAll={clearAll}
           mobileOpen={mobileFiltersOpen}
           setMobileOpen={setMobileFiltersOpen}
+          dynamicSections={dynamicSections}
+          categorySubcategoryMap={categorySubcategoryMap}
         />
 
         <section className="space-y-7 min-w-0">
