@@ -4,38 +4,46 @@ import { User, Bell, Shield, Wallet, CircleCheck, ChevronRight } from "lucide-re
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const settingsSections = [
-  {
-    title: "Account Settings",
-    icon: User,
-    description: "Manage your profile information and account details.",
-    items: [
-      { label: "Profile Information", value: "Priya Nair" },
-      { label: "Email Address", value: "priya@example.com" },
-      { label: "Phone Number", value: "+91 ••••••••89" },
-    ]
-  },
-  {
-    title: "Notifications",
-    icon: Bell,
-    description: "Control how you receive updates and alerts.",
-    items: [
-      { label: "Email Notifications", toggle: true, checked: true },
-      { label: "Browser Notifications", toggle: true, checked: false },
-    ]
-  },
-  {
-    title: "Security",
-    icon: Shield,
-    description: "Keep your account secure with extra protection.",
-    items: [
-      { label: "Password", value: "Last changed 3 months ago" },
-      { label: "Two-Factor Auth", value: "Disabled" },
-    ]
-  }
-];
+import { useAuth } from "@/components/AuthProvider";
 
 export default function SettingsPage() {
+  const { user, profile, loading } = useAuth();
+
+  const settingsSections = [
+    {
+      title: "Account Settings",
+      icon: User,
+      description: "Manage your profile information and account details.",
+      items: [
+        { label: "Profile Information", value: profile?.display_name || user?.email?.split('@')[0] || "User" },
+        { label: "Email Address", value: user?.email || "Not provided" },
+        { label: "Phone Number", value: "Not provided" },
+      ]
+    },
+    {
+      title: "Notifications",
+      icon: Bell,
+      description: "Control how you receive updates and alerts.",
+      items: [
+        { label: "Email Notifications", toggle: true, checked: true },
+        { label: "Browser Notifications", toggle: true, checked: false },
+      ]
+    },
+    {
+      title: "Security",
+      icon: Shield,
+      description: "Keep your account secure with extra protection.",
+      items: [
+        { label: "Password", value: "Last changed recently" },
+        { label: "Two-Factor Auth", value: "Disabled" },
+      ]
+    }
+  ];
+
+  if (loading) {
+    return <div className="max-w-[1000px] mx-auto p-6 md:p-10 text-center animate-pulse text-muted-foreground">Loading settings...</div>;
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto p-6 md:p-10 space-y-10">
       <header className="space-y-2">

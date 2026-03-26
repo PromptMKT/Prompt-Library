@@ -20,6 +20,7 @@ export type UserProfile = {
   interests?: string[] | null;
   created_at?: string;
   updated_at?: string;
+  coins?: number;
 };
 
 type AuthContextValue = {

@@ -44,6 +44,15 @@ export default function RegisterPage() {
     return () => window.clearInterval(timer);
   }, [retryAfterSec]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("step") === "2") {
+        setStep(2);
+      }
+    }
+  }, []);
+
   const pathOptions = [
     { id: "creator", label: "Content Creator", sub: "Influencers, writers, creators", icon: Sparkles },
     { id: "designer", label: "Designer", sub: "UI/UX, 3D, brand artists", icon: Palette },
@@ -142,21 +151,43 @@ export default function RegisterPage() {
       }
 
       setCheckingAvailability(true);
-      const [emailCheck, userCheck] = await Promise.all([
-        isRegisteredEmail(email),
-        isRegisteredUsername(username)
-      ]);
-      setCheckingAvailability(false);
+      // We check username first
+      const userCheck = await isRegisteredUsername(username);
 
-      if (emailCheck.exists) {
-        setEmailError(duplicateEmailMessage);
-        return;
-      }
-      
       if (userCheck.exists) {
+        setCheckingAvailability(false);
         setUsernameError("This username is already taken. Please try another one.");
         return;
       }
+
+      // Attempt to sign up immediately to catch "Email already registered" errors on Step 1
+      const cleanEmail = sanitizeEmail(email);
+      const finalPassword = await pepperPassword(password);
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: finalPassword,
+        options: {
+          data: {
+            username: username.trim().toLowerCase(),
+            display_name: displayName,
+          },
+        },
+      });
+
+      setCheckingAvailability(false);
+
+      if (signUpError) {
+        const authMessage = toAuthMessage(signUpError.message || "", "signup");
+        if (authMessage === duplicateEmailMessage) {
+          setEmailError(authMessage);
+        } else {
+          setError(authMessage);
+        }
+        return;
+      }
+      
+      // Successfully signed up or email confirmation sent. Move to step 2.
     } else {
       const validationError = validateStep(step);
       if (validationError) {
@@ -176,18 +207,6 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!validateStepOneWithInlineErrors()) {
-      setStep(1);
-      return;
-    }
-
-    const stepTwoError = validateStep(2);
-    if (stepTwoError) {
-      setError(stepTwoError);
-      setStep(2);
-      return;
-    }
-
     const stepThreeError = validateStep(3);
     if (stepThreeError) {
       setError(stepThreeError);
@@ -195,59 +214,34 @@ export default function RegisterPage() {
       return;
     }
 
-    const cleanEmail = sanitizeEmail(email);
-
     setSubmitting(true);
     setError(null);
     setInfo(null);
 
-    const finalPassword = await pepperPassword(password);
+    // The user was already created in Step 1.
+    // Now we update their metadata with the final choices and ensure the profile is synced.
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password: finalPassword,
-      options: {
+    if (user) {
+      // Update the auth user's metadata to include the new role and interests
+      await supabase.auth.updateUser({
         data: {
           role,
           interests,
-          username: username.trim().toLowerCase(),
-          display_name: displayName,
-        },
-      },
-    });
+        }
+      });
 
-    if (signUpError) {
-      const authMessage = toAuthMessage(signUpError.message || "", "signup");
-      if (authMessage === duplicateEmailMessage) {
-        setEmailError(authMessage);
-        setStep(1);
-        setError(null);
-        setSubmitting(false);
-        return;
-      }
-      if (authMessage.toLowerCase().includes("too many attempts")) {
-        setRetryAfterSec(60);
-      }
-      setError(authMessage);
-      setSubmitting(false);
-      return;
-    }
-
-    if (data.user && data.session) {
-      await ensureUserProfile(data.user, {
+      await ensureUserProfile(user, {
         role,
         interests,
         displayName,
       });
-    }
 
-    if (data.session && data.user) {
       router.push("/register/welcome");
-      return;
+    } else {
+      setInfo("Account created. Please sign in to continue.");
+      router.push("/sign-in?registered=1");
     }
-
-    setInfo("Account created. Please sign in to continue.");
-    router.push("/sign-in?registered=1");
   };
 
   return (
@@ -257,7 +251,7 @@ export default function RegisterPage() {
           <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
           <div className="relative z-10 space-y-8">
-            <Link href="/home" className="inline-flex items-center gap-3">
+            <Link href="/" className="inline-flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-900/30">
                 <Sparkles className="w-4 h-4" />
               </span>
@@ -329,7 +323,7 @@ export default function RegisterPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        const { error } = await signInWithGoogle();
+                        const { error } = await signInWithGoogle("/register?step=2");
                         if (error) setError(error.message);
                       }}
                       className="h-14 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
@@ -341,7 +335,7 @@ export default function RegisterPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        const { error } = await signInWithGithub();
+                        const { error } = await signInWithGithub("/register?step=2");
                         if (error) setError(error.message);
                       }}
                       className="h-14 rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-all flex items-center justify-center gap-2"

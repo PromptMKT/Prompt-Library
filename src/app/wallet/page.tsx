@@ -8,29 +8,23 @@ import { TransactionHistory } from "./components/TransactionHistory";
 import { WalletSidebar } from "./components/WalletSidebar";
 import { UserSidebar } from "./components/UserSidebar";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function WalletPage() {
-  const [balance, setBalance] = useState<number>(1000); // Updated to match screenshot demo
+  const { profile } = useAuth();
+  const [balance, setBalance] = useState<number>(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    fetchBalance();
-  }, []);
-
-  const fetchBalance = async () => {
-    try {
-      const res = await fetch("/api/user/profile");
-      if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data.coins === "number") {
-          setBalance(data.coins);
-        }
-      }
-    } catch (e: any) {
-      console.error("Failed to fetch balance:", e.message);
+    const profileCoins = (profile as any)?.coins;
+    
+    if (profileCoins !== undefined) {
+      setBalance(profileCoins);
+    } else {
+      setBalance(1000); // Fallback dummy data if no profile or coins
     }
-  };
+  }, [profile]);
 
   const handlePurchase = async (pkg: any) => {
     toast.loading(`Initializing purchase for ${pkg.coins} coins...`);

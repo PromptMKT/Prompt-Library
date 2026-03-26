@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet, MessageCircle, CircleDashed } from "lucide-react";
+import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 const promptRows = [
   { prompt: "Cold Email Framework", platform: "ChatGPT", status: "Live", sales: "489", revenue: "14,670", rating: "4.9" },
@@ -50,6 +53,9 @@ const sidebarLinks = [
 ];
 
 export default function DashboardPage() {
+  const { user, profile } = useAuth();
+  const firstName = profile?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || "Creator";
+
   return (
     <div className="bg-background min-h-dvh w-full font-sans text-slate-900 dark:text-foreground">
       <div className="w-full">
@@ -57,7 +63,9 @@ export default function DashboardPage() {
 
           <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-foreground">Good morning, Priya</h1>
+              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-foreground">
+                Good morning, {firstName}
+              </h1>
               <p className="text-muted-foreground mt-1">Here&apos;s how your prompts are performing</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -337,9 +345,9 @@ export default function DashboardPage() {
               <div className="rounded-xl bg-secondary/60 border border-border p-4">
                 <p className="font-bold text-foreground mb-2">Earnings</p>
                 <ul className="space-y-2 text-card-foreground">
-                  <li className="inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-primary" /> Cold Email sale +027</li>
-                  <li className="inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-primary" /> LinkedIn sale +020</li>
-                  <li className="inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-primary" /> Escrow released +081</li>
+                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> Cold Email sale +027</li>
+                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> LinkedIn sale +020</li>
+                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> Escrow released +081</li>
                 </ul>
               </div>
             </div>

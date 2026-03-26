@@ -17,7 +17,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: User, label: "Profile", href: "/u" },
+  { icon: User, label: "Profile", href: "/u/profile" },
   { icon: Heart, label: "Wishlist", href: "/wishlist" },
   { icon: Upload, label: "Upload", href: "/upload" },
   { icon: Wallet, label: "Wallet", href: "/wallet" },

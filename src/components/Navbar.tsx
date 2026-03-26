@@ -61,7 +61,7 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     await signOut();
-    router.push("/home");
+    router.push("/");
   };
 
   const uploadHref = isAuthenticated ? "/upload" : "/sign-in?next=%2Fupload";
@@ -131,7 +131,7 @@ export const Navbar = () => {
 
             {isAuthenticated ? (
               <Link href="/wallet" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 text-xs font-black text-foreground hover:border-primary/50 hover:text-primary transition-colors">
-                <span>0 PV</span>
+                <span>{profile?.coins || 0} PV</span>
               </Link>
             ) : null}
 
@@ -254,7 +254,7 @@ export const Navbar = () => {
                 <>
                   <Link href="/wallet" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full h-12 rounded-xl border-border/60 font-black uppercase tracking-wide">
-                      0 PV Wallet
+                      {profile?.coins || 0} PV Wallet
                     </Button>
                   </Link>
                   <Button

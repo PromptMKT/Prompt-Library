@@ -22,7 +22,7 @@ function SignInContent() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      const next = searchParams.get("next") || "/home";
+      const next = searchParams.get("next") || "/";
       router.replace(next);
     }
   }, [loading, isAuthenticated, router, searchParams]);
@@ -67,7 +67,7 @@ function SignInContent() {
       await ensureUserProfile(data.user);
     }
 
-    const next = searchParams.get("next") || "/home";
+    const next = searchParams.get("next") || "/";
     router.replace(next);
   };
 
@@ -79,7 +79,7 @@ function SignInContent() {
           <div className="absolute bottom-0 left-0 w-125 h-125 bg-indigo-600/10 rounded-full blur-[100px] -ml-64 -mb-64 pointer-events-none" />
 
           <div className="relative z-10 space-y-8">
-            <Link href="/home" className="inline-flex items-center gap-3">
+            <Link href="/" className="inline-flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-900/30">
                 <Sparkles className="w-4 h-4" />
               </span>

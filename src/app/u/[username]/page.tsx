@@ -28,6 +28,8 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
   const [isFollowing, setIsFollowing] = useState(false);
   
   useEffect(() => {
+    if (authLoading) return;
+
     const fetchUserAndPrompts = async () => {
       try {
         setLoading(true);
@@ -40,8 +42,19 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         if (userError) throw userError;
 
         let userData = targetUser;
-        if (!userData && profile && profile.username === params.username) {
-          userData = profile as any;
+        
+        // Use profile if available, or fallback to authUser for "me"/"profile"
+        if (!userData && (params.username === "profile" || params.username === "me")) {
+          if (profile) {
+            userData = profile as any;
+          } else if (authUser) {
+            userData = {
+              id: authUser.id,
+              auth_user_id: authUser.id,
+              email: authUser.email,
+              display_name: authUser.email?.split('@')[0] || "User",
+            } as any;
+          }
         }
 
         if (!userData) {
@@ -50,20 +63,21 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         }
 
         setUser({
-          id: userData.id,
-          username: userData.username,
-          name: userData.display_name || userData.username,
+          id: userData.id || userData.auth_user_id,
+          auth_user_id: userData.auth_user_id,
+          username: userData.username || params.username,
+          name: userData.display_name || userData.name || userData.email || "User",
           email: userData.email,
           avatar: userData.avatar_url,
-          bio: userData.bio || (userData.role === "buyer" ? "I love exploring and purchasing elite AI prompts." : "AI prompt engineer."),
-          coins: 240,
-          followers: 1204,
-          following: 89,
-          verified: userData.is_verified || false,
+          bio: userData.bio || "I love exploring and purchasing elite AI prompts.",
           location: userData.location || "Global",
-          website: "vault.io",
-          avgRating: userData.average_rating || 4.9,
-          memberSince: userData.created_at ? new Date(userData.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : "Jan 2026"
+          website: userData.website || "vault.io",
+          coins: userData.coins || 0,
+          followers: userData.followers || 0,
+          following: userData.following || 0,
+          verified: userData.is_verified || false,
+          avgRating: userData.average_rating || 5.0,
+          memberSince: userData.created_at ? new Date(userData.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : "Just now"
         });
 
         const { data: promptsData, error: promptsError } = await supabase
@@ -163,6 +177,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         isFollowing={isFollowing} 
         onFollow={toggleFollow} 
         onCopyLink={copyLink} 
+        isOwner={profile?.username === user.username || authUser?.id === user.auth_user_id}
       />
 
       <ProfileStats onTabChange={setActiveTab} />

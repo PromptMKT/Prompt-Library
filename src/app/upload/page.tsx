@@ -104,6 +104,7 @@ const TAXONOMY_DATA = [
   }
 ];
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function PromptUploadPage() {
   const { user, profile } = useAuth();
@@ -543,7 +544,15 @@ export default function PromptUploadPage() {
                                         accept={config.accept}
                                         onChange={(e) => {
                                           if (e.target.files) {
-                                            Array.from(e.target.files).forEach(file => handleInputDataItemAdd(id, file));
+                                            const validFiles: File[] = [];
+                                            Array.from(e.target.files).forEach(file => {
+                                              if (file.size > MAX_FILE_SIZE) {
+                                                toast.error(`File ${file.name} exceeds the 7MB limit.`);
+                                              } else {
+                                                validFiles.push(file);
+                                              }
+                                            });
+                                            validFiles.forEach(file => handleInputDataItemAdd(id, file));
                                           }
                                         }}
                                       />
@@ -648,7 +657,15 @@ export default function PromptUploadPage() {
                             accept=".md,.json,.txt" 
                             onChange={(e) => {
                               if (e.target.files) {
-                                setPromptFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                                const validFiles: File[] = [];
+                                Array.from(e.target.files!).forEach((file: File) => {
+                                  if (file.size > MAX_FILE_SIZE) {
+                                    toast.error(`File ${file.name} exceeds the 7MB limit.`);
+                                  } else {
+                                    validFiles.push(file);
+                                  }
+                                });
+                                setPromptFiles(prev => [...prev, ...validFiles]);
                               }
                             }}
                           />
@@ -828,8 +845,13 @@ export default function PromptUploadPage() {
                         <label className="text-[11px] font-black uppercase text-slate-500 mb-2 block">Cover Image (Live Preview)</label>
                         <input type="file" accept="image/*" className="hidden" id="coverUpload" onChange={(e) => {
                            if(e.target.files && e.target.files[0]) {
-                             setCoverFile(e.target.files[0]);
-                             setImagePreview(URL.createObjectURL(e.target.files[0]));
+                             const file = e.target.files[0];
+                             if (file.size > MAX_FILE_SIZE) {
+                               toast.error("Cover image exceeds the 7MB limit.");
+                               return;
+                             }
+                             setCoverFile(file);
+                             setImagePreview(URL.createObjectURL(file));
                            }
                         }} />
                         <label htmlFor="coverUpload" className="w-full h-32 border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
@@ -1024,7 +1046,14 @@ export default function PromptUploadPage() {
                       
                       <input type="file" multiple accept="image/*,video/*" className="hidden" id="screenshotUpload" onChange={(e) => {
                         if(e.target.files) {
-                          const newFiles = Array.from(e.target.files);
+                          const newFiles: File[] = [];
+                          Array.from(e.target.files).forEach((file: File) => {
+                            if (file.size > MAX_FILE_SIZE) {
+                              toast.error(`Screenshot ${file.name} exceeds the 7MB limit.`);
+                            } else {
+                              newFiles.push(file);
+                            }
+                          });
                           setScreenshotFiles(prev => [...prev, ...newFiles]);
                           const newUrls = newFiles.map(f => URL.createObjectURL(f));
                           setScreenshots(prev => [...prev, ...newUrls]);
