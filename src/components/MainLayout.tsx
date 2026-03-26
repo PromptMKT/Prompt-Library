@@ -27,7 +27,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className={cn("flex min-h-screen", isAuthPage && "bg-[#0a0a0f]")}>
       {showSidebar && <Sidebar />}
       <div className={cn(
-        "flex-1 flex flex-col min-h-screen overflow-x-hidden transition-all duration-300",
+        "flex-1 flex flex-col min-h-screen transition-all duration-300",
         isAuthPage && "min-h-dvh bg-[#0a0a0f]",
         showSidebar && "lg:ml-60"
       )}>

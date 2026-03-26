@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File } from "lucide-react";
+import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { uploadToCloudinary } from "@/app/actions/upload-cloudinary";
@@ -268,15 +268,7 @@ export default function PromptUploadPage() {
       }
 
       // 3. Prepare Prompt Data
-      const { data: legacyProfile, error: profileErr } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
-        
-      if (profileErr) console.error("Profile lookup error:", profileErr);
-
-      const creatorId = legacyProfile?.id || user.id;
+      const creatorId = profile?.id || user.id;
 
       const isMultiStep = promptTab === 'chain';
       const stepCount = isMultiStep ? chainSteps.length : 1;
@@ -319,7 +311,7 @@ export default function PromptUploadPage() {
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
         .insert([promptInsert])
-        .select('id')
+        .select('*')
         .single();
 
       if (promptError) {
@@ -328,11 +320,8 @@ export default function PromptUploadPage() {
          setIsPublishing(false);
          return;
       }
-      const promptId = promptData.id;
-      
-      if (promptId) {
-        setPublishedPromptId(promptId);
-      }
+      // Prioritize promptid if available (per user request), fallback to id
+      const promptId = promptData.promptid || promptData.id;
 
       // 4. Insert Prompt Steps
       if (isMultiStep) {
@@ -381,6 +370,11 @@ export default function PromptUploadPage() {
         }));
         const { error: modelsError } = await supabase.from('prompt_models').insert(modelsToInsert);
         if (modelsError) throw modelsError;
+      }
+      
+      // Successfully through all inserts, now mark as published
+      if (promptId) {
+        setPublishedPromptId(String(promptId));
       }
       
       setIsPublished(true);
@@ -468,7 +462,7 @@ export default function PromptUploadPage() {
           <p className="text-slate-500 font-medium text-sm md:text-base">Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
           
           <div className="space-y-4">
             {/* --- 1. WRITE YOUR PROMPT --- */}
@@ -1214,7 +1208,6 @@ export default function PromptUploadPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* --- 7. PRICE --- */}
             <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 7 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
               <SectionHeader num={7} titleStr="Set your price" desc={price ? `◈ ${price} coins` : "Coin value per purchase"} />
               <AnimatePresence>
@@ -1296,9 +1289,9 @@ export default function PromptUploadPage() {
                         </div>
                       </div>
 
-                      <div className="pt-5 flex items-center gap-3 border-t border-slate-100 mt-8">
+                      <div className="pt-5 flex items-center gap-3 border-t-2 border-slate-100 mt-8">
                         <button className="px-6 py-3 bg-white border border-slate-200 text-slate-500 text-xs font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-sm">Save draft</button>
-                        <button onClick={() => { setCompletedSections(prev => [...prev.filter(x => x!==6), 6]); setActiveSection(7); }} className="flex-1 py-3 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm">Save & continue →</button>
+                        <button onClick={() => { setCompletedSections(prev => [...prev.filter(x => x!==7), 7]); setActiveSection(8); }} className="flex-1 py-3 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm">Save & continue →</button>
                       </div>
 
                     </div>
@@ -1307,36 +1300,38 @@ export default function PromptUploadPage() {
               </AnimatePresence>
             </motion.div>
 
-            {/* --- 7. REVIEW --- */}
-            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 7 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
-              <SectionHeader num={7} titleStr="Review & publish" desc="Final check before live" />
+            {/* --- 8. REVIEW --- */}
+            <motion.div className={cn("bg-white rounded-[20px] border transition-all duration-300 overflow-hidden", activeSection === 8 ? "border-purple-300 shadow-xl shadow-purple-500/5" : "border-slate-200/80")}>
+              <SectionHeader num={8} titleStr="Review & publish" desc="Final check before live" />
               <AnimatePresence>
-                {activeSection === 7 && (
+                {activeSection === 8 && (
                   <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                     <div className="p-5 md:p-6 pt-0 mt-2 space-y-4">
                       
-                      <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>Prompt</span><span className="text-purple-600 cursor-pointer" onClick={()=>setActiveSection(1)}>Edit →</span></div>
-                        <div className="p-3 px-4 text-xs font-medium flex justify-between border-b border-slate-100"><span className="text-slate-500">Title</span><span className="font-bold text-slate-900">{title || '—'}</span></div>
-                        <div className="p-3 px-4 text-xs font-medium flex justify-between"><span className="text-slate-500">Variables</span><span className="font-bold whitespace-pre font-mono text-slate-900">{getVarsCount() ? `${getVarsCount()} detected` : '—'}</span></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                          <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>Basic Info</span><span className="text-purple-600 cursor-pointer" onClick={()=>setActiveSection(1)}>Edit →</span></div>
+                          <div className="p-3 px-4 text-xs font-medium space-y-2">
+                            <div className="flex justify-between"><span className="text-slate-500">Title</span><span className="font-bold text-slate-900 truncate max-w-[120px]">{title || '—'}</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Platform</span><span className="font-bold text-slate-900">{platform || '—'}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                          <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>Pricing</span><span className="text-purple-600 cursor-pointer" onClick={()=>setActiveSection(7)}>Edit →</span></div>
+                          <div className="p-3 px-4 text-xs font-medium flex justify-between"><span className="text-slate-500">Price</span><span className="font-bold text-slate-900 font-mono">{price ? `◈ ${price}` : '—'}</span></div>
+                        </div>
                       </div>
 
-                      <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>Platform & Category</span><span className="text-purple-600 cursor-pointer" onClick={()=>setActiveSection(2)}>Edit →</span></div>
-                        <div className="p-3 px-4 text-xs font-medium flex justify-between border-b border-slate-100"><span className="text-slate-500">Platform</span><span className="font-bold text-slate-900">{platform || '—'}</span></div>
-                        <div className="p-3 px-4 text-xs font-medium flex justify-between"><span className="text-slate-500">Category</span><span className="font-bold text-slate-900">{category || '—'}</span></div>
+                      <div className="p-5 bg-purple-50 rounded-2xl border border-purple-100 flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 mt-1"><Rocket className="w-5 h-5 text-purple-600" /></div>
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-black text-slate-900">Ready to go?</h4>
+                          <p className="text-xs font-medium text-slate-500 leading-relaxed">Once published, your prompt will be live on the marketplace. You can edit it or change the price anytime from your dashboard.</p>
+                        </div>
                       </div>
 
-                      <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <div className="flex justify-between items-center p-3 border-b border-slate-200 bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500"><span>Pricing</span><span className="text-purple-600 cursor-pointer" onClick={()=>setActiveSection(6)}>Edit →</span></div>
-                        <div className="p-3 px-4 text-xs font-medium flex justify-between"><span className="text-slate-500">Price</span><span className="font-bold text-slate-900 font-mono">{price ? `◈ ${price}` : '—'}</span></div>
-                      </div>
-
-                      <div className="p-4 bg-purple-50/50 border border-purple-100 text-slate-700 rounded-xl text-xs font-medium leading-relaxed mt-4">
-                        By publishing you confirm this is your original work and that you have personally tested it. Prompt text is locked after the first purchase.
-                      </div>
-
-                      <div className="pt-4 flex flex-col gap-4">
+                      <div className="pt-6 space-y-4">
                         <div className="flex items-center gap-3">
                           <button className="px-6 py-4 bg-white border border-slate-200 text-slate-500 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-sm">Save draft</button>
                           <button 
@@ -1362,79 +1357,134 @@ export default function PromptUploadPage() {
                 )}
               </AnimatePresence>
             </motion.div>
-
           </div>
-
 
           {/* ── SUCCESS SCREEN OVERLAY ── */}
           <AnimatePresence>
             {isPublished && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/80 backdrop-blur-md">
-                <motion.div 
-                  initial={{ scale: 0.9, y: 20, opacity: 0 }} 
-                  animate={{ scale: 1, y: 0, opacity: 1 }} 
-                  className="bg-white rounded-[40px] p-10 max-w-[480px] w-full text-center shadow-2xl shadow-slate-200 border border-slate-100"
-                >
-                  <div className="flex flex-col items-center">
-                    {/* Green Checkmark Circle */}
-                    <div className="w-20 h-20 rounded-full bg-[#f0f9f1] flex items-center justify-center mb-8">
-                       <div className="w-12 h-12 rounded-full bg-[#e3f2e5] flex items-center justify-center">
-                          <Check className="w-6 h-6 text-[#4caf50]" strokeWidth={3} />
-                       </div>
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[110] bg-white flex flex-col"
+              >
+                {/* Header with Back Button */}
+                <div className="w-full h-20 px-6 md:px-12 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                  <button 
+                    onClick={() => setIsPublished(false)} 
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm group"
+                  >
+                    <div className="p-2 rounded-full group-hover:bg-slate-100 transition-colors">
+                      <X className="w-4 h-4" />
+                    </div>
+                    <span>Back to edit</span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm">Success</span>
+                  </div>
+                </div>
+
+                {/* Main Content: Split Screen */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center px-6 md:px-12 py-12 md:py-20 h-full">
+                    
+                    {/* Left: Content */}
+                    <div className="space-y-10 animate-in fade-in slide-in-from-left-4 duration-700">
+                      <div>
+                        {/* Green Checkmark Icon */}
+                        <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mb-8 rotate-3 shadow-sm border border-emerald-100">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                        </div>
+                        
+                        <h2 className="text-4xl md:text-[52px] leading-[1.1] font-black text-slate-900 mb-6 tracking-tight">Your prompt is live!</h2>
+                        <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md">
+                          It’s now visible on the Explore page. Share it to get your first buyers — sellers who share on day 1 get 10x more visibility.
+                        </p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-4 max-w-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <button 
+                            onClick={() => {
+                              const text = encodeURIComponent(`Check out my new prompt: "${title}" on PromptLibrary!`);
+                              const url = encodeURIComponent(`${window.location.origin}/prompt/${publishedPromptId}`);
+                              window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                            }}
+                            className="flex items-center justify-center gap-2.5 py-4 bg-[#1DA1F2] text-white font-bold text-sm rounded-2xl hover:bg-[#1a91da] hover:shadow-lg hover:shadow-sky-500/20 transition-all active:scale-[0.98]"
+                          >
+                             Share on X
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const text = encodeURIComponent(`Check out my new prompt: "${title}" \n\n ${window.location.origin}/prompt/${publishedPromptId}`);
+                              window.open(`https://wa.me/?text=${text}`, '_blank');
+                            }}
+                            className="flex items-center justify-center gap-2.5 py-4 bg-[#25D366] text-white font-bold text-sm rounded-2xl hover:bg-[#21bd5c] hover:shadow-lg hover:shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                          >
+                             Share on WhatsApp
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Link 
+                            href={`/prompt/${publishedPromptId}`}
+                            className="group flex items-center justify-center gap-2.5 py-4 bg-white border-2 border-slate-200 text-slate-900 font-bold text-sm rounded-2xl hover:border-purple-600 hover:text-purple-600 transition-all active:scale-[0.98]"
+                          >
+                            View my prompt <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                          </Link>
+                          <Link 
+                            href="/dashboard"
+                            className="flex items-center justify-center gap-2.5 py-4 bg-slate-100 text-slate-600 font-bold text-sm rounded-2xl hover:bg-slate-200 transition-all active:scale-[0.98]"
+                          >
+                            Go to dashboard
+                          </Link>
+                        </div>
+                      </div>
                     </div>
 
-                    <h2 className="text-[28px] font-bold text-slate-900 mb-4 tracking-tight">Your prompt is live!</h2>
-                    <p className="text-slate-500 font-medium mb-10 leading-relaxed text-[15px] px-2">
-                      It's now visible on the Explore page. Share it to get your first buyers — sellers who share on day 1 get 3x more sales in their first week.
-                    </p>
-                    
-                    {/* Action Buttons Grid */}
-                    <div className="w-full space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <button 
-                          onClick={() => {
-                            const text = encodeURIComponent(`Check out my new prompt: "${title}" on PromptLibrary!`);
-                            const url = encodeURIComponent(`${window.location.origin}/prompt/${publishedPromptId}`);
-                            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-                          }}
-                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                        >
-                          Share on X
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const text = encodeURIComponent(`Check out my new prompt: "${title}" \n\n ${window.location.origin}/prompt/${publishedPromptId}`);
-                            window.open(`https://wa.me/?text=${text}`, '_blank');
-                          }}
-                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                        >
-                          Share on WhatsApp
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Link 
-                          href={`/prompt/${publishedPromptId}`}
-                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                        >
-                          View my prompt <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                        <Link 
-                          href="/dashboard"
-                          className="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-900 font-bold text-[13px] rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
-                        >
-                          Go to dashboard <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                    {/* Right: Featured Preview Card */}
+                    <div className="flex justify-center lg:justify-end animate-in fade-in slide-in-from-right-8 duration-1000">
+                      <div className="relative group">
+                        <div className="absolute -inset-4 bg-gradient-to-tr from-purple-500/20 to-amber-500/20 rounded-[40px] blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative w-full max-w-[360px] bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-2xl shadow-purple-500/10 scale-110 lg:scale-125">
+                           <div className="h-[220px] w-full relative overflow-hidden bg-slate-100">
+                             {imagePreview ? <img src={imagePreview} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300 font-black uppercase text-[10px] tracking-widest">Preview Image</div>}
+                             <div className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase z-10">{platform || "Platform"}</div>
+                           </div>
+                           <div className="p-5 space-y-4">
+                             <div className="flex items-center gap-1 text-amber-500 text-xs">★★★★★ <span className="text-slate-400 ml-1 font-bold">5.0</span></div>
+                             <div className="text-[17px] font-black leading-snug text-slate-900 line-clamp-2">{title || "Your Prompt Title"}</div>
+                             <div className="flex gap-2">
+                               <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[9px] font-black text-slate-500 uppercase tracking-tighter">{category || "Uncategorized"}</span>
+                               <span className="px-2 py-0.5 bg-purple-50 border border-purple-100 rounded-md text-[9px] font-black text-purple-600 uppercase tracking-tighter">{outputFormat || "Format"}</span>
+                             </div>
+                             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                               <div className="flex items-center gap-2">
+                                 <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white">YP</div>
+                                 <span className="text-xs font-bold text-slate-600">You</span>
+                               </div>
+                               <div className="text-xl font-black text-amber-600 flex items-center gap-1.5">
+                                 <span className="text-sm">◈</span> {price || "0"}
+                               </div>
+                             </div>
+                           </div>
+                        </div>
                       </div>
                     </div>
+
                   </div>
-                </motion.div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
 
           {/* ── RIGHT COLUMN: STICKY PREVIEW & TRACKER ── */}
-          <div className="sticky top-28 space-y-6">
+          <div className="sticky top-28 space-y-6 self-start z-10">
             
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
