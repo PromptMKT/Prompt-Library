@@ -107,7 +107,7 @@ const TAXONOMY_DATA = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function PromptUploadPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<number>(1);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
@@ -437,6 +437,7 @@ export default function PromptUploadPage() {
     { label: "Price set", done: parseInt(price) >= 10 }
   ];
   const completenessPct = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
+  const showAuthPrompt = !loading && !user;
 
   const SectionHeader = ({ num, titleStr, desc }: { num: number; titleStr: string; desc: string }) => {
     const isActive = activeSection === num;
@@ -456,8 +457,8 @@ export default function PromptUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc] text-slate-900 font-sans pb-32">
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-12">
+    <div className="relative min-h-screen bg-[#f8f9fc] text-slate-900 font-sans pb-32">
+      <div className={cn("max-w-[1240px] mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-12 transition-all duration-200", showAuthPrompt && "blur-sm pointer-events-none select-none")}>
         <div className="mb-10 max-w-2xl">
           <h1 className="text-4xl md:text-[44px] leading-none font-black tracking-tighter text-slate-900 mb-3">List a prompt</h1>
           <p className="text-slate-500 font-medium text-sm md:text-base">Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime.</p>
@@ -1557,6 +1558,26 @@ export default function PromptUploadPage() {
 
         </div>
       </div>
+
+      {showAuthPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/40" />
+          <div className="relative w-full max-w-md rounded-2xl border border-white/20 bg-white p-6 shadow-2xl">
+            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <h2 className="text-xl font-black tracking-tight text-slate-900">You are not logged in</h2>
+            <p className="mt-2 text-sm font-medium text-slate-600">Please get logged in to upload your prompt.</p>
+            <Link
+              href="/sign-in?next=%2Fupload"
+              className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 text-sm font-bold text-white transition-colors hover:bg-purple-700"
+            >
+              Go to Sign In
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
