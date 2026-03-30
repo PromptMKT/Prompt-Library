@@ -88,10 +88,10 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             description, 
             price, 
             cover_image_url, 
-            purchases_count, 
-            average_rating, 
             is_published,
             created_at,
+            purchases_count,
+            average_rating,
             platforms(name),
             categories(name)
           `)
@@ -105,11 +105,10 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             id: String(p.id),
             title: p.title || "Untitled Prompt",
             price: Number(p.price || 0),
-            sales: Number(p.purchases_count || 0),
             platform: p.platforms?.name || "AI",
             category: p.categories?.name || "Prompt",
-            reviewsCount: 0, 
-            rating: Number(p.average_rating || 0),
+            reviewsCount: p.purchases_count || 0, // Using purchases as a proxy or just count
+            rating: p.average_rating || 4.8,
             status: p.is_published ? "live" : "draft",
             image: p.cover_image_url || null,
             promptText: p.description

@@ -437,12 +437,12 @@ export default function HomePage() {
           supabase
             .from('prompts')
             .select(`
-              id, title, price, average_rating, purchases_count, cover_image_url,
-              creator:users!prompts_creator_id_fkey(display_name, username),
-              platform:platforms!prompts_platform_id_fkey(name)
+              id, title, price, cover_image_url, created_at, purchases_count, average_rating,
+              creator:users(display_name, username),
+              platform:platforms(name)
             `)
             .eq('is_published', true)
-            .order('purchases_count', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10),
           supabase.from('categories').select('*').limit(5)
         ]);
@@ -459,8 +459,9 @@ export default function HomePage() {
             id: p.id,
             title: p.title,
             price: p.price,
-            rating: p.average_rating || 4.8,
-            sales: p.purchases_count || 0,
+            created_at: p.created_at,
+            rating: 4.8,
+            sales: 0,
             author: (p.creator as any)?.display_name || (p.creator as any)?.username || "Creator",
             platform: (p.platform as any)?.name || "AI",
             image: p.cover_image_url
