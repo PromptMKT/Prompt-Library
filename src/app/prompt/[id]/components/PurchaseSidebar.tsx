@@ -8,6 +8,7 @@ import { toast } from "sonner";
 interface PurchaseSidebarProps {
   price: number;
   isPurchased: boolean;
+  isPurchasing?: boolean;
   handlePurchase: () => void;
   seller: any;
   platform?: string;
@@ -20,11 +21,13 @@ interface PurchaseSidebarProps {
   lastTested?: string;
   imageCount?: number;
   review_count?: number;
+  useCase?: string;
 }
 
 export function PurchaseSidebar({ 
   price, 
   isPurchased, 
+  isPurchasing = false,
   handlePurchase, 
   seller,
   platform = "AI",
@@ -36,7 +39,8 @@ export function PurchaseSidebar({
   sales = 0,
   lastTested = "Recent",
   imageCount = 0,
-  review_count = 0
+  review_count = 0,
+  useCase
 }: PurchaseSidebarProps) {
   const sellerData = typeof seller === 'object' ? seller : { username: seller };
   const username = sellerData.username || sellerData.display_name || "anonymous";
@@ -55,8 +59,19 @@ export function PurchaseSidebar({
           <div className="text-xs text-muted-foreground mb-4">One-time purchase · Yours forever</div>
           
           {!isPurchased ? (
-            <Button className="w-full h-12 rounded-xl text-[15px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all mb-2.5" onClick={handlePurchase}>
-              🔓 Buy Now — ⬡ {price} coins
+            <Button 
+              className="w-full h-12 rounded-xl text-[15px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 transition-all mb-2.5" 
+              onClick={handlePurchase}
+              disabled={isPurchasing}
+            >
+              {isPurchasing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>🔓 Buy Now — ⬡ {price} coins</>
+              )}
             </Button>
           ) : (
             <Button className="w-full h-12 rounded-xl text-[14px] font-bold bg-secondary border border-border/40 hover:bg-muted transition-all mb-2.5">
@@ -84,7 +99,7 @@ export function PurchaseSidebar({
             <span className="text-muted-foreground">Category</span>
             <div className="text-right">
               <span className="block text-foreground font-medium font-mono text-[12px]">{category}</span>
-              {subcategory && <span className="block text-[10px] text-muted-foreground italic">{subcategory}</span>}
+              {subcategory && <span className="block text-[10px] text-muted-foreground italic">{subcategory}{useCase ? ` • ${useCase}` : ''}</span>}
             </div>
           </div>
           <div className="flex justify-between items-center pb-2 border-b border-border/40 text-[13px]">
@@ -124,23 +139,25 @@ export function PurchaseSidebar({
           </div>
           <div>
             <div className="text-sm font-bold text-foreground">@{username}</div>
-            <div className="text-[11px] text-muted-foreground">⭐ {sellerData.average_rating || 4.9} seller · {sellerData.role || 'Top Creator'}</div>
+            <div className="text-[11px] text-muted-foreground">
+              {sellerData.average_rating ? `⭐ ${sellerData.average_rating} creator` : "New Creator"} 
+              {sellerData.role ? ` · ${sellerData.role.charAt(0).toUpperCase() + sellerData.role.slice(1)}` : " · Creator"}
+            </div>
           </div>
         </div>
-        
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="bg-background/50 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-primary font-mono">{sellerData.total_prompts || (sales > 0 ? Math.ceil(sales/10) : 1)}</div>
+            <div className="text-base font-bold text-primary font-mono">{sellerData.total_prompts || 0}</div>
             <div className="text-[10px] text-muted-foreground mt-0.5">prompts</div>
           </div>
           <div className="bg-background/50 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-primary font-mono">{sellerData.total_sales || (sales > 1000 ? (sales/1000).toFixed(1)+'k' : sales)}</div>
+            <div className="text-base font-bold text-primary font-mono">{sellerData.total_sales || 0}</div>
             <div className="text-[10px] text-muted-foreground mt-0.5">total sales</div>
           </div>
         </div>
 
         <div className="text-xs text-muted-foreground leading-relaxed mb-3 line-clamp-2">
-          {sellerData.bio || "Specialises in AI engineering and conversion copy."}
+          {sellerData.bio || "AI Prompt Enthusiast & Digital Asset Creator"}
         </div>
 
         <div className="flex gap-2">

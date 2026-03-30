@@ -3,37 +3,10 @@
 import Link from "next/link";
 import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
-const promptRows = [
-  { prompt: "Cold Email Framework", platform: "ChatGPT", status: "Live", sales: "489", revenue: "14,670", rating: "4.9" },
-  { prompt: "Twitter Thread Framework", platform: "ChatGPT", status: "Live", sales: "445", revenue: "11,125", rating: "4.6" },
-  { prompt: "LinkedIn Post Engine", platform: "ChatGPT", status: "Live", sales: "334", revenue: "7,348", rating: "4.7" },
-  { prompt: "Food Photography Hero", platform: "FLUX", status: "Live", sales: "112", revenue: "3,584", rating: "4.6" },
-  { prompt: "SEO Blog Post Architect", platform: "ChatGPT", status: "Draft", sales: "-", revenue: "-", rating: "-" },
-];
-
-const reviews = [
-  { name: "Aditya K.", prompt: "Cold Email Framework", copy: "Saved us big agency fees. Indistinguishable from real copywriter.", stars: 5 },
-  { name: "Meera R.", prompt: "LinkedIn Post Engine", copy: "Saved 3 hours a week. Team uses it daily now.", stars: 5 },
-  { name: "Rahul K.", prompt: "Food Photography Hero", copy: "Great for dark products and marble setups.", stars: 5 },
-];
-
-const topPerforming = [
-  { rank: 1, name: "Cold Email Framework", sales: 489, total: "14,670", color: "bg-primary/95", width: 100 },
-  { rank: 2, name: "Twitter Thread Framework", sales: 445, total: "11,125", color: "bg-primary/80", width: 92 },
-  { rank: 3, name: "LinkedIn Post Engine", sales: 334, total: "7,348", color: "bg-primary/65", width: 70 },
-  { rank: 4, name: "Food Photography Hero", sales: 112, total: "3,584", color: "bg-primary/50", width: 35 },
-  { rank: 5, name: "SEO Blog Post Architect", sales: 98, total: "2,744", color: "bg-primary/35", width: 28 },
-];
-
-const topBuyers = [
-  { initials: "AK", name: "Aditya K.", purchases: 8, coins: 312, badge: "bg-primary" },
-  { initials: "MR", name: "Meera R.", purchases: 5, coins: 204, badge: "bg-primary/85" },
-  { initials: "KS", name: "Karthik S.", purchases: 4, coins: 160, badge: "bg-primary/70" },
-  { initials: "RV", name: "Riya V.", purchases: 3, coins: 96, badge: "bg-primary/60" },
-  { initials: "DM", name: "Dev M.", purchases: 3, coins: 90, badge: "bg-primary/50" },
-];
-
+// Category Segments for the Donut Chart (unchanged visual design)
 const categorySegments = [
   { label: "Email & Copy", color: "#6D5AE6", dash: "153 402", offset: "0" },
   { label: "Social Media", color: "#8474EC", dash: "98 402", offset: "-153" },
@@ -42,19 +15,261 @@ const categorySegments = [
   { label: "Research", color: "#D5D0FC", dash: "39 402", offset: "-363" },
 ];
 
-const sidebarLinks = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Home", href: "/" },
-  { label: "Explore", href: "/explore" },
-  { label: "Upload", href: "/upload" },
-  { label: "Wallet", href: "/wallet" },
-  { label: "Coins", href: "/coins" },
-  { label: "Sign In", href: "/sign-in" },
-];
+function timeAgo(date: string | Date) {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInMs = now.getTime() - past.getTime();
+  const diffInSecs = Math.floor(diffInMs / 1000);
+  const diffInMins = Math.floor(diffInSecs / 60);
+  const diffInHours = Math.floor(diffInMins / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInSecs < 60) return "just now";
+  if (diffInMins < 60) return `${diffInMins}m ago`;
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  return `${diffInDays}d ago`;
+}
 
 export default function DashboardPage() {
   const { user, profile } = useAuth();
   const firstName = profile?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || "Creator";
+
+  const [promptRows, setPromptRows] = useState<any[]>([]);
+  const [topPerforming, setTopPerforming] = useState<any[]>([]);
+  
+  // Dashboard Aggregates
+  const [totalEarnings, setTotalEarnings] = useState("0");
+  const [totalSales, setTotalSales] = useState("0");
+  const [avgRating, setAvgRating] = useState("0.0");
+  const [activePromptsCount, setActivePromptsCount] = useState("0");
+  const [realReviews, setRealReviews] = useState<any[]>([]);
+  const [realTopBuyers, setRealTopBuyers] = useState<any[]>([]);
+  const [realChartData, setRealChartData] = useState<any[]>([]);
+  const [hoveredPoint, setHoveredPoint] = useState<any | null>(null);
+  const [timeRange, setTimeRange] = useState(30);
+  const [realCategorySegments, setRealCategorySegments] = useState<any[]>([]);
+  const [hoveredCategory, setHoveredCategory] = useState<any | null>(null);
+  const [rawPrompts, setRawPrompts] = useState<any[]>([]);
+  const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
+  const [recentReviewsLive, setRecentReviewsLive] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      if (!user) return;
+
+      const { data: prompts, error } = await supabase
+        .from('prompts')
+        .select(`
+          id, title, price, is_published, purchases_count, average_rating,
+          platform:platforms(name),
+          category:categories(name)
+        `)
+        .eq('creator_id', user.id)
+        .order('purchases_count', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching creator prompts:", error);
+        return;
+      }
+
+      if (prompts && prompts.length > 0) {
+        setRawPrompts(prompts);
+        // Aggregate totals
+        let earnings = 0;
+        let sales = 0;
+        let totalRating = 0;
+        let ratingCount = 0;
+        let activeCount = 0;
+
+        const tableRows = prompts.map(p => {
+          const s = p.purchases_count || 0;
+          const r = p.average_rating || 0;
+          const rev = s * (p.price || 0);
+          
+          sales += s;
+          earnings += rev;
+          if (r > 0) {
+            totalRating += r;
+            ratingCount++;
+          }
+          if (p.is_published) {
+            activeCount++;
+          }
+
+          return {
+            prompt: p.title || "Untitled Prompt",
+            platform: (p.platform as any)?.name || "Unknown",
+            status: p.is_published ? "Live" : "Draft",
+            sales: s.toString(),
+            revenue: rev.toLocaleString(),
+            rating: r.toFixed(1)
+          };
+        });
+
+        setPromptRows(tableRows);
+        setTotalSales(sales.toLocaleString());
+        setTotalEarnings(earnings.toLocaleString());
+        setActivePromptsCount(activeCount.toString());
+        setAvgRating(ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : "0.0");
+
+        // Top Performing (Top 5 by Revenue)
+        const sortedByRevenue = [...prompts].sort((a, b) => {
+          const revA = (a.purchases_count || 0) * (a.price || 0);
+          const revB = (b.purchases_count || 0) * (b.price || 0);
+          return revB - revA;
+        }).slice(0, 5);
+        
+        const maxEarnings = sortedByRevenue.length > 0 ? ((sortedByRevenue[0].purchases_count || 0) * (sortedByRevenue[0].price || 0)) : 1;
+        const colors = ["bg-primary/95", "bg-primary/80", "bg-primary/65", "bg-primary/50", "bg-primary/35"];
+        
+        setTopPerforming(sortedByRevenue.map((p, index) => {
+          const itemSales = p.purchases_count || 0;
+          const itemEarnings = itemSales * (p.price || 0);
+          return {
+            id: p.id,
+            rank: index + 1,
+            name: p.title || "Untitled Prompt",
+            sales: itemSales,
+            total: itemEarnings.toLocaleString(),
+            color: colors[index] || "bg-primary/20",
+            width: maxEarnings > 0 ? Math.max(10, (itemEarnings / maxEarnings) * 100) : 10
+          };
+        }));
+
+        // Process Category Sales for Donut Chart
+        const catMap: Record<string, number> = {};
+        let totalSalesAll = 0;
+        prompts.forEach(p => {
+          const catName = (p.category as any)?.name || "Uncategorized";
+          const s = p.purchases_count || 0;
+          catMap[catName] = (catMap[catName] || 0) + s;
+          totalSalesAll += s;
+        });
+
+        const catColors = ["#6D5AE6", "#8474EC", "#9D90F1", "#B8AFF6", "#D5D0FC", "#E7E4FF"];
+        let currentOffset = 0;
+        const processedCats = Object.entries(catMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(([label, sales], i) => {
+            const percent = totalSalesAll > 0 ? (sales / totalSalesAll) : 0;
+            const dashLen = Math.round(percent * 402);
+            const segment = {
+              label,
+              sales,
+              percent: Math.round(percent * 100),
+              color: catColors[i % catColors.length],
+              dash: `${dashLen} 402`,
+              offset: `-${currentOffset}`
+            };
+            currentOffset += dashLen;
+            return segment;
+          });
+        
+        setRealCategorySegments(processedCats);
+
+        // Fetch real reviews for these prompts
+        const promptIds = prompts.map(p => p.id);
+        if (promptIds.length > 0) {
+          const { data: reviewsData } = await supabase
+            .from('reviews')
+            .select('*, prompts(title)')
+            .in('prompt_id', promptIds)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          
+          if (reviewsData) {
+            setRecentReviewsLive(reviewsData);
+            setRealReviews(reviewsData.map(r => ({
+              name: "Verified Buyer", // Since reviews might not have user info joined or it might be anonymous
+              prompt: (r.prompts as any)?.title || "Untitled Prompt",
+              copy: r.body,
+              stars: r.rating || 5
+            })));
+          }
+
+          // Fetch Top Buyers
+          const { data: purchasesData } = await supabase
+            .from('purchases')
+            .select('user_id, amount_paid, purchased_at, users(display_name, username, avatar_url), prompts(title)')
+            .in('prompt_id', promptIds);
+          
+          if (purchasesData) {
+            const buyerMap: Record<string, any> = {};
+            
+            purchasesData.forEach((p: any) => {
+              const bId = p.user_id;
+              if (!buyerMap[bId]) {
+                const u = p.users;
+                const name = u?.display_name || u?.username || "Anonymous";
+                buyerMap[bId] = {
+                  name,
+                  purchases: 0,
+                  coins: 0,
+                  initials: name.substring(0, 2).toUpperCase(),
+                  badge: ["bg-primary", "bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500"][Math.floor(Math.random() * 5)]
+                };
+              }
+              buyerMap[bId].purchases += 1;
+              buyerMap[bId].coins += Number(p.amount_paid || 0);
+            });
+
+            const sortedBuyers = Object.values(buyerMap)
+              .sort((a, b) => b.coins - a.coins)
+              .slice(0, 5);
+            
+            setRealTopBuyers(sortedBuyers);
+            setRecentPurchases(purchasesData.sort((a, b) => 
+              new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
+            ).slice(0, 5));
+          }
+
+          // Fetch Business Intelligence: Revenue Over Time (Dynamic Time Range)
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() - (timeRange - 1));
+          startDate.setHours(0, 0, 0, 0);
+          
+          const { data: chartDataRaw } = await supabase
+            .from('purchases')
+            .select('amount_paid, purchased_at')
+            .in('prompt_id', promptIds)
+            .gte('purchased_at', startDate.toISOString())
+            .order('purchased_at', { ascending: true });
+
+          if (chartDataRaw) {
+            // Create time-range buckets
+            const dayBuckets: Record<string, number> = {};
+            for (let i = timeRange - 1; i >= 0; i--) {
+              const d = new Date();
+              d.setDate(d.getDate() - i);
+              dayBuckets[d.toISOString().split('T')[0]] = 0;
+            }
+
+            chartDataRaw.forEach((p: any) => {
+              const dateStr = p.purchased_at.split('T')[0];
+              if (dayBuckets[dateStr] !== undefined) {
+                dayBuckets[dateStr] += Number(p.amount_paid || 0);
+              }
+            });
+
+            const processedData = Object.entries(dayBuckets).map(([date, amount]) => ({
+              date,
+              amount,
+              label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            }));
+            
+            setRealChartData(processedData);
+          }
+        }
+      }
+    }
+
+    fetchDashboardData();
+  }, [user, timeRange]);
+
+  // Keep static mock data for buyers/reviews/activity until those tables exist
+  // Buyers tracking not yet implemented in DB
+  const topBuyers = realTopBuyers.length > 0 ? realTopBuyers : [];
+  const reviews = realReviews.length > 0 ? realReviews : [];
 
   return (
     <div className="bg-background min-h-dvh w-full font-sans text-slate-900 dark:text-foreground">
@@ -69,24 +284,24 @@ export default function DashboardPage() {
               <p className="text-muted-foreground mt-1">Here&apos;s how your prompts are performing</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button suppressHydrationWarning className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
-                Last 30 days
-              </button>
+              <div suppressHydrationWarning className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2">
+                Last {timeRange} days
+              </div>
               <button suppressHydrationWarning className="h-10 px-4 rounded-xl border border-border bg-card text-sm font-bold text-card-foreground inline-flex items-center gap-2 hover:bg-secondary">
                 <Download className="w-4 h-4" /> Export
               </button>
-              <button suppressHydrationWarning className="h-10 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
+              <Link href="/upload" suppressHydrationWarning className="h-10 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
                 <Plus className="w-4 h-4" /> New prompt
-              </button>
+              </Link>
             </div>
           </header>
 
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {[
-              { label: "Total earnings", value: "2,840", info: "+18% vs last period", color: "text-primary" },
-              { label: "Total sales", value: "1,847", info: "+24% vs last period", color: "text-primary" },
-              { label: "Avg rating", value: "4.9", info: "+0.1 vs last period", color: "text-primary" },
-              { label: "Active prompts", value: "38", info: "+3 new this period", color: "text-primary" },
+              { label: "Total earnings", value: totalEarnings, info: "Lifetime total", color: "text-primary" },
+              { label: "Total sales", value: totalSales, info: "Lifetime total", color: "text-primary" },
+              { label: "Avg rating", value: avgRating, info: "Across all active", color: "text-primary" },
+              { label: "Active prompts", value: activePromptsCount, info: "Currently listed", color: "text-primary" },
             ].map((card) => (
               <article key={card.label} className="rounded-2xl border border-border bg-card p-5">
                 <p className="text-sm text-muted-foreground">{card.label}</p>
@@ -101,61 +316,138 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-2xl font-black tracking-tight text-foreground">Revenue over time</h2>
-                  <p className="text-xs text-muted-foreground">Last 30 days</p>
+                  <p className="text-xs text-muted-foreground">Last {timeRange} days</p>
                 </div>
                 <div className="inline-flex rounded-lg bg-secondary p-1 text-xs font-black">
-                  <span className="px-2 py-1 rounded-md text-muted-foreground">7D</span>
-                  <span className="px-2 py-1 rounded-md bg-card text-primary">30D</span>
-                  <span className="px-2 py-1 rounded-md text-muted-foreground">90D</span>
+                  {[7, 30, 90].map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setTimeRange(range)}
+                      className={`px-3 py-1 rounded-md transition-all ${
+                        timeRange === range 
+                          ? "bg-card text-primary shadow-sm" 
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {range}D
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="h-72 rounded-xl bg-secondary/50 border border-border p-4">
-                <svg viewBox="0 0 760 260" className="w-full h-full">
-                  {[20, 48, 76, 104, 132, 160, 188, 216, 244].map((y) => (
-                    <line key={y} x1="36" y1={y} x2="744" y2={y} stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.14" />
+              <div className="h-72 rounded-xl bg-secondary/50 border border-border p-4 relative group">
+                <svg 
+                  viewBox="0 0 760 260" 
+                  className="w-full h-full overflow-visible"
+                  onMouseLeave={() => setHoveredPoint(null)}
+                >
+                  {/* Grid Lines */}
+                  {[20, 76, 132, 188, 244].map((y) => (
+                    <line key={y} x1="36" y1={y} x2="744" y2={y} stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.1" />
                   ))}
 
-                  {[36, 132, 228, 324, 420, 516, 612, 708, 744].map((x) => (
-                    <line key={x} x1={x} y1="20" x2={x} y2="244" stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.12" />
-                  ))}
-
-                  <path
-                    d="M36 214 C 52 184, 66 170, 82 206 C 96 238, 112 102, 132 124 C 148 140, 166 16, 188 52 C 206 86, 224 142, 244 170 C 262 196, 280 214, 304 224 C 322 232, 338 36, 356 24 C 372 18, 386 98, 404 112 C 422 124, 440 76, 456 52 C 474 24, 492 154, 508 184 C 526 216, 544 228, 564 216 C 584 202, 598 46, 612 38 C 628 34, 646 88, 664 116 C 682 144, 698 182, 708 194 C 722 210, 734 62, 744 26 L 744 244 L 36 244 Z"
-                    fill="hsl(var(--primary))"
-                    opacity="0.1"
-                  />
-
-                  <path
-                    d="M36 214 C 52 184, 66 170, 82 206 C 96 238, 112 102, 132 124 C 148 140, 166 16, 188 52 C 206 86, 224 142, 244 170 C 262 196, 280 214, 304 224 C 322 232, 338 36, 356 24 C 372 18, 386 98, 404 112 C 422 124, 440 76, 456 52 C 474 24, 492 154, 508 184 C 526 216, 544 228, 564 216 C 584 202, 598 46, 612 38 C 628 34, 646 88, 664 116 C 682 144, 698 182, 708 194 C 722 210, 734 62, 744 26"
-                    fill="none"
-                    stroke="#6366F1"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-
-                  <g fill="hsl(var(--primary))" fontSize="11" fontWeight="700" opacity="0.8">
-                    <text x="8" y="247">O20</text>
-                    <text x="8" y="219">O30</text>
-                    <text x="8" y="191">O40</text>
-                    <text x="8" y="163">O50</text>
-                    <text x="8" y="135">O60</text>
-                    <text x="8" y="107">O70</text>
-                    <text x="8" y="79">O80</text>
-                    <text x="8" y="51">O90</text>
-                    <text x="8" y="23">O100</text>
+                  {/* Horizontal Labels (Coins) */}
+                  <g fill="hsl(var(--primary))" fontSize="10" fontWeight="700" opacity="0.6">
+                    {realChartData.length > 0 && (() => {
+                      const maxVal = Math.max(...realChartData.map(d => d.amount), 10);
+                      return [0, 0.25, 0.5, 0.75, 1].map(p => {
+                        const val = Math.round(maxVal * p);
+                        const y = 244 - (p * 224);
+                        return <text key={p} x="5" y={y + 4}>◈{val}</text>
+                      });
+                    })()}
                   </g>
 
-                  <g fill="hsl(var(--muted-foreground))" fontSize="11" fontWeight="700">
-                    <text x="24" y="258">Feb 20</text>
-                    <text x="120" y="258">Feb 24</text>
-                    <text x="216" y="258">Feb 28</text>
-                    <text x="312" y="258">Mar 4</text>
-                    <text x="408" y="258">Mar 8</text>
-                    <text x="504" y="258">Mar 12</text>
-                    <text x="600" y="258">Mar 16</text>
-                    <text x="696" y="258">Mar 20</text>
+                  {/* Data Path */}
+                  {realChartData.length > 0 && (() => {
+                    const maxVal = Math.max(...realChartData.map(d => d.amount), 10);
+                    const stepX = 708 / (realChartData.length - 1);
+                    
+                    const points = realChartData.map((d, i) => ({
+                      x: 36 + (i * stepX),
+                      y: 244 - ((d.amount / maxVal) * 224),
+                      ...d
+                    }));
+
+                    const pathData = points.reduce((acc, p, i) => 
+                      i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`, 
+                    "");
+
+                    const areaData = `${pathData} L ${points[points.length-1].x} 244 L 36 244 Z`;
+
+                    return (
+                      <>
+                        <path d={areaData} fill="hsl(var(--primary))" opacity="0.1" />
+                        <path 
+                          d={pathData} 
+                          fill="none" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth="3" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                        />
+                        
+                        {/* Interactive Zones */}
+                        {points.map((p, i) => (
+                          <rect
+                            key={i}
+                            x={p.x - stepX/2}
+                            y="0"
+                            width={stepX}
+                            height="260"
+                            fill="transparent"
+                            onMouseEnter={() => setHoveredPoint(p)}
+                            className="cursor-pointer"
+                          />
+                        ))}
+
+                        {/* Hover Elements */}
+                        {hoveredPoint && (
+                          <g>
+                            <line 
+                              x1={hoveredPoint.x} y1="20" 
+                              x2={hoveredPoint.x} y2="244" 
+                              stroke="hsl(var(--primary))" 
+                              strokeWidth="1" 
+                              strokeDasharray="4 4" 
+                            />
+                            <circle 
+                              cx={hoveredPoint.x} 
+                              cy={hoveredPoint.y} 
+                              r="6" 
+                              fill="hsl(var(--primary))" 
+                              stroke="white" 
+                              strokeWidth="2" 
+                            />
+                          </g>
+                        )}
+                      </>
+                    );
+                  })()}
+
+                  {/* Date Labels (Dynamic) */}
+                  <g fill="hsl(var(--muted-foreground))" fontSize="10" fontWeight="700">
+                    {realChartData.filter((_, i) => i % 5 === 0 || i === realChartData.length - 1).map((d, i) => {
+                      const stepX = 708 / (realChartData.length - 1);
+                      const fullIndex = realChartData.indexOf(d);
+                      return <text key={d.date} x={36 + (fullIndex * stepX) - 15} y="258">{d.label}</text>
+                    })}
                   </g>
                 </svg>
+
+                {/* Tooltip Overlay */}
+                {hoveredPoint && (
+                  <div 
+                    className="absolute z-50 bg-card border border-border/80 shadow-xl rounded-lg p-2.5 pointer-events-none transition-all duration-200"
+                    style={{ 
+                      left: `${(hoveredPoint.x / 760) * 100}%`, 
+                      top: `${(hoveredPoint.y / 260) * 100}%`,
+                      transform: 'translate(-50%, -120%)'
+                    }}
+                  >
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">{hoveredPoint.date}</p>
+                    <p className="text-sm font-black text-primary leading-none">◈ {hoveredPoint.amount} <span className="text-[10px] text-muted-foreground font-medium">coins</span></p>
+                  </div>
+                )}
               </div>
             </article>
 
@@ -163,10 +455,10 @@ export default function DashboardPage() {
               <h2 className="text-xl font-bold text-foreground">This month</h2>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  ["489", "Coins earned"],
-                  ["54", "Sales made"],
-                  ["12", "New reviews"],
-                  ["81", "In escrow"],
+                  [totalEarnings, "Coins earned"],
+                  [totalSales, "Sales made"],
+                  ["0", "New reviews"], 
+                  ["0", "In escrow"],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-xl border border-border bg-secondary/60 px-3 py-3">
                     <p className="text-2xl font-bold text-primary">{value}</p>
@@ -181,9 +473,8 @@ export default function DashboardPage() {
                   <button suppressHydrationWarning className="text-xs font-bold text-primary">Refresh</button>
                 </div>
                 <ul className="space-y-2 text-sm text-card-foreground">
-                  <li className="flex items-start gap-2"><TrendingUp className="w-4 h-4 text-primary mt-0.5" /> Cold Email trending this week.</li>
-                  <li className="flex items-start gap-2"><CircleDashed className="w-4 h-4 text-primary mt-0.5" /> 3 drafts are 80-95% complete.</li>
-                  <li className="flex items-start gap-2"><ArrowUpRight className="w-4 h-4 text-primary mt-0.5" /> Add a video prompt for higher conversion.</li>
+                  <li className="flex items-start gap-2"><TrendingUp className="w-4 h-4 text-primary mt-0.5" /> Optimize listings with video for +15% conversion.</li>
+                  <li className="flex items-start gap-2"><ArrowUpRight className="w-4 h-4 text-primary mt-0.5" /> Consider creating ChatGPT framework prompts.</li>
                 </ul>
               </div>
             </article>
@@ -194,30 +485,57 @@ export default function DashboardPage() {
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="text-2xl font-black tracking-tight text-foreground">Sales by category</h2>
               </div>
-              <div className="p-6 flex flex-col items-center gap-5">
-                <svg viewBox="0 0 220 220" className="w-44 h-44">
-                  <circle cx="110" cy="110" r="64" fill="none" stroke="hsl(var(--border))" strokeWidth="34" />
-                  {categorySegments.map((segment) => (
-                    <circle
-                      key={segment.label}
-                      cx="110"
-                      cy="110"
-                      r="64"
-                      fill="none"
-                      stroke={segment.color}
-                      strokeWidth="34"
-                      strokeDasharray={segment.dash}
-                      strokeDashoffset={segment.offset}
-                      transform="rotate(-90 110 110)"
-                    />
-                  ))}
-                  <circle cx="110" cy="110" r="46" fill="#ffffff" />
-                </svg>
+              <div className="p-6 flex flex-col items-center gap-5 relative">
+                <div className="relative w-44 h-44">
+                  <svg viewBox="0 0 220 220" className="w-full h-full transform transition-transform duration-500">
+                    <circle cx="110" cy="110" r="64" fill="none" stroke="hsl(var(--border))" strokeWidth="34" opacity="0.3" />
+                    {realCategorySegments.map((segment) => (
+                      <circle
+                        key={segment.label}
+                        cx="110"
+                        cy="110"
+                        r="64"
+                        fill="none"
+                        stroke={segment.color}
+                        strokeWidth={hoveredCategory?.label === segment.label ? "40" : "34"}
+                        strokeDasharray={segment.dash}
+                        strokeDashoffset={segment.offset}
+                        transform="rotate(-90 110 110)"
+                        className="transition-all duration-300 cursor-pointer"
+                        onMouseEnter={() => setHoveredCategory(segment)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                      />
+                    ))}
+                    <circle cx="110" cy="110" r="42" fill="white" className="dark:fill-slate-900 shadow-inner" />
+                  </svg>
+                  
+                  {/* Center Tooltip Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    {hoveredCategory ? (
+                      <>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{hoveredCategory.label}</p>
+                        <p className="text-xl font-black text-foreground">{hoveredCategory.percent}%</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Sales</p>
+                        <p className="text-xl font-black text-foreground">{totalSales}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
-                  {categorySegments.map((segment) => (
-                    <span key={segment.label} className="inline-flex items-center gap-2 text-card-foreground">
-                      <span className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: segment.color }} /> {segment.label}
+                  {realCategorySegments.map((segment) => (
+                    <span 
+                      key={segment.label} 
+                      className={`inline-flex items-center gap-2 transition-opacity duration-200 ${
+                        hoveredCategory && hoveredCategory.label !== segment.label ? "opacity-40" : "opacity-100"
+                      }`}
+                    >
+                      <span className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: segment.color }} /> 
+                      <span className="font-medium text-card-foreground">{segment.label}</span>
+                      <span className="text-xs text-muted-foreground">({segment.sales})</span>
                     </span>
                   ))}
                 </div>
@@ -227,21 +545,35 @@ export default function DashboardPage() {
             <article className="rounded-2xl border border-border bg-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <h2 className="text-2xl font-black tracking-tight text-foreground">Top performing</h2>
-                <button suppressHydrationWarning className="text-sm font-bold text-primary">See all</button>
+                <button 
+                  suppressHydrationWarning 
+                  onClick={() => document.getElementById('all-prompts-table')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-sm font-bold text-primary hover:underline hover:opacity-80 transition-all"
+                >
+                  See all
+                </button>
               </div>
-              <div className="p-5 space-y-4">
-                {topPerforming.map((item) => (
-                  <div key={item.rank} className="grid grid-cols-[34px_1fr_auto] items-center gap-3">
-                    <p className="text-sm font-semibold text-muted-foreground">#{item.rank}</p>
-                    <div>
-                      <p className="font-semibold text-foreground leading-tight">{item.name}</p>
+              <div className="p-5 space-y-4 flex-1">
+                {topPerforming.length > 0 ? topPerforming.map((item) => (
+                  <Link 
+                    key={item.id} 
+                    href={`/prompt/${item.id}`}
+                    className="grid grid-cols-[34px_1fr_auto] items-center gap-3 p-2 -mx-2 rounded-xl transition-all duration-300 hover:bg-secondary group"
+                  >
+                    <p className="text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors">#{item.rank}</p>
+                    <div className="truncate">
+                      <p className="font-semibold text-foreground leading-tight truncate group-hover:text-primary transition-colors">{item.name}</p>
                       <p className="text-sm text-muted-foreground mt-0.5">{item.sales} sales • ◈{item.total} total</p>
                     </div>
                     <div className="w-16 h-1.5 bg-primary/20 rounded-full overflow-hidden">
-                      <span className={`block h-full ${item.color}`} style={{ width: `${item.width}%` }} />
+                      <span className={`block h-full ${item.color} transition-all duration-700`} style={{ width: `${item.width}%` }} />
                     </div>
+                  </Link>
+                )) : (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    No sales data available yet.
                   </div>
-                ))}
+                )}
               </div>
             </article>
 
@@ -250,7 +582,7 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black tracking-tight text-foreground">Top buyers</h2>
               </div>
               <div className="p-5 space-y-2">
-                {topBuyers.map((buyer) => (
+                {topBuyers.length > 0 ? topBuyers.map((buyer) => (
                   <div key={buyer.name} className="py-3 border-b border-border last:border-b-0 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className={`w-10 h-10 rounded-full text-white text-sm font-black inline-flex items-center justify-center ${buyer.badge}`}>
@@ -263,12 +595,16 @@ export default function DashboardPage() {
                     </div>
                     <p className="text-primary font-semibold">◈ {buyer.coins}</p>
                   </div>
-                ))}
+                )) : (
+                  <div className="py-10 text-center text-sm text-muted-foreground italic">
+                    No purchase data available yet.
+                  </div>
+                )}
               </div>
             </article>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4" id="all-prompts-table">
             <article className="rounded-2xl border border-border bg-card overflow-x-auto">
               <div className="p-5 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-foreground">All prompts</h2>
@@ -286,20 +622,43 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {promptRows.map((row) => (
-                    <tr key={row.prompt} className="border-b border-border/80 hover:bg-secondary/40">
-                      <td className="py-3 px-5 font-semibold text-foreground">{row.prompt}</td>
-                      <td className="py-3 px-5 text-card-foreground">{row.platform}</td>
-                      <td className="py-3 px-5">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.status === "Live" ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"}`}>
-                          {row.status}
-                        </span>
+                  {promptRows.length > 0 ? (
+                    rawPrompts.map((p, i) => {
+                      const s = p.purchases_count || 0;
+                      const r = p.average_rating || 0;
+                      const rev = (s * (p.price || 0)).toLocaleString();
+                      const status = p.is_published ? "Live" : "Draft";
+                      
+                      return (
+                        <tr 
+                          key={p.id} 
+                          className="border-b border-border/80 hover:bg-secondary/40 transition-colors cursor-pointer group"
+                          onClick={() => window.location.href = `/prompt/${p.id}`}
+                        >
+                          <td className="py-3 px-5 font-semibold text-foreground group-hover:text-primary transition-colors">{p.title}</td>
+                          <td className="py-3 px-5 text-card-foreground">{(p.platform as any)?.name || "Unknown"}</td>
+                          <td className="py-3 px-5">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${status === "Live" ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-5 text-primary font-semibold">{s}</td>
+                          <td className="py-3 px-5 text-primary font-semibold">◈{rev}</td>
+                          <td className="py-3 px-5 text-foreground">
+                            <span className="flex items-center gap-1">
+                              <Star className="w-3.5 h-3.5 fill-primary text-primary" /> {r.toFixed(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
+                        No prompts uploaded yet. <Link href="/upload" className="text-primary hover:underline">Create your first prompt</Link>.
                       </td>
-                      <td className="py-3 px-5 text-primary font-semibold">{row.sales}</td>
-                      <td className="py-3 px-5 text-primary font-semibold">◈{row.revenue}</td>
-                      <td className="py-3 px-5 text-foreground inline-flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary" /> {row.rating}</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </article>
@@ -309,45 +668,64 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold text-foreground">Recent reviews</h2>
                 <button suppressHydrationWarning className="text-sm font-bold text-primary">View all</button>
               </div>
-              {reviews.map((review) => (
-                <div key={review.name} className="border-t border-border pt-3">
+              {reviews.length > 0 ? reviews.map((review, i) => (
+                <div key={i} className="border-t border-border pt-3">
                   <p className="font-semibold text-foreground">{review.name}</p>
                   <p className="text-xs text-muted-foreground">{review.prompt}</p>
                   <p className="text-sm text-card-foreground mt-1">"{review.copy}"</p>
                   <p className="text-primary text-sm mt-1">{"★".repeat(review.stars)}</p>
                 </div>
-              ))}
+              )) : (
+                <div className="py-10 text-center text-sm text-muted-foreground italic">
+                  No reviews received yet.
+                </div>
+              )}
             </article>
           </div>
 
           <article className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">Live activity</h2>
-              <p className="text-xs text-muted-foreground">Updated 03:37 PM</p>
+              <p className="text-xs text-muted-foreground">Updated Now</p>
             </div>
             <div className="grid md:grid-cols-3 gap-4 text-sm">
               <div className="rounded-xl bg-secondary/60 border border-border p-4">
                 <p className="font-bold text-foreground mb-2">Sales</p>
                 <ul className="space-y-2 text-card-foreground">
-                  <li>Aditya K. bought Cold Email</li>
-                  <li>Karthik V. bought Cold Email</li>
-                  <li>Riya M. bought LinkedIn Post</li>
+                  {recentPurchases.length > 0 ? recentPurchases.map((p, i) => (
+                    <li key={p.id || i} className="flex items-center justify-between gap-2 overflow-hidden">
+                      <span className="truncate flex-1">{p.prompts?.title || "Prompt Purchase"}</span>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(p.purchased_at)}</span>
+                    </li>
+                  )) : (
+                    <li className="text-muted-foreground italic">Awaiting new sales data...</li>
+                  )}
                 </ul>
               </div>
               <div className="rounded-xl bg-secondary/60 border border-border p-4">
                 <p className="font-bold text-foreground mb-2">Reviews</p>
                 <ul className="space-y-2 text-card-foreground">
-                  <li>Meera R. rated LinkedIn Post</li>
-                  <li>Sneha K. rated Twitter Thread</li>
-                  <li>Rahul K. rated Food Photography</li>
+                  {recentReviewsLive.length > 0 ? recentReviewsLive.map((r, i) => (
+                    <li key={r.id || i} className="flex items-center justify-between gap-2 overflow-hidden">
+                      <span className="truncate flex-1">{r.prompts?.title || "New Review"}</span>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(r.created_at)}</span>
+                    </li>
+                  )) : (
+                    <li className="text-muted-foreground italic">Awaiting new review data...</li>
+                  )}
                 </ul>
               </div>
               <div className="rounded-xl bg-secondary/60 border border-border p-4">
                 <p className="font-bold text-foreground mb-2">Earnings</p>
                 <ul className="space-y-2 text-card-foreground">
-                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> Cold Email sale +027</li>
-                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> LinkedIn sale +020</li>
-                  <li className="inline-flex items-center gap-2"><WalletIcon className="w-4 h-4 text-primary" /> Escrow released +081</li>
+                  {recentPurchases.length > 0 ? recentPurchases.map((p, i) => (
+                    <li key={`earning-${p.id || i}`} className="flex items-center justify-between gap-2 overflow-hidden">
+                      <span className="truncate flex-1 text-primary font-medium">+◈{p.amount_paid}</span>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{timeAgo(p.purchased_at)}</span>
+                    </li>
+                  )) : (
+                    <li className="text-muted-foreground italic">Awaiting new transaction data...</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -358,9 +736,9 @@ export default function DashboardPage() {
               <p className="text-lg font-black text-foreground">Your personalized feed is ready</p>
               <p className="text-sm text-card-foreground">Publish one more prompt to unlock featured creator placement.</p>
             </div>
-            <button suppressHydrationWarning className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
+            <Link href="/upload" suppressHydrationWarning className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-black inline-flex items-center gap-2 hover:bg-primary/90">
               <MessageCircle className="w-4 h-4" /> Launch next prompt
-            </button>
+            </Link>
           </div>
         </section>
       </div>

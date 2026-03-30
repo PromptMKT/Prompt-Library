@@ -36,6 +36,8 @@ type PromptItem = {
     bio?: string;
     total_sales?: number;
     average_rating?: number;
+    role?: string;
+    total_prompts?: number;
   };
   outputType?: string;
   tags?: string[];
@@ -51,6 +53,15 @@ type PromptItem = {
   inputTypes?: string[];
   inputData?: Record<string, any[]>;
   promptFileUrls?: string[];
+  quick_setup?: string;
+  guide_steps?: string[];
+  fill_variables?: string;
+  what_to_expect?: string;
+  pro_tips?: string;
+  common_mistakes?: string;
+  how_to_adapt?: string;
+  seller_note?: string;
+  useCase?: string;
 };
 
 const OUTPUT_TYPES = [
@@ -275,8 +286,8 @@ function mapDefaultFallbackPrompt(id: string): PromptItem {
   };
 }
 
-function mapDbPrompt(row: any): PromptItem {
-  const seller = row.users || row.creator || {};
+function mapDbPrompt(row: any, sellerData?: any): PromptItem {
+  const seller = sellerData || {};
   return {
     id: String(row.id),
     title: row.title || "Untitled Prompt",
@@ -285,26 +296,24 @@ function mapDbPrompt(row: any): PromptItem {
     platform: row.platforms?.name || row.platform || "AI",
     category: row.categories?.name || row.category || "Prompt",
     subcategory: row.subcategories?.name,
+    useCase: row.use_cases?.name || row.use_case,
     model: row.models?.name,
     price: Number(row.price || 0),
     promptText: row.prompt_text || row.promptText || "No preview available.",
-    images: row.images?.length
-      ? row.images
-      : row.screenshots?.length
-        ? row.screenshots
-        : row.cover_image_url
-          ? [row.cover_image_url]
-          : row.cover_image
-            ? [row.cover_image]
-            : [],
+    images: row.prompt_images?.length
+      ? row.prompt_images.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)).map((img: any) => img.image_url)
+      : row.cover_image_url
+        ? [row.cover_image_url]
+        : [],
     seller: {
       id: seller.id || row.creator_id,
-      username: seller.username || seller.display_name || "creator",
+      username: seller.display_name || seller.username || "creator",
       display_name: seller.display_name,
       avatar: seller.avatar_url || seller.avatar || "",
       bio: seller.bio,
       total_sales: Number(seller.total_sales || 0),
       average_rating: Number(seller.average_rating || 0),
+      role: seller.role === 'buyer' && Number(seller.total_prompts || 0) > 0 ? 'creator' : seller.role,
     },
     outputType: row.output_type || row.outputType || undefined,
     tags: Array.isArray(row.tags) ? row.tags : [],
@@ -319,7 +328,15 @@ function mapDbPrompt(row: any): PromptItem {
     created_at: row.created_at,
     inputTypes: row.input_types || [],
     inputData: row.input_data || {},
-    promptFileUrls: row.prompt_file_urls || []
+    promptFileUrls: row.prompt_file_urls || [],
+    quick_setup: row.quick_setup,
+    guide_steps: row.guide_steps || [],
+    fill_variables: row.fill_variables,
+    what_to_expect: row.what_to_expect,
+    pro_tips: row.pro_tips,
+    common_mistakes: row.common_mistakes,
+    how_to_adapt: row.how_to_adapt,
+    seller_note: row.seller_note
   };
 }
 
@@ -330,7 +347,9 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   const [prompt, setPrompt] = useState<PromptItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [activeTab, setActiveTab] = useState("prompt");
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchPromptData = async () => {
@@ -341,21 +360,47 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           .from("prompts")
           .select(`
             *,
-            users!prompts_creator_id_fkey(*),
-            platforms!prompts_platform_id_fkey(name),
-            categories!prompts_category_id_fkey(name),
-            subcategories!prompts_subcategory_id_fkey(name),
-            models!prompts_model_id_fkey(name),
+            platforms(name),
+            categories(name),
+            subcategories(name),
+            use_cases(name),
+            models(name),
             prompt_steps(id, step_number, title, instruction, step_type),
+            prompt_images(image_url, sort_order),
             reviews(*)
           `)
           .eq("id", params.id)
           .maybeSingle();
 
         if (mainData) {
-          const mapped = mapDbPrompt(mainData);
+          let sellerInfo = null;
+          if (mainData.creator_id) {
+            const { data: sData } = await supabase
+              .from("users")
+              .select("*")
+              .eq("id", mainData.creator_id)
+              .maybeSingle();
+            sellerInfo = sData;
+          }
+
+          const mapped = mapDbPrompt(mainData, sellerInfo);
           setPrompt(mapped);
           fetchRelated(mapped);
+          fetchSellerPromptCount(mapped.seller.id);
+          
+          // Check if already purchased
+          if (user) {
+            const { data: purchaseData } = await supabase
+              .from('purchases')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('prompt_id', params.id)
+              .maybeSingle();
+            
+            if (purchaseData) {
+              setIsPurchased(true);
+            }
+          }
           return;
         }
 
@@ -390,26 +435,49 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
             description, 
             price, 
             cover_image_url, 
-            purchases_count, 
-            average_rating, 
             created_at,
-            platforms!prompts_platform_id_fkey(name),
-            categories!prompts_category_id_fkey(name),
-            users!prompts_creator_id_fkey(display_name, username)
+            platforms(name),
+            categories(name),
+            users(display_name, username)
           `)
-          .order('purchases_count', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(4);
           
         if (data) {
-           setRelatedPrompts(data.map(row => mapDbPrompt(row)));
+          setRelatedPrompts(data.map(row => mapDbPrompt(row)));
         }
       } catch (err) {
         console.error("Error fetching related:", err);
       }
     };
 
+    const fetchSellerPromptCount = async (sellerId: string) => {
+      try {
+        const { count } = await supabase
+          .from("prompts")
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', sellerId)
+          .eq('is_published', true);
+        
+        if (count !== null) {
+          setPrompt(prev => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              seller: {
+                ...prev.seller,
+                total_prompts: count
+              }
+            };
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching seller prompt count:", err);
+      }
+    };
+
     fetchPromptData();
-  }, [params.id]);
+  }, [params.id, user]);
 
   const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
 
@@ -426,52 +494,106 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   }
 
   const handlePurchase = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       router.push(`/sign-in?next=${encodeURIComponent(`/prompt/${params.id}`)}`);
       return;
     }
-    setIsPurchased(true);
-    toast.success("Prompt unlocked for preview mode");
+
+    if (isPurchasing) return;
+    setIsPurchasing(true);
+
+    try {
+      // Record purchase in database
+      const { error } = await supabase
+        .from('purchases')
+        .insert([{
+          user_id: user.id,
+          prompt_id: params.id,
+          amount_paid: prompt?.price || 0,
+          currency: 'USD',
+          status: 'completed'
+        }]);
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation (already purchased)
+           setIsPurchased(true);
+           toast.success("You already own this prompt!");
+           return;
+        }
+        throw error;
+      }
+
+      setIsPurchased(true);
+      toast.success("Purchase successful! Content unlocked.");
+    } catch (err: any) {
+      console.error("Purchase error:", err);
+      toast.error("Failed to complete purchase. Please try again.");
+    } finally {
+      setIsPurchasing(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
-      <div className="max-w-300 mx-auto pt-8 pb-32 md:pb-8 px-6 lg:px-6">
-        <OutputTypeBar prompt={prompt} />
+    <div className="min-h-screen bg-background text-foreground font-sans relative overflow-hidden">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[20%] left-[-5%] w-[30%] h-[30%] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-0 items-start">
-          <div className="md:pr-10">
-            <ImageGallery images={prompt.images} platform={prompt.platform} category={prompt.category} />
+      <div className="max-w-300 mx-auto pt-8 pb-32 md:pb-16 px-6 lg:px-8 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <OutputTypeBar prompt={prompt} />
+        </motion.div>
 
-            <div className="flex flex-wrap gap-2 mb-5">
-              <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 font-mono text-[11px] rounded-full px-3 py-1">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start mt-4">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+            className="space-y-6"
+          >
+            <div className="backdrop-blur-md bg-card/60 border border-white/10 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl shadow-black/5">
+              <ImageGallery images={prompt.images} platform={prompt.platform} category={prompt.category} />
+            </div>
+
+            <div className="flex flex-wrap gap-2 py-4">
+              <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 font-mono text-[11px] rounded-full px-3 py-1.5 transition-all">
                 {prompt.platform}
               </Badge>
-              <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border-indigo-500/20 font-mono text-[11px] rounded-full px-3 py-1">
+              <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border-indigo-500/20 font-mono text-[11px] rounded-full px-3 py-1.5 transition-all">
                 {prompt.category}
               </Badge>
-              <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 font-mono text-[11px] rounded-full px-3 py-1">
+              <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20 font-mono text-[11px] rounded-full px-3 py-1.5 transition-all">
                 Community
               </Badge>
-              <Badge className="group relative overflow-visible bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 font-mono text-[11px] rounded-full px-3 py-1 flex items-center gap-1">
+              <Badge className="group relative overflow-visible bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 font-mono text-[11px] rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-all">
                 <CheckCircle className="w-3 h-3" /> Verified Output
               </Badge>
-              <Badge className="group relative overflow-visible bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border-orange-500/20 font-mono text-[11px] rounded-full px-3 py-1 flex items-center gap-1">
+              <Badge className="group relative overflow-visible bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border-orange-500/20 font-mono text-[11px] rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-all">
                 <Flame className="w-3 h-3" /> Trending
               </Badge>
             </div>
 
-            <PromptHeader platform={prompt.platform} category={prompt.category} title={prompt.title} tagline={prompt.tagline} />
+            <div className="py-2">
+              <PromptHeader platform={prompt.platform} category={prompt.category} title={prompt.title} tagline={prompt.tagline} />
+            </div>
 
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/40">
-              <span className="text-primary text-base tracking-widest">
-                {"★".repeat(Math.round(prompt.rating || 5)) + "☆".repeat(5 - Math.round(prompt.rating || 5))}
+            <div className="flex items-center gap-6 mb-8 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 text-lg tracking-tighter font-serif">
+                  {"★".repeat(Math.round(prompt.rating || 5)) + "☆".repeat(5 - Math.round(prompt.rating || 5))}
+                </span>
+                <span className="font-extrabold text-lg text-foreground mt-0.5">{prompt.rating}</span>
+                <span className="text-muted-foreground text-sm font-medium mt-0.5">({prompt.review_count || 0})</span>
+              </div>
+              <div className="h-4 w-px bg-border/60" />
+              <span className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                <span className="p-1 px-2 rounded-md bg-secondary/50 text-foreground font-mono text-xs">◈ SAVED {prompt.sales || 0} TIMES</span>
               </span>
-              <span className="font-bold text-sm">{prompt.rating}</span>
-              <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
-              <span className="text-muted-foreground text-sm">{prompt.review_count || 0} reviews</span>
-              <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
-              <span className="text-muted-foreground text-sm flex items-center gap-1">🛒 {prompt.sales || 0} purchases</span>
             </div>
 
             <div className="flex gap-8 border-b border-border/40 mb-8 overflow-x-auto overflow-y-hidden scrollbar-hide select-none pt-2">
@@ -555,21 +677,108 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
                         )}
                       </div>
                     )}
+
+                    {isPurchased && (
+                      <div className="pt-8 border-t border-border/40 space-y-10">
+                        {/* User Guide Section */}
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-2">
+                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                               <Bot className="w-4 h-4 text-primary" />
+                             </div>
+                             <h3 className="text-lg font-bold text-foreground">User Guide</h3>
+                          </div>
+
+                          {prompt.quick_setup && (
+                            <div className="space-y-2">
+                              <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Quick Setup</div>
+                              <p className="text-sm text-foreground leading-relaxed bg-muted/30 p-4 rounded-xl border border-border/40">{prompt.quick_setup}</p>
+                            </div>
+                          )}
+
+                          {prompt.guide_steps && prompt.guide_steps.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Instructions</div>
+                              <div className="space-y-3">
+                                {prompt.guide_steps.map((step, idx) => (
+                                  <div key={idx} className="flex gap-4 items-start">
+                                    <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{idx + 1}</div>
+                                    <p className="text-sm text-foreground">{step}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {prompt.what_to_expect && (
+                            <div className="space-y-2">
+                              <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">What to expect</div>
+                              <p className="text-sm text-foreground leading-relaxed">{prompt.what_to_expect}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Seller Notes Section */}
+                        {(prompt.pro_tips || prompt.common_mistakes || prompt.how_to_adapt || prompt.seller_note) && (
+                          <div className="space-y-6 pt-8 border-t border-border/40">
+                            <div className="flex items-center gap-2">
+                               <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                                 <Flame className="w-4 h-4 text-amber-500" />
+                               </div>
+                               <h3 className="text-lg font-bold text-foreground">Seller Notes</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {prompt.pro_tips && (
+                                <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-2">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-600">Pro Tips</div>
+                                  <p className="text-xs text-foreground leading-relaxed">{prompt.pro_tips}</p>
+                                </div>
+                              )}
+                              {prompt.common_mistakes && (
+                                <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 space-y-2">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-rose-600">Common Mistakes</div>
+                                  <p className="text-xs text-foreground leading-relaxed">{prompt.common_mistakes}</p>
+                                </div>
+                              )}
+                              {prompt.how_to_adapt && (
+                                <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 space-y-2">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600">How to Adapt</div>
+                                  <p className="text-xs text-foreground leading-relaxed">{prompt.how_to_adapt}</p>
+                                </div>
+                              )}
+                              {prompt.seller_note && (
+                                <div className="p-5 rounded-2xl bg-muted/50 border border-border/40 space-y-2 col-span-full">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Seller Note</div>
+                                  <p className="text-xs text-foreground leading-relaxed">{prompt.seller_note}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {activeTab === "variables" && (
                   <div className="space-y-4 mb-10">
                     <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono mb-3">Variables in this prompt</div>
-                    <div className="bg-card border border-border/40 rounded-xl p-6">
-                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                    <div className="bg-card border border-border/40 rounded-xl p-6 space-y-4">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         Replace placeholder variables like [TARGET_PERSONA] and [PAIN_POINT] with your own context.
                       </p>
+                      {prompt.fill_variables && (
+                        <div className="pt-4 border-t border-border/40">
+                          <div className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">How to fill</div>
+                          <p className="text-sm text-foreground">{prompt.fill_variables}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {activeTab === "steps" && (
+                {activeTab === "steps" && prompt.is_multi_step && (
                   <div className="space-y-6 mb-10">
                     <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono mb-3">Multi-step Workflow</div>
                     <div className="space-y-4">
@@ -651,32 +860,54 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
                 )}
               </motion.div>
             </AnimatePresence>
-          </div>
+          </motion.div>
 
-          <PurchaseSidebar
-            price={prompt.price}
-            isPurchased={isPurchased}
-            handlePurchase={handlePurchase}
-            seller={prompt.seller}
-            platform={prompt.platform}
-            category={prompt.category}
-            subcategory={prompt.subcategory}
-            model={prompt.model}
-            tags={prompt.tags}
-            complexity={prompt.complexity}
-            sales={prompt.sales}
-            lastTested={prompt.lastTested}
-            imageCount={prompt.images.length}
-            review_count={prompt.review_count}
-          />
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+            className="lg:sticky lg:top-8"
+          >
+            <PurchaseSidebar 
+              price={prompt.price}
+              isPurchased={isPurchased}
+              isPurchasing={isPurchasing}
+              handlePurchase={handlePurchase}
+              seller={prompt.seller}
+              platform={prompt.platform}
+              category={prompt.category}
+              subcategory={prompt.subcategory}
+              model={prompt.model}
+              tags={prompt.tags}
+              useCase={prompt.useCase}
+              complexity={prompt.complexity}
+              sales={prompt.sales}
+              lastTested={prompt.lastTested}
+              imageCount={prompt.images.length}
+              review_count={prompt.review_count}
+            />
+          </motion.div>
         </div>
       </div>
 
       {!isPurchased && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-background/95 backdrop-blur-2xl border-t border-border/40 z-50 shadow-2xl">
-          <Button className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest bg-primary text-white" onClick={handlePurchase}>
-            Unlock • {prompt.price} Coins
-          </Button>
+        <div className="md:hidden fixed bottom-16 left-0 right-0 p-6 px-8 z-50 pointer-events-none">
+          <div className="pointer-events-auto backdrop-blur-2xl bg-background/80 border border-white/20 p-4 rounded-3xl shadow-2xl">
+            <Button 
+              className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest bg-primary text-white shadow-xl shadow-primary/20" 
+              onClick={handlePurchase}
+              disabled={isPurchasing}
+            >
+              {isPurchasing ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing...
+                </div>
+              ) : (
+                <>Unlock • {prompt?.price || 0} Coins</>
+              )}
+            </Button>
+          </div>
         </div>
       )}
     </div>

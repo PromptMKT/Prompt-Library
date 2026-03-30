@@ -229,13 +229,13 @@ function ExploreContent() {
           description,
           price,
           cover_image_url,
-          purchases_count,
-          average_rating,
           created_at,
           platform_id,
           category_id,
           subcategory_id,
-          creator_id
+          creator_id,
+          purchases_count,
+          average_rating
         `;
 
         const joinedQuery = await supabase
