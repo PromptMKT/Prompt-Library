@@ -157,29 +157,39 @@ export async function isRegisteredUsername(username: string, client?: SupabaseCl
 
 export const getURL = () => {
   let url =
-    process.env.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
-    process.env.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
-    'http://localhost:3000';
+    process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env vars
+    process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
+    'http://localhost:3000/';
+  // Make sure to include `https://` when not localhost.
   url = url.includes('http') ? url : `https://${url}`;
-  url = url.charAt(url.length - 1) === '/' ? url.slice(0, -1) : url;
+  // Make sure to include a trailing `/`.
+  url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
   return url;
 };
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(nextUrl?: string) {
+  const redirectTo = nextUrl 
+    ? `${getURL()}/auth/callback?next=${encodeURIComponent(nextUrl)}`
+    : `${getURL()}/auth/callback`;
+
   const { data, error } = await defaultSupabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${getURL()}/auth/callback`,
+      redirectTo,
     },
   });
   return { data, error };
 }
 
-export async function signInWithGithub() {
+export async function signInWithGithub(nextUrl?: string) {
+  const redirectTo = nextUrl 
+    ? `${getURL()}/auth/callback?next=${encodeURIComponent(nextUrl)}`
+    : `${getURL()}/auth/callback`;
+
   const { data, error } = await defaultSupabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: `${getURL()}/auth/callback`,
+      redirectTo,
     },
   });
   return { data, error };

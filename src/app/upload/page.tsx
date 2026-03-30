@@ -267,7 +267,16 @@ export default function PromptUploadPage() {
         screenshotUrls.push(url);
       }
 
-      // 3. Prepare Prompt Data
+      // 3. Upload Prompt Files (New)
+      const promptFileUrls = [];
+      for (const file of promptFiles) {
+        const fd = new FormData();
+        fd.append('file', file);
+        const url = await uploadToCloudinary(fd);
+        promptFileUrls.push(url);
+      }
+
+      // 4. Prepare Prompt Data
       const creatorId = profile?.id || user.id;
 
       const isMultiStep = promptTab === 'chain';
@@ -276,6 +285,7 @@ export default function PromptUploadPage() {
       const promptInsert = {
          creator_id: creatorId,
          title,
+         tagline: tagline || title,
          description: tagline || title,
          price: parseInt(price),
          category_id: category || null,
@@ -286,27 +296,62 @@ export default function PromptUploadPage() {
          is_published: true,
          is_multi_step: isMultiStep,
          step_count: stepCount,
-         cover_image_provider: 'cloudinary'
+         cover_image_provider: 'cloudinary',
+         // New fields
+         input_types: inputNeeds.filter(n => n !== 'none'),
+         input_data: inputData,
+         prompt_file_urls: promptFileUrls,
+         target_audience: targetAudience,
+         output_format: outputFormat,
+         use_case_id: null as number | null,
+         verified_at: verifiedDate ? new Date().toISOString() : null, // Store as timestamp or string
+         quick_setup: quickSetup,
+         guide_steps: guideSteps.map(s => s.text),
+         fill_variables: fillVariables,
+         what_to_expect: whatToExpect,
+         pro_tips: proTips,
+         common_mistakes: commonMistakes,
+         how_to_adapt: howToAdapt,
+         complexity,
+         tags,
+         seller_note: sellerNote
       };
 
-      // Save new use case to DB if it doesn't exist
+      // Resolve use_case_id
+      let finalUseCaseId: number | null = null;
       if (selectedUseCase && subCategory) {
-        supabase.from('use_cases')
+        // Try to find existing
+        const { data: existingUC } = await supabase
+          .from('use_cases')
           .select('id')
           .eq('subcategory_id', subCategory)
           .eq('name', selectedUseCase)
-          .single()
-          .then(({data: existingUseCase}) => {
-            if (!existingUseCase) {
-              supabase.from('use_cases').insert([{
-                name: selectedUseCase,
-                category_id: category,
-                subcategory_id: subCategory,
-                is_custom: true
-              }]).then(() => {});
-            }
-          });
+          .maybeSingle();
+
+        if (existingUC) {
+          finalUseCaseId = existingUC.id;
+        } else {
+          // Create new
+          const { data: newUC, error: ucError } = await supabase
+            .from('use_cases')
+            .insert([{
+              name: selectedUseCase,
+              category_id: category,
+              subcategory_id: subCategory,
+              is_custom: true
+            }])
+            .select('id')
+            .single();
+          
+          if (newUC) {
+            finalUseCaseId = newUC.id;
+          } else {
+            console.warn("Failed to create new use case:", ucError);
+          }
+        }
       }
+      
+      promptInsert.use_case_id = finalUseCaseId;
       
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
