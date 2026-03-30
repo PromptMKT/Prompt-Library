@@ -32,6 +32,7 @@ type ExploreFilterSidebarProps = {
   mobileOpen: boolean;
   setMobileOpen: (value: boolean) => void;
   dynamicSections?: { id: string; title: string; options: string[] }[];
+  categorySubcategoryMap?: Record<string, string[]>;
 };
 
 type SidebarBodyProps = Omit<ExploreFilterSidebarProps, "mobileOpen" | "setMobileOpen"> & {
