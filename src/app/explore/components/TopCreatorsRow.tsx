@@ -36,8 +36,12 @@ export function TopCreatorsRow({ creators }: { creators: Creator[] }) {
             key={creator.name}
             className="group min-w-0 rounded-xl border border-border/55 bg-card/85 px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_10px_22px_rgba(58,47,132,0.14)]"
           >
-            <div className="w-7 h-7 rounded-full bg-primary/15 text-primary text-[11px] font-black flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110">
-              {getInitials(creator.name)}
+            <div className="w-7 h-7 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110">
+              <img 
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name}`} 
+                alt={creator.name} 
+                className="w-full h-full object-cover" 
+              />
             </div>
             <p className="font-black text-foreground text-sm leading-none mb-0.5 truncate group-hover:text-primary transition-colors">{creator.name}</p>
             <p className="text-[11px] text-muted-foreground">{creator.prompts} prompts</p>

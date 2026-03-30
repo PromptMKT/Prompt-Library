@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, Rocket, Shield, Globe } from "lucide-react";
+import { Sparkles, Rocket, Shield, Globe, Home } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { ensureUserProfile, isValidEmail, sanitizeEmail, signInWithGoogle, signInWithGithub, toAuthMessage } from "@/lib/auth";
@@ -114,6 +114,10 @@ function SignInContent() {
         </aside>
 
         <section className="relative p-6 sm:p-10 lg:p-14 flex items-center justify-center bg-[#07070b] min-h-dvh">
+          <Link href="/" className="absolute top-6 right-6 lg:top-10 lg:right-10 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-bold hover:bg-white/10 transition-colors flex items-center gap-2 z-50">
+            <Home className="w-4 h-4" />
+            Home
+          </Link>
           <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] bg-size-[32px_32px] pointer-events-none" />
           <div className="w-full max-w-140 space-y-8">
             <div className="space-y-2">

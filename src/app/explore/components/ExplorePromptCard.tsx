@@ -151,8 +151,12 @@ export function ExplorePromptCard({
           
           {/* Footer (Author & Price) */}
           <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-auto">
-            <div className="w-5 h-5 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white shadow-sm shrink-0">
-              {creatorInitials(creator || "Anonymous")}
+            <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+              <img 
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator || "Anonymous"}`} 
+                alt={creator || "Anonymous"} 
+                className="w-full h-full object-cover" 
+              />
             </div>
             <div className="text-[11px] font-medium text-slate-700 flex-1 truncate">
               {creator}

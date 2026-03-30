@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 const PLATFORM_MODELS: Record<string, string[]> = {
   ChatGPT:['GPT-5.1 (latest)','GPT-5','GPT-5 Mini','GPT-4o','GPT-4o Mini','GPT-4 Turbo','o4','o4 Mini','o3','o3 Mini','o1','GPT-3.5 Turbo'],
   Claude:['Claude Opus 4.5 (latest)','Claude Opus 4','Claude Sonnet 4.6','Claude Sonnet 4.5','Claude Haiku 4.5','Claude 3.5 Sonnet','Claude 3.5 Haiku','Claude 3 Opus','Claude 3 Sonnet','Claude 3 Haiku'],
@@ -549,7 +551,15 @@ export default function PromptUploadPage() {
                                         accept={config.accept}
                                         onChange={(e) => {
                                           if (e.target.files) {
-                                            Array.from(e.target.files).forEach(file => handleInputDataItemAdd(id, file));
+                                            const validFiles: File[] = [];
+                                            Array.from(e.target.files).forEach(file => {
+                                              if (file.size > MAX_FILE_SIZE) {
+                                                toast.error(`File ${file.name} exceeds the 10MB limit.`);
+                                              } else {
+                                                validFiles.push(file);
+                                              }
+                                            });
+                                            validFiles.forEach(file => handleInputDataItemAdd(id, file));
                                           }
                                         }}
                                       />
@@ -654,7 +664,15 @@ export default function PromptUploadPage() {
                             accept=".md,.json,.txt" 
                             onChange={(e) => {
                               if (e.target.files) {
-                                setPromptFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                                const validFiles: File[] = [];
+                                Array.from(e.target.files!).forEach((file: File) => {
+                                  if (file.size > MAX_FILE_SIZE) {
+                                    toast.error(`File ${file.name} exceeds the 10MB limit.`);
+                                  } else {
+                                    validFiles.push(file);
+                                  }
+                                });
+                                setPromptFiles(prev => [...prev, ...validFiles]);
                               }
                             }}
                           />
@@ -834,8 +852,13 @@ export default function PromptUploadPage() {
                         <label className="text-[11px] font-black uppercase text-slate-500 mb-2 block">Cover Image (Live Preview)</label>
                         <input type="file" accept="image/*" className="hidden" id="coverUpload" onChange={(e) => {
                            if(e.target.files && e.target.files[0]) {
-                             setCoverFile(e.target.files[0]);
-                             setImagePreview(URL.createObjectURL(e.target.files[0]));
+                             const file = e.target.files[0];
+                             if (file.size > MAX_FILE_SIZE) {
+                               toast.error("Cover image exceeds the 10MB limit.");
+                               return;
+                             }
+                             setCoverFile(file);
+                             setImagePreview(URL.createObjectURL(file));
                            }
                         }} />
                         <label htmlFor="coverUpload" className="w-full h-32 border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
@@ -1030,7 +1053,14 @@ export default function PromptUploadPage() {
                       
                       <input type="file" multiple accept="image/*,video/*" className="hidden" id="screenshotUpload" onChange={(e) => {
                         if(e.target.files) {
-                          const newFiles = Array.from(e.target.files);
+                          const newFiles: File[] = [];
+                          Array.from(e.target.files).forEach((file: File) => {
+                            if (file.size > MAX_FILE_SIZE) {
+                              toast.error(`Screenshot ${file.name} exceeds the 10MB limit.`);
+                            } else {
+                              newFiles.push(file);
+                            }
+                          });
                           setScreenshotFiles(prev => [...prev, ...newFiles]);
                           const newUrls = newFiles.map(f => URL.createObjectURL(f));
                           setScreenshots(prev => [...prev, ...newUrls]);

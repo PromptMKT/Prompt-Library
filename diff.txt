@@ -1,0 +1,40 @@
+﻿diff --git a/src/app/upload/page.tsx b/src/app/upload/page.tsx
+index c71659d..74487d8 100644
+--- a/src/app/upload/page.tsx
++++ b/src/app/upload/page.tsx
+@@ -547,7 +547,7 @@ export default function PromptUploadPage() {
+                                             const validFiles: File[] = [];
+                                             Array.from(e.target.files).forEach(file => {
+                                               if (file.size > MAX_FILE_SIZE) {
+-                                                toast.error(`File ${file.name} exceeds the 7MB limit.`);
++                                                toast.error(`File ${file.name} exceeds the 10MB limit.`);
+                                               } else {
+                                                 validFiles.push(file);
+                                               }
+@@ -660,7 +660,7 @@ export default function PromptUploadPage() {
+                                 const validFiles: File[] = [];
+                                 Array.from(e.target.files!).forEach((file: File) => {
+                                   if (file.size > MAX_FILE_SIZE) {
+-                                    toast.error(`File ${file.name} exceeds the 7MB limit.`);
++                                    toast.error(`File ${file.name} exceeds the 10MB limit.`);
+                                   } else {
+                                     validFiles.push(file);
+                                   }
+@@ -847,7 +847,7 @@ export default function PromptUploadPage() {
+                            if(e.target.files && e.target.files[0]) {
+                              const file = e.target.files[0];
+                              if (file.size > MAX_FILE_SIZE) {
+-                               toast.error("Cover image exceeds the 7MB limit.");
++                               toast.error("Cover image exceeds the 10MB limit.");
+                                return;
+                              }
+                              setCoverFile(file);
+@@ -1049,7 +1049,7 @@ export default function PromptUploadPage() {
+                           const newFiles: File[] = [];
+                           Array.from(e.target.files).forEach((file: File) => {
+                             if (file.size > MAX_FILE_SIZE) {
+-                              toast.error(`Screenshot ${file.name} exceeds the 7MB limit.`);
++                              toast.error(`Screenshot ${file.name} exceeds the 10MB limit.`);
+                             } else {
+                               newFiles.push(file);
+                             }

@@ -28,6 +28,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink }: Profi
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="relative mt-[-56px] mb-4">
             <div className="w-[108px] h-[108px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-[36px] font-black tracking-[-0.04em] text-white border-[4px] border-background shadow-[0_0_0_1px_var(--border2)] relative z-10 overflow-hidden">
+<<<<<<< Updated upstream
                {user.display_name 
                  ? user.display_name.split(' ').map((n: any) => n[0]).join('').slice(0, 2).toUpperCase()
                  : user.name
@@ -39,6 +40,21 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink }: Profi
                >
                   <Camera className="w-4 h-4 mr-1" /> Change
                </div>
+=======
+               {user.avatar ? (
+                 <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+               ) : (
+                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username || user.id || 'default'}`} alt="Random Avatar" className="w-full h-full object-cover" />
+               )}
+               {isOwner && (
+                 <div 
+                   className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer z-[11] text-[10px] font-black text-white uppercase tracking-widest"
+                   onClick={() => toast("Photo upload coming soon")}
+                 >
+                    <Camera className="w-4 h-4 mr-1" /> Change
+                 </div>
+               )}
+>>>>>>> Stashed changes
             </div>
             <div className="absolute bottom-2 right-1 w-4 h-4 bg-[#22d3ee] border-[3px] border-background rounded-full z-20" title="Online now" />
           </div>

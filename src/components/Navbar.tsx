@@ -155,13 +155,28 @@ export const Navbar = () => {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    suppressHydrationWarning
-                    aria-label="Open profile menu"
-                    className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-background hover:border-primary transition-colors"
-                  >
-                    <User className="h-5 w-5 text-primary" />
-                  </button>
+                   <button
+                     suppressHydrationWarning
+                     aria-label="Open profile menu"
+                     className={cn(
+                       "hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary/40 bg-background hover:border-primary transition-colors overflow-hidden",
+                       !profile?.avatar_url && "p-0"
+                     )}
+                   >
+                     {profile?.avatar_url ? (
+                       <img 
+                         src={profile.avatar_url} 
+                         alt={profile.username || "User"} 
+                         className="h-full w-full object-cover" 
+                       />
+                     ) : (
+                       <img 
+                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.auth_user_id || 'guest'}`} 
+                         alt="Avatar" 
+                         className="h-full w-full object-cover" 
+                       />
+                     )}
+                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 border border-border/70 p-2 z-9999">
                   <DropdownMenuItem asChild>

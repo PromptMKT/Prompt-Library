@@ -100,11 +100,13 @@ export function PromptCard({
         <Stars rating={rating} />
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="flex items-center gap-2">
-            <img
-              src={author.avatar}
-              className="w-6 h-6 rounded-full"
-              alt={author.username}
-            />
+            <div className="w-6 h-6 rounded-full overflow-hidden shrink-0">
+              <img
+                src={author.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${author.username}`}
+                className="w-full h-full object-cover"
+                alt={author.username}
+              />
+            </div>
             <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[80px]">
               {author.username}
             </span>
