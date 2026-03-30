@@ -245,7 +245,8 @@ function ExploreContent() {
             platforms(name),
             categories(name),
             subcategories(name),
-            users(display_name, username)
+            users(display_name, username),
+            prompt_steps(instruction)
           `)
           .order("created_at", { ascending: false })
           .limit(400);
@@ -317,7 +318,7 @@ function ExploreContent() {
           subcategory: row.subcategories?.name || (row.subcategory_id ? String(row.subcategory_id) : undefined),
           output_type: undefined,
           difficulty: undefined,
-          prompt_text: undefined,
+          prompt_text: (row.prompt_steps && row.prompt_steps.length > 0) ? row.prompt_steps[0].instruction : undefined,
           createdAt: row.created_at,
         }));
 
@@ -613,8 +614,8 @@ function ExploreContent() {
                   const count = tab === "All prompts"
                     ? prompts.length
                     : filteredPrompts.filter((prompt) =>
-                        getPromptText(prompt).includes(normalize(tab.replace(/^for /i, "")))
-                      ).length;
+                      getPromptText(prompt).includes(normalize(tab.replace(/^for /i, "")))
+                    ).length;
 
                   return (
                     <button
@@ -791,6 +792,7 @@ function ExploreContent() {
                     category={prompt.category || "Prompt"}
                     platform={prompt.platform || "AI"}
                     mode={layoutMode}
+                    promptPreview={prompt.prompt_text}
                   />
                 ))}
               </motion.div>
@@ -833,6 +835,7 @@ function ExploreContent() {
                     category={prompt.category || "Prompt"}
                     platform={prompt.platform || "AI"}
                     mode={layoutMode}
+                    promptPreview={prompt.prompt_text}
                   />
                 ))}
               </motion.div>
