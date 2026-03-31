@@ -84,9 +84,11 @@ function getCategoryDesign(category: string) {
   return { type: "domain", icon: Briefcase, color: "text-blue-600 dark:text-blue-400", bgBase: "bg-slate-50 dark:bg-slate-900", badgeGradient: "bg-slate-700 dark:bg-slate-600", borderColor: "border-slate-300 dark:border-slate-700" };
 }
 
-function Curtain({ isCurtainOpen, setIsCurtainOpen, promptPreview }: any) {
+function Curtain({ isCurtainOpen, setIsCurtainOpen, promptPreview, hasImage }: any) {
   return (
-    <div className={cn("curtain absolute inset-y-0 right-0 w-[100.5%] bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl translate-x-[100%] z-50 flex flex-col border-l border-slate-200 dark:border-slate-700 shadow-[-10px_0_20px_rgba(0,0,0,0.05)] dark:shadow-[-10px_0_40px_rgba(0,0,0,0.4)] transition-transform duration-500", !isCurtainOpen && "group-hover:translate-x-[85%]", isCurtainOpen && "!translate-x-0 is-open")}>
+    <div className={cn("curtain absolute inset-y-0 right-0 w-[100.5%] translate-x-[100%] z-50 flex flex-col transition-transform duration-500",
+      hasImage ? "bg-transparent backdrop-blur-none border-transparent shadow-none" : "bg-white/95 dark:bg-[#1e293b]/95 backdrop-blur-xl border-l border-slate-200 dark:border-slate-700 shadow-[-10px_0_20px_rgba(0,0,0,0.05)] dark:shadow-[-10px_0_40px_rgba(0,0,0,0.4)]",
+      !isCurtainOpen && "group-hover:translate-x-[85%]", isCurtainOpen && "!translate-x-0 is-open")}>
 
       <div className={cn("peek-trigger absolute inset-y-0 left-0 w-[15%] h-full flex justify-center items-center cursor-pointer bg-gradient-to-r from-transparent to-black/5 dark:to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300", isCurtainOpen && "opacity-0 pointer-events-none")} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCurtainOpen(true); }}>
         <button className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center transition-all duration-300 scale-90 -translate-x-1 group-hover:scale-100 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-110 outline-none border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300">
@@ -95,36 +97,41 @@ function Curtain({ isCurtainOpen, setIsCurtainOpen, promptPreview }: any) {
       </div>
 
       <div className={cn("curtain-content w-full h-full p-6 flex flex-col pointer-events-none pl-[15%] opacity-0 transition-opacity duration-300 delay-100", isCurtainOpen && "opacity-100 pointer-events-auto")}>
-        <div className="flex justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-700 pb-3 h-10 shrink-0">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5"><Terminal className="w-3.5 h-3.5" /> Details</span>
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCurtainOpen(false); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors pointer-events-auto shrink-0 shadow-sm border border-transparent dark:border-slate-600">
-            <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+        <div className={cn("flex justify-between items-center mb-4 pb-3 h-10 shrink-0", !hasImage && "border-b border-slate-200 dark:border-slate-700")}>
+          <span className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5", hasImage ? "text-white/90 drop-shadow-md" : "text-indigo-600 dark:text-indigo-400")}>
+            {hasImage ? <ImageIcon className="w-3.5 h-3.5" /> : <Terminal className="w-3.5 h-3.5" />}
+            {hasImage ? "Image Preview" : "Details"}
+          </span>
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCurtainOpen(false); }} className={cn("w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors pointer-events-auto shrink-0 shadow-sm border border-transparent dark:border-slate-600", hasImage ? "bg-black/40 hover:bg-black/60 text-white/90" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400")}>
+            <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex-1 w-full text-left font-mono text-[13px] leading-[1.8] text-slate-500 dark:text-slate-400 relative rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-100/50 dark:bg-[#0f172a]/60 overflow-hidden shadow-inner flex flex-col">
-          <div className="px-5 py-6 flex-1 w-full relative overflow-y-auto styled-scrollbar">
-            {promptPreview ? (
-              <p className="relative z-10 font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 flex flex-col gap-2 drop-shadow-sm whitespace-pre-wrap">
-                {promptPreview}
-              </p>
-            ) : (
-              <>
-                <div className="animate-pulse space-y-4 absolute inset-x-5">
-                  <div className="h-2 w-[85%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                  <div className="h-2 w-full bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                  <div className="h-2 w-[90%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                  <div className="h-2 w-[60%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                </div>
-                <p className="mt-8 relative z-10 font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 drop-shadow-sm opacity-50">
-                  Prompt details unavailable.
+        {!hasImage && (
+          <div className="flex-1 w-full text-left font-mono text-[13px] leading-[1.8] text-slate-500 dark:text-slate-400 relative rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-100/50 dark:bg-[#0f172a]/60 overflow-hidden shadow-inner flex flex-col">
+            <div className="px-5 py-6 flex-1 w-full relative overflow-y-auto styled-scrollbar">
+              {promptPreview ? (
+                <p className="relative z-10 font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 flex flex-col gap-2 drop-shadow-sm whitespace-pre-wrap">
+                  {promptPreview}
                 </p>
-              </>
-            )}
+              ) : (
+                <>
+                  <div className="animate-pulse space-y-4 absolute inset-x-5">
+                    <div className="h-2 w-[85%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                    <div className="h-2 w-full bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                    <div className="h-2 w-[90%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                    <div className="h-2 w-[60%] bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                  </div>
+                  <p className="mt-8 relative z-10 font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 drop-shadow-sm opacity-50">
+                    Prompt details unavailable.
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="w-full bg-white dark:bg-slate-800 px-5 py-3 border-t border-slate-200 dark:border-slate-700 text-xs flex justify-between items-center shrink-0 shadow-sm z-10">
+              <span className="font-sans font-bold text-slate-400 cursor-pointer pointer-events-auto hover:text-indigo-500 transition-colors">Expand</span>
+            </div>
           </div>
-          <div className="w-full bg-white dark:bg-slate-800 px-5 py-3 border-t border-slate-200 dark:border-slate-700 text-xs flex justify-between items-center shrink-0 shadow-sm z-10">
-            <span className="font-sans font-bold text-slate-400 cursor-pointer pointer-events-auto hover:text-indigo-500 transition-colors">Expand</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -136,7 +143,10 @@ function TextPromptCard({ props, design, displayTitle, isCurtainOpen, setIsCurta
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-[#faf9f6] dark:bg-[#121210] border border-[#e8e6e1] dark:border-[#2a2825] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col font-serif select-none text-left", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="absolute inset-x-0 top-12 bottom-0 bg-[linear-gradient(transparent_27px,#e5e7eb_28px)] dark:bg-[linear-gradient(transparent_27px,#2a2825_28px)] bg-[length:100%_28px] opacity-40 pointer-events-none">
@@ -175,7 +185,7 @@ function TextPromptCard({ props, design, displayTitle, isCurtainOpen, setIsCurta
           </div>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -185,7 +195,10 @@ function ImageVisualPromptCard({ props, design, displayTitle, isCurtainOpen, set
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 bg-gradient-to-br from-indigo-50 via-purple-50 to-fuchsia-50 dark:from-indigo-950/20 dark:via-purple-900/10 dark:to-fuchsia-950/20 border border-purple-100 dark:border-purple-900/30 text-left flex flex-col", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       {/* Super subtle pattern overlay */}
       <div
@@ -232,7 +245,7 @@ function ImageVisualPromptCard({ props, design, displayTitle, isCurtainOpen, set
             className="text-purple-700 dark:text-purple-300 font-mono font-black bg-white/60 dark:bg-black/40 border border-purple-200/50 dark:border-purple-800/40 px-2 py-1 rounded text-[15px] shadow-sm">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -242,7 +255,10 @@ function CodeTechnicalPromptCard({ props, design, displayTitle, isCurtainOpen, s
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-zinc-50 dark:bg-[#09090b] shadow-sm hover:shadow-emerald-900/20 hover:-translate-y-1 transition-all duration-300 flex flex-col font-mono cursor-pointer overflow-hidden border border-zinc-200 dark:border-[#27272a] text-left", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="h-9 bg-zinc-100 dark:bg-[#18181b] border-b border-zinc-200 dark:border-[#27272a] flex items-center px-4 justify-between shrink-0 relative w-full">
@@ -291,7 +307,7 @@ function CodeTechnicalPromptCard({ props, design, displayTitle, isCurtainOpen, s
           </div>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -301,7 +317,10 @@ function DataAnalysisPromptCard({ props, design, displayTitle, isCurtainOpen, se
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden text-left hover:shadow-xl hover:-translate-y-1 hover:border-cyan-500/30 dark:hover:border-cyan-500/50 transition-all duration-300", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       {/* Grid bg */}
       <div
@@ -360,7 +379,7 @@ function DataAnalysisPromptCard({ props, design, displayTitle, isCurtainOpen, se
             className="font-mono text-cyan-600 dark:text-cyan-400 font-black bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm px-2 py-1 rounded text-[15px]">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -370,7 +389,10 @@ function StrategyPlanningPromptCard({ props, design, displayTitle, isCurtainOpen
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-gradient-to-br from-indigo-50/50 to-white dark:from-[#0f172a] dark:to-[#1e293b] border border-indigo-100 dark:border-indigo-900/40 shadow-sm hover:shadow-xl hover:shadow-indigo-900/10 dark:hover:shadow-indigo-900/30 hover:-translate-y-1 transition-all duration-300 flex flex-col text-left overflow-hidden", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="absolute top-0 py-6 px-1 rounded-full right-6 w-1 h-[80%] bg-indigo-100/50 dark:bg-indigo-900/20 pointer-events-none transition-transform duration-700 flex flex-col justify-between items-center z-0">
@@ -411,7 +433,7 @@ function StrategyPlanningPromptCard({ props, design, displayTitle, isCurtainOpen
             className="font-mono text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded text-[15px] font-black border border-indigo-200 dark:border-indigo-800">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -421,7 +443,10 @@ function LearningEducationPromptCard({ props, design, displayTitle, isCurtainOpe
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-[#fdfaf5] dark:bg-[#111816] border border-[#e2e8f0] dark:border-[#1e2e2b] shadow-sm hover:shadow-xl hover:shadow-teal-900/10 dark:hover:shadow-teal-900/30 hover:-translate-y-1 transition-all duration-300 flex flex-col text-left overflow-hidden", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="absolute top-0 right-4 w-6 h-12 bg-teal-500/10 dark:bg-teal-500/5 rounded-b border-x border-b border-teal-500/20 group-hover:h-16 transition-all duration-500 flex justify-center items-end pb-2 overflow-hidden shadow-inner">
@@ -453,7 +478,7 @@ function LearningEducationPromptCard({ props, design, displayTitle, isCurtainOpe
             className="font-mono text-[15px] font-black text-teal-600 dark:text-teal-400 bg-slate-100 dark:bg-[#1a2422] px-2 py-1 rounded shadow-sm border border-[#e2e8f0] dark:border-[#2a3b37]">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -463,7 +488,10 @@ function AudioVoicePromptCard({ props, design, displayTitle, isCurtainOpen, setI
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-3xl bg-amber-50 dark:bg-amber-950/20 shadow-sm hover:shadow-xl hover:-translate-y-1 overflow-hidden transition-all duration-500 border border-amber-200/50 dark:border-amber-900/30 text-left flex flex-col", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-300/40 dark:from-amber-600/20 via-amber-200/20 dark:via-amber-800/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-70 inset-0 pointer-events-none">
@@ -511,7 +539,7 @@ function AudioVoicePromptCard({ props, design, displayTitle, isCurtainOpen, setI
             className="font-mono text-orange-600 dark:text-orange-400 font-black text-[15px] bg-white/50 dark:bg-black/50 px-2 py-1 rounded shadow-sm border border-amber-200/50 dark:border-amber-900/30">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -521,7 +549,10 @@ function AgenticWorkflowPromptCard({ props, design, displayTitle, isCurtainOpen,
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-emerald-900/10 dark:hover:shadow-emerald-900/20 hover:-translate-y-1 transition-all duration-300 flex flex-col text-left overflow-hidden", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div className="p-6 flex flex-col h-full relative z-10 w-full">
         <div className="flex justify-between items-center mb-5 shrink-0 w-full">
@@ -576,7 +607,7 @@ function AgenticWorkflowPromptCard({ props, design, displayTitle, isCurtainOpen,
             className="font-mono font-black text-[15px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 px-2 py-1 rounded shadow-sm">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -586,7 +617,10 @@ function RolePersonaPromptCard({ props, design, displayTitle, isCurtainOpen, set
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded-[1.25rem] bg-rose-50 dark:bg-[#1a1114] border border-rose-200 dark:border-rose-950/50 shadow-sm hover:shadow-xl hover:shadow-rose-900/20 hover:-translate-y-1 transition-all duration-300 flex flex-col text-left overflow-hidden", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div className="absolute inset-0 opacity-10 dark:opacity-5 mix-blend-multiply dark:mix-blend-overlay pointer-events-none"
         style={{ "backgroundImage": "repeating-linear-gradient(45deg, #e11d48 0, #e11d48 1px, transparent 1px, transparent 16px)" }}>
@@ -621,7 +655,7 @@ function RolePersonaPromptCard({ props, design, displayTitle, isCurtainOpen, set
             className="font-mono text-rose-600 dark:text-rose-400 font-black text-[15px] bg-white/50 dark:bg-black/50 px-2 py-1 rounded border border-rose-200/30 dark:border-rose-900/30 shadow-sm">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
@@ -631,7 +665,10 @@ function DomainSpecificPromptCard({ props, design, displayTitle, isCurtainOpen, 
     <div
       className={cn("group relative w-full max-w-[340px] h-[320px] rounded bg-white dark:bg-[#070b14] border-t-4 border-t-blue-800 dark:border-t-blue-700 border-x border-b border-slate-200 dark:border-[#1e293b] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left overflow-hidden flex flex-col", isCurtainOpen && "curtain-open")}>
       {props.image ? (
-        <img src={props.image} alt={displayTitle} className="absolute inset-0 w-full h-full object-cover opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen pointer-events-none z-0" />
+        <img src={props.image} alt={displayTitle} className={cn(
+          "absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-500",
+          isCurtainOpen ? "opacity-100 z-40 mix-blend-normal dark:opacity-100 dark:mix-blend-normal" : "opacity-10 dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen z-0"
+        )} />
       ) : null}
       <div
         className="p-6 flex flex-col h-full relative z-10 w-full bg-[linear-gradient(135deg,transparent_90px,rgba(30,58,138,0.03)_90px)]">
@@ -663,7 +700,7 @@ function DomainSpecificPromptCard({ props, design, displayTitle, isCurtainOpen, 
             className="font-mono font-black text-[15px] text-white bg-blue-800 dark:bg-blue-700 px-2 py-1 rounded shadow-sm">◈ {props.price}</span>
         </div>
       </div>
-      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} />
+      <Curtain promptPreview={props.promptPreview} isCurtainOpen={isCurtainOpen} setIsCurtainOpen={setIsCurtainOpen} hasImage={!!props.image} />
     </div>
   );
 }
