@@ -4,6 +4,9 @@ import { useMemo, useState, Suspense, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { 
+  getWishlistedIds 
+} from "@/app/actions/wishlist";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
@@ -199,6 +202,7 @@ function ExploreContent() {
   const q = searchParams.get("q") || "";
 
   const [dataset, setDataset] = useState<ExploreDataset>(EMPTY_DATASET);
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
 
   const [selectedFilters, setSelectedFilters] = useState<FilterSelections>({});
   const [openSections, setOpenSections] = useState<OpenSections>({
@@ -245,7 +249,7 @@ function ExploreContent() {
             platforms(name),
             categories(name),
             subcategories(name),
-            users(display_name, username)
+            users!prompts_creator_id_fkey(username, email, avatar_url)
           `)
           .order("created_at", { ascending: false })
           .limit(400);
@@ -265,7 +269,7 @@ function ExploreContent() {
             supabase.from("platforms").select("id, name"),
             supabase.from("categories").select("id, name"),
             supabase.from("subcategories").select("id, name"),
-            supabase.from("users").select("id, auth_user_id, display_name, username"),
+            supabase.from("users").select("id, username, email, avatar_url"),
           ]);
 
           const platformMap = new Map<string, string>();
@@ -277,11 +281,12 @@ function ExploreContent() {
           const subcategoryMap = new Map<string, string>();
           for (const row of subcategoriesRes.data || []) subcategoryMap.set(String(row.id), row.name || String(row.id));
 
-          const userMap = new Map<string, { display_name?: string; username?: string }>();
+          const userMap = new Map<string, { username?: string; email?: string }>();
           for (const row of usersRes.data || []) {
-            const payload = { display_name: row.display_name || undefined, username: row.username || undefined };
-            userMap.set(String(row.id), payload);
-            if (row.auth_user_id) userMap.set(String(row.auth_user_id), payload);
+            userMap.set(String(row.id), { 
+              username: row.username || undefined, 
+              email: row.email || undefined 
+            });
           }
 
           rows = (plainQuery.data || []).map((row: any) => ({
@@ -302,37 +307,51 @@ function ExploreContent() {
           return;
         }
 
-        const mappedPrompts: PromptRecord[] = rows.map((row: any) => ({
-          id: String(row.id),
-          title: row.title || "Untitled Prompt",
-          short_description: row.description || "Prompt system that ships outcomes.",
-          images: row.cover_image_url ? [row.cover_image_url] : [],
-          rating: Number(row.average_rating || 4.8),
-          sales: Number(row.purchases_count || 0),
-          tags: [],
-          seller: row.users?.display_name || row.users?.username || "Creator",
-          price: Number(row.price || 0),
-          platform: row.platforms?.name || String(row.platform_id || "AI"),
-          category: row.categories?.name || String(row.category_id || "Prompt"),
-          subcategory: row.subcategories?.name || (row.subcategory_id ? String(row.subcategory_id) : undefined),
-          output_type: undefined,
-          difficulty: undefined,
-          prompt_text: undefined,
-          createdAt: row.created_at,
-        }));
+        const mappedPrompts: (PromptRecord & { creator_id?: string })[] = rows.map((row: any) => {
+          const userData = row.users || {};
+          const sellerName = userData.username || userData.display_name || "Creator";
 
-        const sellerStats = new Map<string, { prompts: number; sales: number }>();
+          return {
+            id: String(row.id),
+            title: row.title || "Untitled Prompt",
+            short_description: row.description || "Prompt system that ships outcomes.",
+            images: row.cover_image_url ? [row.cover_image_url] : [],
+            rating: Number(row.average_rating || 4.8),
+            sales: Number(row.purchases_count || 0),
+            tags: [],
+            seller: sellerName,
+            creator_id: row.creator_id || null,
+            price: Number(row.price || 0),
+            platform: row.platforms?.name || String(row.platform_id || "AI"),
+            category: row.categories?.name || String(row.category_id || "Prompt"),
+            subcategory: row.subcategories?.name || (row.subcategory_id ? String(row.subcategory_id) : undefined),
+            output_type: undefined,
+            difficulty: undefined,
+            prompt_text: undefined,
+            createdAt: row.created_at,
+          };
+        });
+
+        // Improved Top Creators calculation (Group by creator_id)
+        const sellerStats = new Map<string, { prompts: number; sales: number; name: string }>();
         for (const prompt of mappedPrompts) {
-          const sellerName = prompt.seller || "Creator";
-          const current = sellerStats.get(sellerName) || { prompts: 0, sales: 0 };
+          const cid = prompt.creator_id || "anonymous";
+          const current = sellerStats.get(cid) || { prompts: 0, sales: 0, name: prompt.seller };
           current.prompts += 1;
           current.sales += Number(prompt.sales || 0);
-          sellerStats.set(sellerName, current);
+          
+          // If we had a generic name but now found a specific one, update it
+          if (current.name === "Creator" && prompt.seller !== "Creator") {
+            current.name = prompt.seller;
+          }
+          
+          sellerStats.set(cid, current);
         }
 
         const topCreators = Array.from(sellerStats.entries())
-          .map(([name, stats]) => ({
-            name,
+          .filter(([cid]) => cid !== "anonymous") // Only show real identified creators
+          .map(([cid, stats]) => ({
+            name: stats.name,
             prompts: stats.prompts,
             sales: stats.sales,
             score: stats.sales * 10 + stats.prompts * 100,
@@ -352,6 +371,12 @@ function ExploreContent() {
           trendingTags: ["All", ...trendingTags],
           prompts: mappedPrompts,
         });
+
+        // Also fetch user's wishlist IDs
+        const wishIds = await getWishlistedIds();
+        if (wishIds) {
+          setWishlistedIds(new Set(wishIds));
+        }
       } catch {
         setDataset(EMPTY_DATASET);
       }
@@ -791,6 +816,7 @@ function ExploreContent() {
                     category={prompt.category || "Prompt"}
                     platform={prompt.platform || "AI"}
                     mode={layoutMode}
+                    initialWishlisted={wishlistedIds.has(prompt.id)}
                   />
                 ))}
               </motion.div>
@@ -833,6 +859,7 @@ function ExploreContent() {
                     category={prompt.category || "Prompt"}
                     platform={prompt.platform || "AI"}
                     mode={layoutMode}
+                    initialWishlisted={wishlistedIds.has(prompt.id)}
                   />
                 ))}
               </motion.div>
@@ -884,6 +911,7 @@ function ExploreContent() {
                         category={prompt.category || "Prompt"}
                         platform={prompt.platform || "AI"}
                         mode={layoutMode}
+                        initialWishlisted={wishlistedIds.has(prompt.id)}
                       />
                     ))}
                   </motion.div>

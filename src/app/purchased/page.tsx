@@ -1,16 +1,78 @@
 "use client";
 
-import { Download, ChevronRight, ShoppingBag, Eye, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, ShoppingBag, Eye, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-const purchasedItems = [
-  { id: "1", title: "Corporate Presentation Wizard", date: "Mar 18, 2026", price: 45, platform: "Midjourney", author: "design_guru", image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100&h=100&fit=crop" },
-  { id: "2", title: "Advanced Python Debugger Prompt", date: "Mar 12, 2026", price: 29, platform: "Claude", author: "code_master" },
-  { id: "3", title: "Travel Blog Blueprint", date: "Feb 28, 2026", price: 15, platform: "ChatGPT", author: "content_ninja" },
-];
+import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 export default function PurchasedPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPurchased = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('purchases')
+          .select(`
+            id,
+            purchased_at,
+            amount_paid,
+            prompts (
+              id,
+              title,
+              cover_image_url,
+              platforms (name),
+              users!prompts_creator_id_fkey (username)
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .order('purchased_at', { ascending: false });
+
+        if (error) throw error;
+
+        const mapped = (data || []).map((item: any) => ({
+          id: item.id,
+          title: item.prompts?.title || "Unknown Prompt",
+          date: new Date(item.purchased_at).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+          }),
+          price: item.amount_paid,
+          platform: item.prompts?.platforms?.name || "AI",
+          author: item.prompts?.users?.username || "Unknown",
+          image: item.prompts?.cover_image_url,
+          prompt_id: item.prompts?.id
+        }));
+
+        setItems(mapped);
+      } catch (err) {
+        console.error("Purchased fetch error:", err);
+        // toast.error("Failed to load purchase history");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPurchased();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1200px] mx-auto p-6 md:p-10 space-y-10">
       <header className="space-y-2">
@@ -18,13 +80,13 @@ export default function PurchasedPage() {
         <p className="text-muted-foreground font-medium">Access and download your purchased AI prompts and assets.</p>
       </header>
 
-      {purchasedItems.length > 0 ? (
+      {items.length > 0 ? (
         <div className="space-y-4">
-          {purchasedItems.map((item) => (
+          {items.map((item) => (
             <div key={item.id} className="bg-card/40 border border-border/50 rounded-3xl p-5 hover:border-primary/30 hover:bg-secondary/30 transition-all group flex flex-col sm:flex-row items-center gap-6">
               <div className="w-20 h-20 rounded-2xl bg-secondary relative overflow-hidden flex-shrink-0">
                  {item.image ? (
-                   <img src={item.image} className="w-full h-full object-cover" />
+                   <img src={item.image} className="w-full h-full object-cover" alt={item.title} />
                  ) : (
                    <div className="w-full h-full flex items-center justify-center text-muted-foreground font-black text-xs uppercase bg-primary/5">P</div>
                  )}
@@ -40,11 +102,16 @@ export default function PurchasedPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                 <button className="h-11 px-6 rounded-2xl bg-secondary border border-border text-xs font-black uppercase tracking-widest text-foreground hover:bg-white hover:border-primary/50 transition-all flex items-center gap-2" onClick={() => toast.success("Opening prompt preview...")}>
-                   <Eye className="w-4 h-4" /> View Prompt
-                 </button>
-                 <button className="h-11 px-6 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" onClick={() => toast.success("Downloading prompt package...")}>
-                   <Download className="w-4 h-4" /> Download
+                 <Link href={`/prompt/${item.prompt_id}`}>
+                   <button className="h-11 px-6 rounded-2xl bg-secondary border border-border text-xs font-black uppercase tracking-widest text-foreground hover:bg-white hover:border-primary/50 transition-all flex items-center gap-2">
+                     <Eye className="w-4 h-4" /> View Prompt
+                   </button>
+                 </Link>
+                 <button 
+                   className="h-11 px-6 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" 
+                   onClick={() => toast.success("Accessing prompt details...")}
+                 >
+                   <Download className="w-4 h-4" /> Access
                  </button>
               </div>
             </div>
@@ -59,9 +126,11 @@ export default function PurchasedPage() {
               <h3 className="text-xl font-bold text-foreground">No purchases yet</h3>
               <p className="text-sm text-muted-foreground">Found something you like? Explore our library.</p>
            </div>
-           <button className="px-8 py-3 rounded-full bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
-             Explore Prompts
-           </button>
+           <Link href="/explore">
+             <button className="px-8 py-3 rounded-full bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">
+               Explore Prompts
+             </button>
+           </Link>
         </div>
       )}
     </div>
