@@ -336,13 +336,14 @@ function ExploreContent() {
         const sellerStats = new Map<string, { prompts: number; sales: number; name: string }>();
         for (const prompt of mappedPrompts) {
           const cid = prompt.creator_id || "anonymous";
-          const current = sellerStats.get(cid) || { prompts: 0, sales: 0, name: prompt.seller };
+          const current = sellerStats.get(cid) || { prompts: 0, sales: 0, name: prompt.seller || "Creator" };
           current.prompts += 1;
           current.sales += Number(prompt.sales || 0);
           
           // If we had a generic name but now found a specific one, update it
-          if (current.name === "Creator" && prompt.seller !== "Creator") {
-            current.name = prompt.seller;
+          const currentName = prompt.seller || "Creator";
+          if (current.name === "Creator" && currentName !== "Creator") {
+            current.name = currentName;
           }
           
           sellerStats.set(cid, current);
