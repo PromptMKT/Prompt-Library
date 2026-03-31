@@ -1,27 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowUpRight, ArrowDownLeft, ChevronRight, FileDown, Clock, CheckCircle2, PauseCircle, MoreHorizontal } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { FileDown, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-const TRANSACTIONS = [
-  { id: "tx_1", type: "earned", label: "Sale: Cold Email Framework", ref: "@aditya_k", date: "Mar 20, 2:14pm", amount: "+27", balance: "240", status: "Completed", statusType: "done" },
-  { id: "tx_2", type: "spent", label: "Purchase: React Component Builder", ref: "by Dev K.", date: "Mar 19, 6:30pm", amount: "-50", balance: "213", status: "Completed", statusType: "done" },
-  { id: "tx_3", type: "earned", label: "Sale: LinkedIn Post Engine", ref: "@meera_r", date: "Mar 19, 2:12pm", amount: "+20", balance: "263", status: "Completed", statusType: "done" },
-  { id: "tx_4", type: "topup", label: "Top-up: Popular pack", ref: "via UPI / PhonePe", date: "Mar 18, 11:00am", amount: "+500", balance: "243", status: "Completed", statusType: "done" },
-  { id: "tx_5", type: "earned", label: "Escrow: Cold Email Framework", ref: "@dev_m (pending)", date: "Mar 20, 2:14pm", amount: "+27", balance: "—", status: "In escrow", statusType: "hold" },
-];
+type TransactionRow = {
+  id: string;
+  type: string;
+  date: string;
+  description: string;
+  amount: number;
+  status: "Completed" | "Pending" | "Failed";
+};
 
-export function TransactionHistory() {
-  const [activeTab, setActiveTab] = useState("All");
+type HistoryFilter = "All" | "Credit" | "Debit";
+
+const FILTERS: HistoryFilter[] = ["All", "Credit", "Debit"];
+
+export function TransactionHistory({ rows, loading }: { rows: TransactionRow[]; loading: boolean }) {
+  const [activeTab, setActiveTab] = useState<HistoryFilter>("All");
+
+  const formatType = (value: string) =>
+    value
+      .replace(/_/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+
+  const formatAmount = (value: number) => {
+    const abs = Math.abs(value).toLocaleString();
+    return value < 0 ? `-${abs}` : `+${abs}`;
+  };
+
+  const filteredRows = useMemo(() => {
+    const cloned = [...rows];
+    if (activeTab === "Credit") {
+      return cloned.filter((row) => row.amount > 0);
+    }
+    if (activeTab === "Debit") {
+      return cloned.filter((row) => row.amount < 0);
+    }
+    return cloned;
+  }, [activeTab, rows]);
+
+  const exportCsv = () => {
+    const headers = ["ID", "Type", "Date", "Description", "Amount", "Status"];
+    const dataRows = filteredRows.map((row) => [
+      row.id,
+      row.type,
+      row.date ? new Date(row.date).toLocaleString() : "-",
+      row.description,
+      String(row.amount),
+      row.status,
+    ]);
+
+    const csv = [headers, ...dataRows]
+      .map((line) => line.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "transaction-history.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="bg-white dark:bg-[#11121d] border border-slate-100 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] selection:bg-primary/10">
       {/* Tabs Header */}
-      <div className="px-10 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <div className="flex gap-8 relative">
-          {["All", "Earned", "Spent", "Top-ups"].map((tab) => (
+      <div className="px-6 md:px-10 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-6 md:gap-8 relative flex-wrap">
+          {FILTERS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -42,68 +96,54 @@ export function TransactionHistory() {
           ))}
         </div>
         
-        <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#7C3AED] transition-all">
+        <button
+          onClick={exportCsv}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#7C3AED] transition-all"
+        >
            <FileDown className="w-3.5 h-3.5" /> Export .CSV
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="hidden md:block">
+        <table className="w-full table-fixed text-left border-collapse">
           <thead>
             <tr>
-               <th className="px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Transaction</th>
-               <th className="px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Timestamp</th>
-               <th className="px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Volume</th>
-               <th className="px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Resulting</th>
-               <th className="px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50 text-right">Status</th>
+               <th className="w-[38%] px-4 lg:px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Description</th>
+               <th className="w-[18%] px-4 lg:px-6 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Date</th>
+               <th className="w-[14%] px-4 lg:px-6 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50">Type</th>
+               <th className="w-[14%] px-4 lg:px-6 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50 text-right">Amount</th>
+               <th className="w-[16%] px-4 lg:px-8 py-5 text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] border-b border-slate-50 dark:border-slate-800/50 text-right">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50/50 dark:divide-slate-800/50">
-            {TRANSACTIONS.map((tx) => (
-              <tr key={tx.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-all group cursor-default">
-                <td className="px-8 py-5 min-w-[300px]">
-                  <div className="flex items-center gap-4">
-                     <div className={cn(
-                       "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 shadow-sm",
-                       tx.type === "earned" ? "bg-[#7C3AED10] text-[#7C3AED] border border-[#7C3AED20]" :
-                       tx.type === "spent" ? "bg-slate-50 dark:bg-white/5 text-slate-400 border border-slate-100 dark:border-slate-800" : 
-                       "bg-[#7C3AED20] text-[#7C3AED] border border-[#7C3AED40]"
-                     )}>
-                       {tx.type === "earned" ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
-                     </div>
-                     <div className="flex flex-col">
-                        <div className="text-[13px] font-black text-slate-900 dark:text-white leading-none mb-1.5">{tx.label}</div>
-                        <div className="text-[10px] font-bold text-slate-400 truncate opacity-60 flex items-center gap-1.5 uppercase tracking-wider">
-                           <span className="w-1 h-1 rounded-full bg-slate-300" /> {tx.ref}
-                        </div>
-                     </div>
-                  </div>
+            {!loading && filteredRows.map((row) => (
+              <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-all group cursor-default">
+                <td className="px-4 lg:px-8 py-5">
+                  <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{row.description}</div>
                 </td>
-                <td className="px-8 py-5">
-                   <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 tabular-nums">
-                      <Clock className="w-3 h-3 opacity-40" /> {tx.date}
-                   </div>
+                <td className="px-4 lg:px-6 py-5 text-[11px] font-bold text-slate-400 tabular-nums">
+                  {row.date ? new Date(row.date).toLocaleString() : "-"}
                 </td>
-                <td className="px-8 py-5">
-                  <div className={cn(
-                    "text-[14px] font-black font-mono tracking-tight flex items-baseline gap-1",
-                    tx.type === "earned" ? "text-[#7C3AED]" : "text-slate-900 dark:text-white"
-                  )}>
-                    <span className="text-[10px] opacity-40 select-none">⬡</span> {tx.amount}
-                  </div>
+                <td className="px-4 lg:px-6 py-5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap overflow-hidden text-ellipsis">
+                  {formatType(row.type)}
                 </td>
-                <td className="px-8 py-5 text-[11px] font-bold text-slate-400 tabular-nums font-mono opacity-80">
-                   {tx.balance !== "—" ? <><span className="opacity-40 tracking-tighter mr-1">⬡</span>{tx.balance}</> : "—"}
+                <td className={cn(
+                  "px-4 lg:px-6 py-5 text-[13px] font-black tabular-nums text-right whitespace-nowrap",
+                  row.amount > 0 ? "text-green-500" : "text-red-500"
+                )}>
+                  {formatAmount(row.amount)}
                 </td>
-                <td className="px-8 py-5 text-right">
+                <td className="px-4 lg:px-8 py-5 text-right">
                    <div className={cn(
                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all",
-                     tx.statusType === "done" ? "bg-[#7C3AED05] text-[#7C3AED] border-[#7C3AED15]" :
-                     tx.statusType === "hold" ? "bg-rose-500/5 text-rose-500 border-rose-500/15" :
-                     "bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-100 dark:border-slate-800"
+                     row.status === "Completed" && "bg-green-500/5 text-green-500 border-green-500/10",
+                     row.status === "Pending" && "bg-yellow-500/5 text-yellow-500 border-yellow-500/10",
+                     row.status === "Failed" && "bg-red-500/5 text-red-500 border-red-500/10",
                    )}>
-                      {tx.statusType === "done" ? <CheckCircle2 className="w-2.5 h-2.5" /> : <PauseCircle className="w-2.5 h-2.5" />}
-                      {tx.status}
+                      {row.status === "Completed" && <CheckCircle2 className="w-2.5 h-2.5" />}
+                      {row.status === "Pending" && <RefreshCw className="w-2.5 h-2.5 animate-spin" />}
+                      {row.status === "Failed" && <XCircle className="w-2.5 h-2.5" />}
+                      {row.status}
                    </div>
                 </td>
               </tr>
@@ -112,14 +152,42 @@ export function TransactionHistory() {
         </table>
       </div>
 
-      <div className="px-10 py-8 bg-slate-50/30 dark:bg-white/[0.01] border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
+      <div className="md:hidden px-4 py-4 space-y-3">
+        {!loading && filteredRows.map((row) => (
+          <div key={row.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/30 dark:bg-white/[0.01]">
+            <div className="text-[13px] font-black text-slate-900 dark:text-white leading-snug">{row.description}</div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+              <div className="text-slate-400 font-bold">Date</div>
+              <div className="text-slate-800 dark:text-slate-200 font-bold text-right">{row.date ? new Date(row.date).toLocaleString() : "-"}</div>
+              <div className="text-slate-400 font-bold">Type</div>
+              <div className="text-slate-800 dark:text-slate-200 font-bold text-right uppercase">{formatType(row.type)}</div>
+              <div className="text-slate-400 font-bold">Amount</div>
+              <div className={cn("font-black text-right whitespace-nowrap", row.amount > 0 ? "text-green-500" : "text-red-500")}>{formatAmount(row.amount)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!loading && filteredRows.length === 0 && (
+        <div className="px-10 py-12 text-center text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+          No transactions found for this filter.
+        </div>
+      )}
+
+      {loading && (
+        <div className="px-10 py-12 text-center text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+          Loading transaction history...
+        </div>
+      )}
+
+      <div className="px-6 md:px-10 py-8 bg-slate-50/30 dark:bg-white/[0.01] border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             Showing <span className="text-slate-900 dark:text-white font-black">1-5</span> of 48 transactions
+             Showing <span className="text-slate-900 dark:text-white font-black">{filteredRows.length}</span> of {rows.length} transactions
           </div>
           <div className="flex items-center gap-2">
               <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all disabled:opacity-30" disabled>←</button>
               <div className="px-4 h-9 flex items-center justify-center rounded-xl bg-[#7C3AED10] text-[11px] font-black text-[#7C3AED] tracking-tighter">1</div>
-              <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">→</button>
+              <button className="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 transition-all disabled:opacity-30" disabled>→</button>
           </div>
       </div>
     </div>

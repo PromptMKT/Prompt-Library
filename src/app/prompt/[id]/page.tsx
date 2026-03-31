@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { purchasePromptWithCoins } from "@/app/actions/purchase-actions";
 
 type PromptItem = {
   id: string;
@@ -499,38 +500,31 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
       return;
     }
 
-    if (isPurchasing) return;
+    if (!prompt) return;
+
     setIsPurchasing(true);
+    toast.loading("Processing your purchase...", { id: "purchase-toast" });
 
     try {
-      // Record purchase in database
-      const { error } = await supabase
-        .from('purchases')
-        .insert([{
-          user_id: user.id,
-          prompt_id: params.id,
-          amount_paid: prompt?.price || 0,
-          currency: 'USD',
-          status: 'completed'
-        }]);
+      const result = await purchasePromptWithCoins(prompt.id);
 
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation (already purchased)
-           setIsPurchased(true);
-           toast.success("You already own this prompt!");
-           return;
-        }
-        throw error;
+      if (result.success) {
+        toast.success("Prompt purchased successfully!", { id: "purchase-toast" });
+        setIsPurchased(true);
+      } else {
+        toast.error(result.message || "Purchase failed.", { id: "purchase-toast" });
       }
-
-      setIsPurchased(true);
-      toast.success("Purchase successful! Content unlocked.");
-    } catch (err: any) {
-      console.error("Purchase error:", err);
-      toast.error("Failed to complete purchase. Please try again.");
+    } catch (error: any) {
+      toast.error(error.message || "An unexpected error occurred.", { id: "purchase-toast" });
     } finally {
       setIsPurchasing(false);
     }
+  };
+
+  const handleCopyPrompt = () => {
+    if (!prompt) return;
+    navigator.clipboard.writeText(prompt.promptText);
+    toast.success("Prompt copied to clipboard!");
   };
 
   return (

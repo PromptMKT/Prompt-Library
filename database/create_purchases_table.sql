@@ -70,9 +70,21 @@ ALTER TABLE public.purchases ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "purchases_self_read" ON public.purchases;
 CREATE POLICY "purchases_self_read" 
 ON public.purchases FOR SELECT 
-USING (auth.uid() = user_id);
+USING (
+    EXISTS (
+        SELECT 1 FROM public.users u
+        WHERE u.id = purchases.user_id
+            AND u.auth_user_id = auth.uid()
+    )
+);
 
 DROP POLICY IF EXISTS "purchases_self_insert" ON public.purchases;
 CREATE POLICY "purchases_self_insert" 
 ON public.purchases FOR INSERT 
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM public.users u
+        WHERE u.id = purchases.user_id
+            AND u.auth_user_id = auth.uid()
+    )
+);
