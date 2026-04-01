@@ -29,7 +29,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         id: user.id, // Will match existing profile or create a new one with same ID as Auth
         auth_user_id: user.auth_user_id || user.id,
         email: user.email,
-        username: user.username || `user_${user.id.substring(0,8)}`,
+        username: user.username || `user_${user.id.substring(0, 8)}`,
         display_name: editForm.name,
         bio: editForm.bio,
       };
@@ -39,7 +39,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         .upsert(dbPayload, { onConflict: "id" });
 
       if (error) throw error;
-      
+
       toast.success("Profile updated successfully!");
       setIsEditing(false);
       window.location.reload();
@@ -59,7 +59,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
       <div className="h-[200px] relative overflow-hidden bg-gradient-to-br from-[#0d0420] via-[#1a0b3b] to-[#0d1f3c]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(124,58,237,0.25),transparent_50%),radial-gradient(circle_at_80%_30%,rgba(139,92,246,0.15),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.1),transparent_40%)]" />
         {isOwner && (
-          <button 
+          <button
             className="absolute top-[14px] right-[14px] py-[6px] px-[14px] rounded-[20px] text-[11px] font-semibold border border-white/15 bg-black/30 backdrop-blur-[8px] text-white/80 hover:bg-black/50 hover:text-white transition-all flex items-center gap-[5px] z-20"
             onClick={() => toast("Cover editor coming soon")}
           >
@@ -72,26 +72,26 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="relative mt-[-56px] mb-4">
             <div className="w-[108px] h-[108px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-[36px] font-black tracking-[-0.04em] text-white border-[4px] border-background shadow-[0_0_0_1px_var(--border2)] relative z-10 overflow-hidden">
-               {user.avatar ? (
-                 <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
-               ) : (
-                 <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.username || 'default'}&backgroundColor=8B5CF6`} alt="Random Avatar" className="w-full h-full object-cover" />
-               )}
-               {isOwner && (
-                 <div 
-                   className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer z-[11] text-[10px] font-black text-white uppercase tracking-widest"
-                   onClick={() => toast("Photo upload coming soon")}
-                 >
-                    <Camera className="w-4 h-4 mr-1" /> Change
-                 </div>
-               )}
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+              ) : (
+                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.username || 'default'}&backgroundColor=8B5CF6`} alt="Random Avatar" className="w-full h-full object-cover" />
+              )}
+              {isOwner && (
+                <div
+                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer z-[11] text-[10px] font-black text-white uppercase tracking-widest"
+                  onClick={() => toast("Photo upload coming soon")}
+                >
+                  <Camera className="w-4 h-4 mr-1" /> Change
+                </div>
+              )}
             </div>
             <div className="absolute bottom-2 right-1 w-4 h-4 bg-[#22d3ee] border-[3px] border-background rounded-full z-20" title="Online now" />
           </div>
-          
+
           <div className="flex items-center gap-2 pb-3">
             {isOwner ? (
-              <button 
+              <button
                 className="py-[9px] px-[22px] rounded-[2rem] text-[13px] font-bold transition-all shadow-sm border border-border2 hover:bg-secondary text-foreground"
                 onClick={() => setIsEditing(!isEditing)}
               >
@@ -99,7 +99,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
               </button>
             ) : (
               <>
-                <button 
+                <button
                   className={cn(
                     "py-[9px] px-[22px] rounded-[2rem] text-[13px] font-bold transition-all shadow-[0_2px_12px_rgba(124,58,237,0.3)]",
                     isFollowing ? "bg-secondary border border-border2 text-muted-foreground shadow-none" : "bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] text-white hover:opacity-90 active:scale-95"
@@ -124,18 +124,18 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
             <div className="space-y-4 max-w-[500px]">
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Display Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editForm.name}
-                  onChange={e => setEditForm({...editForm, name: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                   className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-2 text-sm text-foreground focus:border-primary outline-none"
                 />
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Bio</label>
-                <textarea 
+                <textarea
                   value={editForm.bio}
-                  onChange={e => setEditForm({...editForm, bio: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
                   className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-2 text-sm text-foreground focus:border-primary outline-none h-24 resize-none"
                 />
               </div>
@@ -147,24 +147,41 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         ) : (
           <div className="pb-5 border-b border-border transition-colors">
             <div className="space-y-1">
-              <div className="text-xl font-black tracking-[-0.08em] flex items-center gap-1">
+              <div className="text-xl font-black tracking-[-0.08em] flex items-center gap-2">
                 {user.name && <span className="text-foreground uppercase italic tracking-normal">{user.name}</span>}
+                {user.verified && <span className="text-[10px] font-bold py-[3px] px-[10px] rounded-full bg-[rgba(34,211,238,0.08)] border border-[rgba(34,211,238,0.2)] text-[#22d3ee]">✓ Verified</span>}
               </div>
-              <p className="text-[12px] text-muted-foreground font-black uppercase tracking-widest">@{user.username || "user"} <span className="mx-2 opacity-30">|</span> MEMBER SINCE {user.memberSince?.toUpperCase()}</p>
+              <p className="text-[12px] text-muted-foreground font-black uppercase tracking-widest">@{user.username || "user"} <span className="mx-2 opacity-30">·</span> Member since {user.memberSince}</p>
             </div>
-            <p className="text-[14px] text-foreground/80 font-bold max-w-[620px] leading-[1.6] my-4">
-              {user.bio || "No bio available."}
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4 mt-2">
-              {["B2B Marketing", "Email", "ChatGPT", "Claude", "Content"].map(tag => (
-                <span key={tag} className="py-1.5 px-[14px] rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20 bg-primary/5 text-primary/80">
-                  {tag}
+            {user.bio && (
+              <p className="text-[14px] text-foreground/80 font-bold max-w-[620px] leading-[1.6] my-4">
+                {user.bio}
+              </p>
+            )}
+            {(user.interests?.length > 0) && (
+              <div className="flex flex-wrap gap-2 mb-4 mt-2">
+                {user.interests.map((tag: string) => (
+                  <span key={tag} className="py-1.5 px-[14px] rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20 bg-primary/5 text-primary/80">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-4 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+              {user.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" /> {user.location}
                 </span>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-              <span className="flex items-center gap-2 underline underline-offset-4 decoration-primary/30"><strong className="text-foreground">{user.followers || 0}</strong> followers <span className="opacity-30">/</span> <strong className="text-foreground">{user.following || 0}</strong> following</span>
-              <span className="flex items-center gap-2"><Star className="w-3.5 h-3.5 fill-amber text-amber" /> <strong className="text-foreground">{user.avgRating || "5.0"}</strong> AVG RATING</span>
+              )}
+              {user.website && (
+                <span className="flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5" /> <a href={user.website.startsWith("http") ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{user.website}</a>
+                </span>
+              )}
+              <span className="flex items-center gap-2"><strong className="text-foreground">{(user.followers || 0).toLocaleString()}</strong> followers <span className="opacity-30">/</span> <strong className="text-foreground">{(user.following || 0).toLocaleString()}</strong> following</span>
+              {user.avgRating > 0 && (
+                <span className="flex items-center gap-2"><Star className="w-3.5 h-3.5 fill-[#e8a838] text-[#e8a838]" /> <strong className="text-foreground">{user.avgRating.toFixed(1)}</strong> avg rating</span>
+              )}
             </div>
           </div>
         )}

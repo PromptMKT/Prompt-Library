@@ -4,16 +4,42 @@ import { cn } from "@/lib/utils";
 
 interface ProfileStatsProps {
   onTabChange?: (tab: any) => void;
+  isOwner?: boolean;
+  promptsCount?: number;
+  totalSales?: number;
+  avgRating?: number;
+  reviewsCount?: number;
+  coins?: number;
+  purchasedCount?: number;
 }
 
-export function ProfileStats({ onTabChange }: ProfileStatsProps) {
-  const stats = [
-    { label: "Prompts", value: 63, id: 'prompts', color: "text-[#F0EEFF]" },
-    { label: "Total sales", value: "4,218", color: "text-[#A78BFA]" },
-    { label: "Avg rating", value: "4.9 ★", id: 'reviews', color: "text-[#e8a838]" },
-    { label: "Reviews", value: 512, id: 'reviews', color: "text-[#F0EEFF]" },
+export function ProfileStats({
+  onTabChange,
+  isOwner = false,
+  promptsCount = 0,
+  totalSales = 0,
+  avgRating = 0,
+  reviewsCount = 0,
+  coins = 0,
+  purchasedCount = 0,
+}: ProfileStatsProps) {
+  const visitorStats = [
+    { label: "Prompts", value: promptsCount.toLocaleString(), id: "prompts", color: "text-foreground" },
+    { label: "Total sales", value: totalSales.toLocaleString(), color: "text-[#A78BFA]" },
+    { label: "Avg rating", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—", id: "reviews", color: "text-[#e8a838]" },
+    { label: "Reviews", value: reviewsCount.toLocaleString(), id: "reviews", color: "text-foreground" },
     { label: "Response rate", value: "98%", color: "text-[#22d3ee]" },
   ];
+
+  const ownerStats = [
+    { label: "Prompts", value: promptsCount.toLocaleString(), id: "prompts", color: "text-foreground" },
+    { label: "Total sales", value: totalSales.toLocaleString(), color: "text-[#A78BFA]" },
+    { label: "Avg rating", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—", id: "reviews", color: "text-[#e8a838]" },
+    { label: "Purchased", value: purchasedCount.toLocaleString(), id: "purchased", color: "text-foreground" },
+    { label: "Coins", value: `◈ ${coins.toLocaleString()}`, color: "text-[#22d3ee]" },
+  ];
+
+  const stats = isOwner ? ownerStats : visitorStats;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 border-b border-[rgba(124,58,237,0.13)] w-full">

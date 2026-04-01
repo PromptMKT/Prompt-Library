@@ -7,15 +7,19 @@ interface ProfileTabsProps {
   onTabChange: (tab: any) => void;
   promptsCount?: number;
   reviewsCount?: number;
+  purchasedCount?: number;
+  wishlistCount?: number;
   isOwner?: boolean;
 }
 
 export function ProfileTabs({
   activeTab,
   onTabChange,
-  promptsCount = 63,
-  reviewsCount = 512,
-  isOwner = false
+  promptsCount = 0,
+  reviewsCount = 0,
+  purchasedCount = 0,
+  wishlistCount = 0,
+  isOwner = false,
 }: ProfileTabsProps) {
   const visitorTabs = [
     { id: "prompts", label: "Prompts", count: promptsCount },
@@ -25,8 +29,8 @@ export function ProfileTabs({
 
   const ownerTabs = [
     { id: "prompts", label: "Published", count: promptsCount },
-    { id: "purchased", label: "Purchased" },
-    { id: "wishlist", label: "Wishlist" },
+    { id: "purchased", label: "Purchased", count: purchasedCount },
+    { id: "wishlist", label: "Wishlist", count: wishlistCount },
     { id: "activity", label: "Activity" },
     { id: "reviews", label: "Reviews", count: reviewsCount },
   ];
@@ -50,12 +54,14 @@ export function ProfileTabs({
           >
             {tab.label}
             {tab.count !== undefined && (
-              <span className={cn(
-                "ml-[8px] px-[6px] py-[2px] rounded-full text-[10px] whitespace-nowrap",
-                isActive
-                  ? "bg-[rgba(139,92,246,0.15)] text-[#A78BFA]"
-                  : "bg-[rgba(255,255,255,0.05)] text-[#8E8E9E]"
-              )}>
+              <span
+                className={cn(
+                  "ml-[8px] px-[6px] py-[2px] rounded-full text-[10px] whitespace-nowrap",
+                  isActive
+                    ? "bg-[rgba(139,92,246,0.15)] text-[#A78BFA]"
+                    : "bg-[rgba(255,255,255,0.05)] text-[#8E8E9E]"
+                )}
+              >
                 {tab.count}
               </span>
             )}
