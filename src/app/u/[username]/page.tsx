@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ChevronRight as ChevronRightIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 import { ProfileHeader } from "./components/ProfileHeader";
@@ -72,19 +72,25 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
 
         const userId = userData.id || userData.auth_user_id;
 
+        // Build a clean display name with fallback chain:
+        // display_name → username → email prefix
+        const rawDisplayName = userData.display_name;
+        const fallbackName = rawDisplayName || userData.username || userData.email?.split("@")[0] || "User";
+
         setUser({
           id: userId,
           auth_user_id: userData.auth_user_id,
           username: userData.username || params.username,
-          name: userData.display_name || userData.name || userData.email || "User",
+          displayName: rawDisplayName || "",  // the actual DB display_name (may be null)
+          name: fallbackName,                   // always has a value for rendering
           email: userData.email,
           avatar: userData.avatar_url,
           bio: userData.bio || "",
           location: userData.location || "",
           website: userData.website || "",
           coins: userData.total_coins || 0,
-          followers: userData.followers || 0,
-          following: userData.following || 0,
+          followers: userData.followers_count || 0,
+          following: userData.following_count || 0,
           verified: userData.is_verified || false,
           avgRating: userData.average_rating || 0,
           interests: userData.interests || [],
@@ -92,8 +98,24 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           totalPurchases: userData.total_purchases || 0,
           memberSince: userData.created_at
             ? new Date(userData.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })
-            : "Just now",
+            : "Just joined",
         });
+
+        // ── 1.5. Check if current user is following ──
+        // use profile?.id instead of authUser.id because follower_id references public.users(id)
+        if (profile && profile.id !== userId) {
+          const { data: followData } = await supabase
+            .from("follows")
+            .select("id")
+            .eq("follower_id", profile.id)
+            .eq("following_id", userId)
+            .single();
+
+          if (followData) {
+            setIsFollowing(true);
+          }
+        }
+
 
         // ── 2. Fetch user's prompts ──
         const { data: promptsData } = await supabase
@@ -279,14 +301,57 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     );
   }
 
-  const toggleFollow = () => {
-    setIsFollowing(!isFollowing);
-    toast(isFollowing ? "Unfollowed" : `✓ Following ${user.name}`);
+  const toggleFollow = async () => {
+    if (!profile || !profile.id) {
+      toast.error("Please sign in to follow creators");
+      return;
+    }
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", profile.id)
+          .eq("following_id", user.id);
+
+        if (error) throw error;
+        setIsFollowing(false);
+        setUser({ ...user, followers: Math.max(0, user.followers - 1) });
+        toast("Unfollowed");
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from("follows")
+          .insert({
+            follower_id: profile.id,
+            following_id: user.id
+          });
+
+        if (error) throw error;
+        setIsFollowing(true);
+        setUser({ ...user, followers: user.followers + 1 });
+        toast.success(`✓ Following ${user.name}`);
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    }
   };
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success("✓ Link copied to clipboard!");
+  };
+
+  const handleProfileSave = ({ username, bio }: { username: string; bio: string }) => {
+    const usernameChanged = username !== user.username;
+    if (usernameChanged) {
+      // Redirect to new username URL since the route param is based on username
+      window.location.href = `/u/${username}`;
+    } else {
+      setUser((prev: any) => ({ ...prev, bio }));
+    }
   };
 
   const isOwner = profile?.username === user.username || authUser?.id === user.auth_user_id;
@@ -299,6 +364,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         onFollow={toggleFollow}
         onCopyLink={copyLink}
         isOwner={isOwner}
+        onSave={handleProfileSave}
       />
 
       <ProfileStats
@@ -312,8 +378,8 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         purchasedCount={stats.purchasedCount}
       />
 
-      <div className="max-w-[1400px] mx-auto p-7 pb-[60px]">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
+      <div className="max-w-[1400px] mx-auto px-7 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-8 items-start">
           <div className="space-y-6 min-w-0">
             <ProfileTabs
               activeTab={activeTab}
@@ -491,23 +557,25 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             </div>
           </div>
 
-          {isOwner ? (
-            <ProfileSidebarContent
-              coins={user.coins}
-              totalSales={stats.totalSales}
-              platformBreakdown={platformBreakdown}
-              prompts={sellerPrompts}
-            />
-          ) : (
-            <VisitorSidebarContent
-              user={user}
-              prompts={sellerPrompts}
-              totalSales={stats.totalSales}
-              avgRating={stats.avgRating}
-              reviewsCount={stats.totalReviews}
-              platformBreakdown={platformBreakdown}
-            />
-          )}
+          <div className="hidden xl:block">
+            {isOwner ? (
+              <ProfileSidebarContent
+                coins={user.coins}
+                totalSales={stats.totalSales}
+                platformBreakdown={platformBreakdown}
+                prompts={sellerPrompts}
+              />
+            ) : (
+              <VisitorSidebarContent
+                user={user}
+                prompts={sellerPrompts}
+                totalSales={stats.totalSales}
+                avgRating={stats.avgRating}
+                reviewsCount={stats.totalReviews}
+                platformBreakdown={platformBreakdown}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -30,7 +30,7 @@ export function ProfileAbout({
 }: ProfileAboutProps) {
   const creatorStats = [
     { label: "Member since", value: user?.memberSince || "—" },
-    { label: "Response rate", value: "98% · avg 4h", color: "text-[#22d3ee]" },
+    { label: "Response rate", value: "—", color: "text-muted-foreground" },
     { label: "Prompts published", value: promptsCount.toLocaleString() },
     { label: "Total reviews", value: reviewsCount.toLocaleString(), color: "text-[#A78BFA]" },
     { label: "Total sales", value: totalSales.toLocaleString() },

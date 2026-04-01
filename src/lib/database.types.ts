@@ -195,6 +195,42 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string | null
+          following_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_groups: {
         Row: {
           id: number
@@ -1083,6 +1119,8 @@ export type Database = {
           created_at: string | null
           creator_id: string | null
           email: string
+          followers_count: number | null
+          following_count: number | null
           id: string
           interests: string[] | null
           is_active: boolean | null
@@ -1106,6 +1144,8 @@ export type Database = {
           created_at?: string | null
           creator_id?: string | null
           email: string
+          followers_count?: number | null
+          following_count?: number | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
@@ -1129,6 +1169,8 @@ export type Database = {
           created_at?: string | null
           creator_id?: string | null
           email?: string
+          followers_count?: number | null
+          following_count?: number | null
           id?: string
           interests?: string[] | null
           is_active?: boolean | null
