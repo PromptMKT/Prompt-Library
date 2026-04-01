@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Eye, Heart, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toggleWishlistAction, isWishlisted as checkWishlisted } from "@/app/actions/wishlist";
@@ -107,6 +108,7 @@ export function ExplorePromptCard({
     return cleanUrl.endsWith(".mp4") || cleanUrl.endsWith(".webm") || cleanUrl.endsWith(".mov") || cleanUrl.endsWith(".ogg");
   };
 
+  const router = useRouter();
   const displayTitle = withPromptPrefix(title);
   const normalizedRating = Number.isFinite(rating) ? rating : 4.8;
   const listDescription = (description || title || "Untitled prompt").trim();
@@ -175,11 +177,16 @@ export function ExplorePromptCard({
           </div>
           
           <div className="flex items-center gap-2 pt-4 border-t border-slate-100 mt-auto">
-            <div className="w-5 h-5 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white shadow-sm shrink-0">
-              {creatorInitials(creator || "Anonymous")}
-            </div>
-            <div className="text-[11px] font-medium text-slate-700 flex-1 truncate">
-              {creator}
+            <div 
+              className="flex items-center gap-2 flex-1 cursor-pointer hover:opacity-80 transition-opacity z-20"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/u/${creator}`); }}
+            >
+              <div className="w-5 h-5 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white shadow-sm shrink-0">
+                {creatorInitials(creator || "Anonymous")}
+              </div>
+              <div className="text-[11px] font-medium text-slate-700 truncate hover:text-purple-600 transition-colors">
+                {creator}
+              </div>
             </div>
             <div className="text-sm font-bold font-mono text-purple-600">
               ◈ {price}

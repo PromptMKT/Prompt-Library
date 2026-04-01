@@ -1,6 +1,7 @@
 "use client";
 
 import { Gem, Star } from "lucide-react";
+import Link from "next/link";
 
 type Creator = {
   name: string;
@@ -32,9 +33,10 @@ export function TopCreatorsRow({ creators }: { creators: Creator[] }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-2">
         {creators.map((creator) => (
-          <div
+          <Link
+            href={`/u/${creator.name}`}
             key={creator.name}
-            className="group min-w-0 rounded-xl border border-border/55 bg-card/85 px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_10px_22px_rgba(58,47,132,0.14)]"
+            className="group min-w-0 rounded-xl border border-border/55 bg-card/85 px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_10px_22px_rgba(58,47,132,0.14)] block"
           >
             <div className="w-7 h-7 rounded-full bg-primary/15 text-primary text-[11px] font-black flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110">
               {getInitials(creator.name)}
@@ -47,7 +49,7 @@ export function TopCreatorsRow({ creators }: { creators: Creator[] }) {
               </span>
               <span>{creator.sales} sales</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

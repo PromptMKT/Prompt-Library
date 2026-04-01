@@ -267,10 +267,15 @@ const SectionCard200 = ({
               <span className="font-mono font-bold text-foreground">{p.rating.toFixed(1)}</span>
             </div>
             <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-[8px] font-bold text-white shrink-0 uppercase">
-                {p.author.charAt(0)}
+              <div 
+                className="flex items-center gap-2 flex-1 cursor-pointer hover:opacity-80 transition-opacity z-20"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/u/${p.author}`; }}
+              >
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-[8px] font-bold text-white shrink-0 uppercase">
+                  {p.author.charAt(0)}
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate hover:text-primary transition-colors">{p.author}</div>
               </div>
-              <div className="text-[11px] text-muted-foreground flex-1 truncate">{p.author}</div>
               <div className="text-sm font-bold font-mono text-primary">◈ {p.price}</div>
             </div>
           </div>
@@ -409,11 +414,16 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
       </div>
       
       <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 mt-auto">
-        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-[7px] font-bold text-white shadow-sm shrink-0 uppercase">
-          {p.author.charAt(0)}
-        </div>
-        <div className="text-[10px] font-medium text-slate-700 flex-1 truncate">
-          {p.author}
+        <div 
+          className="flex items-center gap-1.5 flex-1 cursor-pointer hover:opacity-80 transition-opacity z-20"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/u/${p.author}`; }}
+        >
+          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-[7px] font-bold text-white shadow-sm shrink-0 uppercase">
+            {p.author.charAt(0)}
+          </div>
+          <div className="text-[10px] font-medium text-slate-700 truncate hover:text-purple-600 transition-colors">
+            {p.author}
+          </div>
         </div>
         <div className="text-xs font-bold font-mono text-purple-600">
           ◈ {p.price}
@@ -797,7 +807,7 @@ export default function HomePage() {
           <SectionHeader title="Top Contributors" more={false} />
           <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-6 snap-x -mx-2 px-2">
             {contributors.map((c) => (
-              <ProfileCard key={c.seed} c={c} href={`/prompt/${prompts[0].id}`} />
+              <ProfileCard key={c.seed} c={c} href={`/u/${c.name}`} />
             ))}
           </div>
         </section>
