@@ -12,21 +12,22 @@ import { ProfileStats } from "./components/ProfileStats";
 import { ProfileTabs } from "./components/ProfileTabs";
 import { ProfileSidebarContent } from "./components/ProfileSidebarContent";
 import { SellerPromptCard } from "./components/SellerPromptCard";
+import { VisitorSidebarContent } from "./components/VisitorSidebarContent";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 
-type TabType = "published" | "purchased" | "wishlist" | "activity" | "reviews";
+type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
 
 export default function SellerProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
   const { profile, user: authUser, loading: authLoading } = useAuth();
   const params = React.use(paramsPromise);
-  
+
   const [user, setUser] = useState<any>(null);
   const [sellerPrompts, setSellerPrompts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("published");
+  const [activeTab, setActiveTab] = useState<TabType>("prompts");
   const [isFollowing, setIsFollowing] = useState(false);
-  
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -42,7 +43,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         if (userError) throw userError;
 
         let userData = targetUser;
-        
+
         // Use profile if available, or fallback to authUser for "me"/"profile"
         if (!userData && (params.username === "profile" || params.username === "me")) {
           if (profile) {
@@ -169,27 +170,29 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     toast.success("✓ Link copied to clipboard!");
   };
 
+  const isOwner = profile?.username === user.username || authUser?.id === user.auth_user_id;
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
-      <ProfileHeader 
-        user={user} 
-        isFollowing={isFollowing} 
-        onFollow={toggleFollow} 
-        onCopyLink={copyLink} 
-        isOwner={profile?.username === user.username || authUser?.id === user.auth_user_id}
+      <ProfileHeader
+        user={user}
+        isFollowing={isFollowing}
+        onFollow={toggleFollow}
+        onCopyLink={copyLink}
+        isOwner={isOwner}
       />
 
       <ProfileStats onTabChange={setActiveTab} />
 
       <div className="max-w-[1400px] mx-auto p-7 pb-[60px]">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
-          
+
           <div className="space-y-6 min-w-0">
-            <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} isOwner={isOwner} />
 
             <div className="min-h-[400px]">
               <AnimatePresence mode="wait">
-                {activeTab === "published" && (
+                {(activeTab === "published" || activeTab === "prompts") && (
                   <motion.div key="published" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="space-y-6">
                     <div className="filter-bar flex flex-wrap items-center gap-2">
                       {["All", "Live", "Draft", "Under review"].map((filter, i) => (
@@ -201,15 +204,17 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between p-6 bg-primary/5 border border-primary/10 rounded-2xl shadow-sm hover:border-primary transition-all">
-                      <div className="space-y-1">
-                        <div className="text-sm font-black uppercase tracking-tight text-foreground">Ready to list a new prompt?</div>
-                        <div className="text-[11px] text-muted-foreground font-semibold">Your last prompt made <span className="text-primary font-black">₹ 489</span> in its first week</div>
+                    {isOwner && (
+                      <div className="flex items-center justify-between p-6 bg-primary/5 border border-primary/10 rounded-2xl shadow-sm hover:border-primary transition-all">
+                        <div className="space-y-1">
+                          <div className="text-sm font-black uppercase tracking-tight text-foreground">Ready to list a new prompt?</div>
+                          <div className="text-[11px] text-muted-foreground font-semibold">Your last prompt made <span className="text-primary font-black">₹ 489</span> in its first week</div>
+                        </div>
+                        <button className="py-3 px-8 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={() => toast("Opening prompt editor...")}>
+                          + New prompt
+                        </button>
                       </div>
-                      <button className="py-3 px-8 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all" onClick={() => toast("Opening prompt editor...")}>
-                        + New prompt
-                      </button>
-                    </div>
+                    )}
 
                     <div className="flex items-center justify-between pt-4">
                       <div className="text-sm font-black uppercase tracking-[0.14em] text-foreground/80">Published Prompts</div>
@@ -234,8 +239,8 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
             </div>
           </div>
 
-          <ProfileSidebarContent />
-          
+          {isOwner ? <ProfileSidebarContent /> : <VisitorSidebarContent user={user} prompts={sellerPrompts} />}
+
         </div>
       </div>
     </div>

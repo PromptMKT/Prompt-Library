@@ -3,31 +3,31 @@
 import { cn } from "@/lib/utils";
 
 interface ProfileStatsProps {
-  onTabChange: (tab: any) => void;
+  onTabChange?: (tab: any) => void;
 }
 
 export function ProfileStats({ onTabChange }: ProfileStatsProps) {
   const stats = [
-    { label: "Prompts published", value: 41, id: 'published', color: "text-primary" },
-    { label: "Total purchases", value: 128, id: 'purchased', color: "text-primary" },
-    { label: "Total sales made", value: "1,847", color: "text-primary" },
-    { label: "Total earned", value: `2,840`, color: "text-primary" },
-    { label: "Verified reviews", value: 327, id: 'reviews', color: "text-primary" },
+    { label: "Prompts", value: 63, id: 'prompts', color: "text-[#F0EEFF]" },
+    { label: "Total sales", value: "4,218", color: "text-[#A78BFA]" },
+    { label: "Avg rating", value: "4.9 ★", id: 'reviews', color: "text-[#e8a838]" },
+    { label: "Reviews", value: 512, id: 'reviews', color: "text-[#F0EEFF]" },
+    { label: "Response rate", value: "98%", color: "text-[#22d3ee]" },
   ];
 
   return (
-    <div className="flex flex-wrap border-b border-border w-full">
+    <div className="grid grid-cols-2 md:grid-cols-5 border-b border-[rgba(124,58,237,0.13)] w-full">
       {stats.map((stat, i) => (
-        <div 
-          key={i} 
-          className="flex-1 min-w-[150px] py-6 px-5 text-center cursor-pointer hover:bg-primary/5 transition-all duration-300 border-r border-border last:border-r-0 group"
-          onClick={() => stat.id && onTabChange(stat.id)}
+        <div
+          key={i}
+          className="flex flex-col items-center justify-center py-[18px] text-center cursor-pointer transition-all duration-150 border-r border-[rgba(124,58,237,0.13)] last:border-r-0 hover:bg-[rgba(139,92,246,0.08)] group relative"
+          onClick={() => stat.id && onTabChange && onTabChange(stat.id)}
         >
-          <div className={cn("text-3xl font-black tracking-tighter mb-1 transition-transform group-hover:scale-110 duration-500", stat.color)}>
-            {i === 3 && <span className="text-xl mr-1 opacity-50 select-none">◈</span>}
+          <div className={cn("text-[20px] font-extrabold font-mono leading-none mb-1", stat.color)}>
             {stat.value}
           </div>
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground group-hover:text-primary transition-colors">{stat.label}</div>
+          <div className="text-[10px] text-[#9B8EC4] font-semibold uppercase tracking-[0.5px]">{stat.label}</div>
+          <div className="absolute bottom-0 left-[25%] right-[25%] h-[2px] rounded-[2px] bg-[#8B5CF6] opacity-0 transition-opacity duration-200 group-hover:opacity-60" />
         </div>
       ))}
     </div>

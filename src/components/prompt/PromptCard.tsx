@@ -99,7 +99,14 @@ export function PromptCard({
         )}
         <Stars rating={rating} />
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.location.href = `/u/${author.username}`;
+            }}
+          >
             <img
               src={author.avatar}
               className="w-6 h-6 rounded-full"

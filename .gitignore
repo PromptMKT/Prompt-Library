@@ -16,7 +16,7 @@
 # next.js
 /.next/
 /out/
-
+/raw_static_designs/*
 # production
 /build
 
