@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Edit, MapPin, Link as LinkIcon, Star, Share2, Loader2, CheckCircle2, XCircle, X, Plus } from "lucide-react";
+import { Camera, Edit, MapPin, Link as LinkIcon, Share2, Loader2, CheckCircle2, XCircle, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -28,6 +28,55 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
   });
   const [interestInput, setInterestInput] = useState("");
   const [skillInput, setSkillInput] = useState("");
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "cover") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size must be less than 2MB");
+      return;
+    }
+
+    try {
+      if (type === "avatar") setIsUploadingAvatar(true);
+      else setIsUploadingCover(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.auth_user_id || user.id}-${type}-${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from("profiles")
+        .upload(fileName, file, { upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from("profiles").getPublicUrl(fileName);
+
+      const filterCol = user.auth_user_id ? "auth_user_id" : "id";
+      const filterVal = user.auth_user_id || user.id;
+      const updatePayload = type === "avatar" ? { avatar_url: publicUrl } : { cover_url: publicUrl };
+
+      const { error: dbError } = await supabase.from("users").update(updatePayload).eq(filterCol, filterVal);
+      if (dbError) throw dbError;
+
+      toast.success(`${type === "avatar" ? "Profile picture" : "Cover photo"} updated!`);
+      // Reload is safest here so AuthProvider re-fetches the navbar avatar as well
+      window.location.reload();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Upload failed: ${err.message}`);
+    } finally {
+      if (type === "avatar") setIsUploadingAvatar(false);
+      else setIsUploadingCover(false);
+      if (e.target) e.target.value = "";
+    }
+  };
 
   // Username availability check state
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "unchanged">("idle");
@@ -143,15 +192,26 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
   return (
     <>
       {/* ── Cover ── */}
-      <div className="h-[180px] relative overflow-hidden bg-gradient-to-br from-[#0d0420] via-[#1a0b3b] to-[#0d1f3c]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(124,58,237,0.25),transparent_50%),radial-gradient(circle_at_80%_30%,rgba(139,92,246,0.15),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.1),transparent_40%)]" />
+      <div className="h-[180px] relative overflow-hidden bg-[#0a0514]">
+        {user.cover_url ? (
+          <img src={user.cover_url} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0d0420] via-[#1a0b3b] to-[#0d1f3c]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(124,58,237,0.25),transparent_50%),radial-gradient(circle_at_80%_30%,rgba(139,92,246,0.15),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.1),transparent_40%)]" />
+          </div>
+        )}
         {isOwner && (
-          <button
-            className="absolute top-3 right-3 py-1.5 px-4 rounded-full text-[11px] font-semibold border border-white/15 bg-black/30 backdrop-blur-md text-white/80 hover:bg-black/50 transition-all flex items-center gap-1.5 z-20"
-            onClick={() => toast("Cover editor coming soon")}
-          >
-            <Edit className="w-3 h-3" /> Edit cover
-          </button>
+          <>
+            <input type="file" accept="image/*" className="hidden" ref={coverInputRef} onChange={(e) => handleImageUpload(e, "cover")} />
+            <button
+              disabled={isUploadingCover}
+              className="absolute top-3 right-3 py-1.5 px-4 rounded-full text-[11px] font-semibold border border-white/15 bg-black/40 backdrop-blur-md text-white/90 hover:bg-black/60 transition-all flex items-center gap-1.5 z-20 disabled:opacity-50"
+              onClick={() => coverInputRef.current?.click()}
+            >
+              {isUploadingCover ? <Loader2 className="w-3 h-3 animate-spin" /> : <Edit className="w-3 h-3" />}
+              {isUploadingCover ? "Uploading..." : "Edit cover"}
+            </button>
+          </>
         )}
       </div>
 
@@ -161,19 +221,22 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         <div className="flex items-end justify-between gap-4">
           {/* Avatar */}
           <div className="relative mt-[-50px] flex-shrink-0">
-            <div className="w-[100px] h-[100px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-[32px] font-black text-white border-4 border-background shadow-lg relative z-10 overflow-hidden">
+            <div className="w-[100px] h-[100px] rounded-full bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6] flex items-center justify-center text-[38px] font-black text-white border-4 border-background shadow-lg relative z-10 overflow-hidden">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
               ) : (
-                <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.username || 'default'}&backgroundColor=8B5CF6`} alt="Avatar" className="w-full h-full object-cover" />
+                <span className="tracking-tighter">{prettyName?.[0]?.toUpperCase()}{prettyName?.[1]?.toUpperCase()}</span>
               )}
               {isOwner && (
-                <div
-                  className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                  onClick={() => toast("Photo upload coming soon")}
-                >
-                  <Camera className="w-4 h-4 text-white" />
-                </div>
+                <>
+                  <input type="file" accept="image/*" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, "avatar")} />
+                  <div
+                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    {isUploadingAvatar ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -248,9 +311,9 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                     placeholder="your_username"
                     maxLength={30}
                     className={cn(
-                      "edit-input pl-8",
+                      "edit-input !pl-8",
                       usernameStatus === "taken" ? "border-red-500 focus:border-red-500" :
-                      usernameStatus === "available" ? "border-green-500 focus:border-green-500" : ""
+                        usernameStatus === "available" ? "border-green-500 focus:border-green-500" : ""
                     )}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -261,7 +324,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                 </div>
                 <p className={cn("text-[10px] mt-1 font-medium",
                   usernameStatus === "taken" ? "text-red-500" :
-                  usernameStatus === "available" ? "text-green-500" : "text-muted-foreground"
+                    usernameStatus === "available" ? "text-green-500" : "text-muted-foreground"
                 )}>
                   {usernameStatus === "taken" && "Username already taken"}
                   {usernameStatus === "available" && "Username is available!"}
@@ -309,42 +372,18 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                 <p className="text-[10px] text-muted-foreground mt-0.5 text-right">{editForm.bio.length}/300</p>
               </div>
 
-              {/* Specialisations / Interests */}
-              <div className="md:col-span-2">
-                <label className="label-xs">Specialisations <span className="text-muted-foreground/60">(up to 10)</span></label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={interestInput}
-                    onChange={e => setInterestInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
-                    placeholder="e.g. Copywriting, SEO..."
-                    className="edit-input flex-1"
-                  />
-                  <button onClick={addInterest} className="px-3 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {editForm.interests.map(tag => (
-                    <span key={tag} className="flex items-center gap-1 text-[11px] py-1 px-3 rounded-full bg-primary/5 border border-primary/20 text-primary/80">
-                      {tag}
-                      <button onClick={() => removeInterest(tag)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
-                    </span>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Technical Skills */}
               <div className="md:col-span-2">
-                <label className="label-xs">Technical Skills <span className="text-muted-foreground/60">(up to 15)</span></label>
+                <label className="label-xs">Technical Skills</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={skillInput}
                     onChange={e => setSkillInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } }}
-                    placeholder="e.g. Python, React, Prompt Engineering..."
+                    placeholder="e.g. React, Python, UI Design..."
                     className="edit-input flex-1"
                   />
                   <button onClick={addSkill} className="px-3 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
@@ -382,68 +421,55 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
           </div>
         ) : (
           /* ════ VIEW MODE ════ */
-          <div className="py-4 border-b border-border">
-            {/* Name + verified badge */}
-            <div className="flex items-center gap-2.5 mb-1">
-              <h1 className="text-xl font-black tracking-tight text-foreground">{prettyName}</h1>
+          <div className="py-2">
+            {/* Name + Verified Badge */}
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-[22px] font-extrabold tracking-tight text-foreground">{prettyName}</h1>
               {user.verified && (
-                <span className="text-[9px] font-bold py-1 px-2.5 rounded-full bg-[rgba(34,211,238,0.08)] border border-[rgba(34,211,238,0.2)] text-[#22d3ee] uppercase tracking-wider">✓ Verified</span>
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-cyan-700 dark:border-cyan-700 bg-cyan-950/50 dark:bg-cyan-950/50 text-cyan-400 shadow-sm">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Verified creator
+                </span>
               )}
             </div>
 
             {/* Handle + member since */}
-            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-widest mb-3">
-              @{user.username} <span className="mx-1.5 opacity-30">·</span> Member since {user.memberSince}
+            <p className="text-[12px] text-muted-foreground/80 font-medium mb-4">
+              @{user.username} <span className="mx-2 opacity-40">·</span> Member since {user.memberSince}
             </p>
 
             {/* Bio */}
             {user.bio && (
-              <p className="text-[13px] text-foreground/70 max-w-[620px] leading-relaxed mb-3">{user.bio}</p>
+              <p className="text-[13.5px] text-foreground/80 max-w-[700px] leading-relaxed mb-4">{user.bio}</p>
             )}
 
-            {/* Technical Skills */}
+            {/* Technical Skills / Tags row */}
             {user.technicalSkills?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {user.technicalSkills.map((skill: string) => (
-                  <span key={skill} className="text-[11px] py-1 px-3 rounded-full bg-secondary border border-border/60 text-foreground/70 font-medium">
+                  <span key={skill} className="text-[12px] py-1.5 px-4 rounded-full bg-secondary dark:bg-[#201538] text-foreground/70 dark:text-[#c4b5fd] border border-border dark:border-[#3b276b]/50 shadow-sm transition-colors cursor-default font-medium">
                     {skill}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Interests / Specialisation tags */}
-            {user.interests?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {user.interests.map((tag: string) => (
-                  <span key={tag} className="py-1 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider border border-primary/15 bg-primary/5 text-primary/70">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+
 
             {/* Meta row — location, website, followers */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-muted-foreground font-medium">
               {user.location && (
-                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {user.location}</span>
+                <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400/80" /> {user.location}</span>
               )}
               {user.website && (
-                <a href={user.website.startsWith("http") ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                  <LinkIcon className="w-3 h-3" /> {user.website.replace(/^https?:\/\//, "")}
+                <a href={user.website.startsWith("http") ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
+                  <LinkIcon className="w-4 h-4" /> {user.website.replace(/^https?:\/\//, "")}
                 </a>
               )}
-              <span className="flex items-center gap-1.5">
-                <strong className="text-foreground font-bold">{(user.followers || 0).toLocaleString()}</strong> followers
-                <span className="opacity-30">/</span>
-                <strong className="text-foreground font-bold">{(user.following || 0).toLocaleString()}</strong> following
+              <span className="flex items-center gap-2">
+                <span><strong className="text-foreground font-bold">{(user.followers || 0).toLocaleString()}</strong> followers</span>
+                <span className="opacity-30 mx-1">·</span>
+                <span><strong className="text-foreground font-bold">{(user.following || 0).toLocaleString()}</strong> following</span>
               </span>
-              {user.avgRating > 0 && (
-                <span className="flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-[#e8a838] text-[#e8a838]" />
-                  <strong className="text-foreground font-bold">{user.avgRating.toFixed(1)}</strong> avg rating
-                </span>
-              )}
             </div>
           </div>
         )}

@@ -20,7 +20,8 @@
 /raw_static_designs/*
 # production
 /build
-
+/database
+/.vscode
 # misc
 .DS_Store
 *.pem

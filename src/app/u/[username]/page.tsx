@@ -87,6 +87,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           name: fallbackName,                   // always has a value for rendering
           email: userData.email,
           avatar: userData.avatar_url,
+          cover_url: userData.cover_url || "",
           bio: userData.bio || "",
           location: userData.location || "",
           website: userData.website || "",
