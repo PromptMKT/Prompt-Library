@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
 
 export default function SellerProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
+  const router = useRouter();
   const { profile, user: authUser, loading: authLoading } = useAuth();
   const params = React.use(paramsPromise);
 
@@ -94,6 +96,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           verified: userData.is_verified || false,
           avgRating: userData.average_rating || 0,
           interests: userData.interests || [],
+          technicalSkills: userData.technical_skills || [],
           totalSales: userData.total_sales || 0,
           totalPurchases: userData.total_purchases || 0,
           memberSince: userData.created_at
@@ -428,7 +431,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                         </div>
                         <button
                           className="py-3 px-8 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                          onClick={() => toast("Opening prompt editor...")}
+                          onClick={() => router.push("/upload")}
                         >
                           + New prompt
                         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Edit, MapPin, Link as LinkIcon, Star, Share2, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Camera, Edit, MapPin, Link as LinkIcon, Star, Share2, Loader2, CheckCircle2, XCircle, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -19,8 +19,15 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     username: user.username || "",
+    displayName: user.displayName || "",
     bio: user.bio || "",
+    location: user.location || "",
+    website: user.website || "",
+    interests: (user.interests || []) as string[],
+    technicalSkills: (user.technicalSkills || []) as string[],
   });
+  const [interestInput, setInterestInput] = useState("");
+  const [skillInput, setSkillInput] = useState("");
 
   // Username availability check state
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "unchanged">("idle");
@@ -31,7 +38,6 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
     if (!isEditing) return;
     const trimmed = editForm.username.trim().toLowerCase();
 
-    // If same as original, mark unchanged
     if (trimmed === user.username?.toLowerCase()) {
       setUsernameStatus("unchanged");
       return;
@@ -51,61 +57,51 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
         .select("id")
         .eq("username", trimmed)
         .maybeSingle();
-
       setUsernameStatus(data ? "taken" : "available");
     }, 500);
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [editForm.username, isEditing, user.username]);
 
   const handleCancel = () => {
     setIsEditing(false);
-    setEditForm({ username: user.username || "", bio: user.bio || "" });
+    setEditForm({
+      username: user.username || "",
+      displayName: user.displayName || "",
+      bio: user.bio || "",
+      location: user.location || "",
+      website: user.website || "",
+      interests: user.interests || [],
+      technicalSkills: user.technicalSkills || [],
+    });
+    setInterestInput("");
+    setSkillInput("");
     setUsernameStatus("idle");
   };
 
   const handleSave = async () => {
     const trimmedUsername = editForm.username.trim().toLowerCase();
 
-    // Validate username
-    if (trimmedUsername.length < 3) {
-      toast.error("Username must be at least 3 characters");
-      return;
-    }
-    if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
-      toast.error("Username can only contain letters, numbers, and underscores");
-      return;
-    }
-
-    // Block if username is taken
-    if (usernameStatus === "taken") {
-      toast.error("That username is already taken");
-      return;
-    }
-
-    // If still checking, wait
-    if (usernameStatus === "checking") {
-      toast("Still checking username availability...");
-      return;
-    }
+    if (trimmedUsername.length < 3) { toast.error("Username must be at least 3 characters"); return; }
+    if (!/^[a-z0-9_]+$/.test(trimmedUsername)) { toast.error("Username can only contain letters, numbers, and underscores"); return; }
+    if (usernameStatus === "taken") { toast.error("That username is already taken"); return; }
+    if (usernameStatus === "checking") { toast("Still checking username availability..."); return; }
 
     try {
       const filterCol = user.auth_user_id ? "auth_user_id" : "id";
       const filterVal = user.auth_user_id || user.id;
 
-      const updates: Record<string, string> = { bio: editForm.bio };
-      // Only include username in update if it actually changed
-      if (trimmedUsername !== user.username?.toLowerCase()) {
-        updates.username = trimmedUsername;
-      }
+      const updates: Record<string, any> = {
+        bio: editForm.bio,
+        location: editForm.location,
+        website: editForm.website,
+        interests: editForm.interests,
+        technical_skills: editForm.technicalSkills,
+      };
+      if (editForm.displayName.trim()) updates.display_name = editForm.displayName.trim();
+      if (trimmedUsername !== user.username?.toLowerCase()) updates.username = trimmedUsername;
 
-      const { error } = await supabase
-        .from("users")
-        .update(updates)
-        .eq(filterCol, filterVal);
-
+      const { error } = await supabase.from("users").update(updates).eq(filterCol, filterVal);
       if (error) throw error;
 
       toast.success("Profile updated!");
@@ -121,7 +117,25 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
     }
   };
 
-  // Display name with smart fallback
+  // Tag helpers
+  const addInterest = () => {
+    const v = interestInput.trim();
+    if (v && !editForm.interests.includes(v) && editForm.interests.length < 10) {
+      setEditForm(f => ({ ...f, interests: [...f.interests, v] }));
+    }
+    setInterestInput("");
+  };
+  const removeInterest = (tag: string) => setEditForm(f => ({ ...f, interests: f.interests.filter(t => t !== tag) }));
+
+  const addSkill = () => {
+    const v = skillInput.trim();
+    if (v && !editForm.technicalSkills.includes(v) && editForm.technicalSkills.length < 15) {
+      setEditForm(f => ({ ...f, technicalSkills: [...f.technicalSkills, v] }));
+    }
+    setSkillInput("");
+  };
+  const removeSkill = (s: string) => setEditForm(f => ({ ...f, technicalSkills: f.technicalSkills.filter(t => t !== s) }));
+
   const displayName = user.displayName || user.name;
   const isEmailAsName = displayName?.includes("@");
   const prettyName = isEmailAsName ? displayName.split("@")[0] : displayName;
@@ -162,7 +176,6 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                 </div>
               )}
             </div>
-            <div className="absolute bottom-1.5 right-1 w-3.5 h-3.5 bg-[#22d3ee] border-[3px] border-background rounded-full z-20" />
           </div>
 
           {/* Action buttons */}
@@ -204,27 +217,40 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
           </div>
         </div>
 
-        {/* Info section */}
+        {/* ── Info section ── */}
         {isEditing ? (
-          <div className="py-5 border-b border-border animate-in fade-in">
-            <div className="space-y-4 max-w-[480px]">
+          /* ════ EDIT FORM ════ */
+          <div className="py-6 border-b border-border animate-in fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-[820px]">
 
-              {/* Username field */}
+              {/* Display Name */}
               <div>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-black block mb-1">Username</label>
+                <label className="label-xs">Display Name</label>
+                <input
+                  type="text"
+                  value={editForm.displayName}
+                  onChange={e => setEditForm(f => ({ ...f, displayName: e.target.value }))}
+                  placeholder="Your full name"
+                  maxLength={50}
+                  className="edit-input"
+                />
+              </div>
+
+              {/* Username */}
+              <div>
+                <label className="label-xs">Username</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
                   <input
                     type="text"
                     value={editForm.username}
-                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })}
+                    onChange={e => setEditForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") }))}
                     placeholder="your_username"
                     maxLength={30}
                     className={cn(
-                      "w-full bg-background border rounded-xl pl-8 pr-10 py-2.5 text-sm text-foreground outline-none transition-colors",
+                      "edit-input pl-8",
                       usernameStatus === "taken" ? "border-red-500 focus:border-red-500" :
-                        usernameStatus === "available" ? "border-green-500 focus:border-green-500" :
-                          "border-border focus:border-primary"
+                      usernameStatus === "available" ? "border-green-500 focus:border-green-500" : ""
                     )}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -233,11 +259,9 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                     {usernameStatus === "taken" && <XCircle className="w-4 h-4 text-red-500" />}
                   </div>
                 </div>
-                <p className={cn(
-                  "text-[10px] mt-1 font-medium",
+                <p className={cn("text-[10px] mt-1 font-medium",
                   usernameStatus === "taken" ? "text-red-500" :
-                    usernameStatus === "available" ? "text-green-500" :
-                      "text-muted-foreground"
+                  usernameStatus === "available" ? "text-green-500" : "text-muted-foreground"
                 )}>
                   {usernameStatus === "taken" && "Username already taken"}
                   {usernameStatus === "available" && "Username is available!"}
@@ -246,29 +270,118 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
                 </p>
               </div>
 
-              {/* Bio field */}
+              {/* Location */}
               <div>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-black block mb-1">Bio</label>
-                <textarea
-                  value={editForm.bio}
-                  onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                  placeholder="Tell visitors about yourself..."
-                  maxLength={200}
-                  className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-primary outline-none h-20 resize-none transition-colors"
+                <label className="label-xs">Location</label>
+                <input
+                  type="text"
+                  value={editForm.location}
+                  onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))}
+                  placeholder="City, Country"
+                  maxLength={80}
+                  className="edit-input"
                 />
-                <p className="text-[10px] text-muted-foreground mt-0.5 text-right">{editForm.bio.length}/200</p>
               </div>
 
+              {/* Website */}
+              <div>
+                <label className="label-xs">Website</label>
+                <input
+                  type="url"
+                  value={editForm.website}
+                  onChange={e => setEditForm(f => ({ ...f, website: e.target.value }))}
+                  placeholder="https://yoursite.com"
+                  maxLength={120}
+                  className="edit-input"
+                />
+              </div>
+
+              {/* Bio — full width */}
+              <div className="md:col-span-2">
+                <label className="label-xs">Bio</label>
+                <textarea
+                  value={editForm.bio}
+                  onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
+                  placeholder="Tell visitors about yourself..."
+                  maxLength={300}
+                  className="edit-input resize-none h-24"
+                />
+                <p className="text-[10px] text-muted-foreground mt-0.5 text-right">{editForm.bio.length}/300</p>
+              </div>
+
+              {/* Specialisations / Interests */}
+              <div className="md:col-span-2">
+                <label className="label-xs">Specialisations <span className="text-muted-foreground/60">(up to 10)</span></label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={interestInput}
+                    onChange={e => setInterestInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
+                    placeholder="e.g. Copywriting, SEO..."
+                    className="edit-input flex-1"
+                  />
+                  <button onClick={addInterest} className="px-3 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {editForm.interests.map(tag => (
+                    <span key={tag} className="flex items-center gap-1 text-[11px] py-1 px-3 rounded-full bg-primary/5 border border-primary/20 text-primary/80">
+                      {tag}
+                      <button onClick={() => removeInterest(tag)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Technical Skills */}
+              <div className="md:col-span-2">
+                <label className="label-xs">Technical Skills <span className="text-muted-foreground/60">(up to 15)</span></label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={skillInput}
+                    onChange={e => setSkillInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } }}
+                    placeholder="e.g. Python, React, Prompt Engineering..."
+                    className="edit-input flex-1"
+                  />
+                  <button onClick={addSkill} className="px-3 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {editForm.technicalSkills.map(s => (
+                    <span key={s} className="flex items-center gap-1 text-[11px] py-1 px-3 rounded-full bg-secondary border border-border text-foreground/80">
+                      {s}
+                      <button onClick={() => removeSkill(s)} className="hover:text-red-400 transition-colors"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Save button */}
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={handleSave}
                 disabled={usernameStatus === "taken" || usernameStatus === "checking"}
-                className="py-2.5 px-6 bg-primary text-white text-[11px] font-bold rounded-full uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-2.5 px-7 bg-primary text-white text-[11px] font-bold rounded-full uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Save Changes
+              </button>
+              <button
+                onClick={handleCancel}
+                className="py-2.5 px-5 text-[11px] font-bold rounded-full border border-border text-muted-foreground hover:bg-secondary transition-all"
+              >
+                Cancel
               </button>
             </div>
           </div>
         ) : (
+          /* ════ VIEW MODE ════ */
           <div className="py-4 border-b border-border">
             {/* Name + verified badge */}
             <div className="flex items-center gap-2.5 mb-1">
@@ -285,10 +398,21 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
 
             {/* Bio */}
             {user.bio && (
-              <p className="text-[13px] text-foreground/70 max-w-[580px] leading-relaxed mb-3">{user.bio}</p>
+              <p className="text-[13px] text-foreground/70 max-w-[620px] leading-relaxed mb-3">{user.bio}</p>
             )}
 
-            {/* Interest tags */}
+            {/* Technical Skills */}
+            {user.technicalSkills?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {user.technicalSkills.map((skill: string) => (
+                  <span key={skill} className="text-[11px] py-1 px-3 rounded-full bg-secondary border border-border/60 text-foreground/70 font-medium">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Interests / Specialisation tags */}
             {user.interests?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {user.interests.map((tag: string) => (
@@ -299,7 +423,7 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
               </div>
             )}
 
-            {/* Meta row */}
+            {/* Meta row — location, website, followers */}
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-muted-foreground">
               {user.location && (
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {user.location}</span>
@@ -324,6 +448,32 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .label-xs {
+          display: block;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--muted-foreground);
+          margin-bottom: 4px;
+        }
+        .edit-input {
+          width: 100%;
+          background: var(--background);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: var(--foreground);
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .edit-input:focus {
+          border-color: hsl(var(--primary));
+        }
+      `}</style>
     </>
   );
 }
