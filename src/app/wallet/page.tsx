@@ -9,6 +9,7 @@ import { WalletSidebar } from "./components/WalletSidebar";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
+import { topUpCoins, topUpCoinsCustom } from "@/app/actions/purchase-actions";
 
 type TransactionRow = {
   id: string;
@@ -29,6 +30,8 @@ export default function WalletPage() {
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -120,11 +123,62 @@ export default function WalletPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, refreshKey]);
 
   const handlePurchase = async (pkg: any) => {
     const packageId = typeof pkg === "string" ? pkg : pkg?.id || "selected";
-    toast.info(`Top-up checkout is not connected yet for ${packageId}.`);
+
+    if (!user) {
+      toast.error("Please sign in to top up coins.");
+      return;
+    }
+
+    if (isTopUpLoading) return;
+
+    setIsTopUpLoading(true);
+    toast.loading("Processing top-up...", { id: "topup-toast" });
+
+    try {
+      const result = await topUpCoins(packageId);
+      if (!result.success) {
+        toast.error(result.message || "Top-up failed.", { id: "topup-toast" });
+        return;
+      }
+
+      toast.success(result.message || "Top-up successful.", { id: "topup-toast" });
+      setRefreshKey((prev) => prev + 1);
+    } catch (error: any) {
+      toast.error(error?.message || "Top-up failed.", { id: "topup-toast" });
+    } finally {
+      setIsTopUpLoading(false);
+    }
+  };
+
+  const handleCustomTopUp = async (coins: number) => {
+    if (!user) {
+      toast.error("Please sign in to top up coins.");
+      return;
+    }
+
+    if (isTopUpLoading) return;
+
+    setIsTopUpLoading(true);
+    toast.loading("Processing custom top-up...", { id: "topup-toast" });
+
+    try {
+      const result = await topUpCoinsCustom(coins);
+      if (!result.success) {
+        toast.error(result.message || "Top-up failed.", { id: "topup-toast" });
+        return;
+      }
+
+      toast.success(result.message || "Top-up successful.", { id: "topup-toast" });
+      setRefreshKey((prev) => prev + 1);
+    } catch (error: any) {
+      toast.error(error?.message || "Top-up failed.", { id: "topup-toast" });
+    } finally {
+      setIsTopUpLoading(false);
+    }
   };
 
   if (!mounted) return null;
@@ -162,7 +216,11 @@ export default function WalletPage() {
                      <span className="text-[11px] font-black uppercase tracking-[0.3em] text-[#7C3AED] opacity-80">Top Up Packages</span>
                      <div className="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1" />
                  </div>
-                 <CoinPackages onPurchaseAction={handlePurchase} />
+                  <CoinPackages
+                    onPurchaseAction={handlePurchase}
+                    onCustomPurchaseAction={handleCustomTopUp}
+                    isPurchasing={isTopUpLoading}
+                  />
               </div>
 
               {/* Grid Statistics */}
