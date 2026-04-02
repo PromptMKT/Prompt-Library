@@ -1,9 +1,52 @@
 "use client";
 
+import { useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import Link from "next/link";
 import { Coins, Sparkles, Rocket, LayoutDashboard, Store } from "lucide-react";
 
 export default function WelcomePage() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    const addBonusCoins = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Check if bonus already awarded
+        const { data, error } = await supabase
+          .from('coin_transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('transaction_type', 'bonus');
+
+        if (error) {
+          console.error('Error checking for bonus:', error);
+          return;
+        }
+
+        if (data.length === 0) {
+          const { error: insertError } = await supabase
+            .from('coin_transactions')
+            .insert({
+              user_id: user.id,
+              transaction_type: 'bonus',
+              amount: 200,
+              description: 'Initial bonus coins'
+            });
+
+          if (insertError) {
+            console.error('Error adding bonus coins:', insertError);
+          }
+        }
+      }
+    };
+
+    addBonusCoins();
+  }, [supabase]);
+
   return (
     <main className="min-h-dvh bg-[#080b17] text-white flex items-center justify-center px-6 py-12">
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] bg-size-[30px_30px] pointer-events-none" />
@@ -13,7 +56,7 @@ export default function WelcomePage() {
         </div>
 
         <div>
-          <p className="text-5xl font-black tracking-tight text-primary">100</p>
+          <p className="text-5xl font-black tracking-tight text-primary">200</p>
           <p className="text-xs font-black tracking-[0.2em] uppercase text-slate-400 mt-1">Credited to your wallet</p>
         </div>
 
@@ -30,7 +73,7 @@ export default function WelcomePage() {
             <Sparkles className="w-4 h-4 text-primary" /> Sell your first prompt
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 inline-flex items-center gap-2">
-            <Coins className="w-4 h-4 text-primary" /> 100 in wallet now
+            <Coins className="w-4 h-4 text-primary" /> 200 in wallet now
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 inline-flex items-center gap-2">
             <Rocket className="w-4 h-4 text-primary" /> Personalized feed ready

@@ -4,7 +4,14 @@ import React from "react";
 import { TrendingUp, Wallet, Clock, ChevronDown, Plus, Activity, ArrowUp, ArrowDown, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function WalletHero({ balance }: { balance: number }) {
+type WalletHeroProps = {
+  balance: number;
+  totalEarned: number;
+  totalSpent: number;
+  inEscrow: number;
+};
+
+export function WalletHero({ balance, totalEarned, totalSpent, inEscrow }: WalletHeroProps) {
   return (
     <div className="relative overflow-hidden bg-white dark:bg-[#11121d] border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-sm transition-all hover:shadow-md selection:bg-amber-100">
       {/* Decorative background effects */}
@@ -41,9 +48,9 @@ export function WalletHero({ balance }: { balance: number }) {
         {/* Right Side: Quick Stats Column (Following design) */}
         <div className="flex flex-col gap-3">
            {[
-             { label: "Total earned (coins)", value: "2,840", color: "text-[#7C3AED]", bg: "bg-[#7C3AED]/5 dark:bg-[#7C3AED]/10", icon: <ArrowUp className="w-3 h-3" /> },
-             { label: "Total spent (coins)", value: "1,950", color: "text-slate-400", bg: "bg-slate-50 dark:bg-white/5", icon: <ArrowDown className="w-3 h-3" /> },
-             { label: "In escrow (pending)", value: "81", color: "text-rose-400", bg: "bg-rose-500/5 dark:bg-rose-500/10", icon: <Pause className="w-3 h-3" /> },
+             { label: "Total earned (coins)", value: totalEarned.toLocaleString(), color: "text-[#7C3AED]", bg: "bg-[#7C3AED]/5 dark:bg-[#7C3AED]/10", icon: <ArrowUp className="w-3 h-3" /> },
+             { label: "Total spent (coins)", value: totalSpent.toLocaleString(), color: "text-slate-400", bg: "bg-slate-50 dark:bg-white/5", icon: <ArrowDown className="w-3 h-3" /> },
+             { label: "In escrow (pending)", value: inEscrow.toLocaleString(), color: "text-rose-400", bg: "bg-rose-500/5 dark:bg-rose-500/10", icon: <Pause className="w-3 h-3" /> },
            ].map((stat, i) => (
              <div key={i} className="flex items-center gap-4 p-4 bg-slate-50/30 dark:bg-white/[0.01] border border-slate-50 dark:border-slate-800 rounded-2xl transition-all hover:bg-white dark:hover:bg-white/[0.05] group shadow-sm">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105", stat.bg, stat.color)}>
