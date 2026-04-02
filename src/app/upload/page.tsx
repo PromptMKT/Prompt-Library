@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { PromptController } from "@/backend/controllers/PromptController";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
   ChatGPT:['GPT-5.1 (latest)','GPT-5','GPT-5 Mini','GPT-4o','GPT-4o Mini','GPT-4 Turbo','o4','o4 Mini','o3','o3 Mini','o1','GPT-3.5 Turbo'],
@@ -189,7 +190,7 @@ export default function PromptUploadPage() {
 
   useEffect(() => {
     if (category) {
-      supabase.from('subcategories').select('*').eq('category_id', category).then(({data}) => {
+      PromptController.getSubcategories(category).then(data => {
          if(data) setSubcatsData(data || []);
       });
     } else {
@@ -251,7 +252,7 @@ export default function PromptUploadPage() {
     if (completenessPct < 100 || !user) return;
     setIsPublishing(true);
     try {
-      // 1. Upload Cover Image
+      // 1. Upload Assets (Cloudinary)
       let coverUrl = "";
       if (coverFile) {
         const fd = new FormData();
@@ -259,7 +260,6 @@ export default function PromptUploadPage() {
         coverUrl = await uploadToCloudinary(fd);
       }
       
-      // 2. Upload Screenshots
       const screenshotUrls = [];
       for (const file of screenshotFiles) {
         const fd = new FormData();
@@ -268,7 +268,6 @@ export default function PromptUploadPage() {
         screenshotUrls.push(url);
       }
 
-      // 3. Upload Prompt Files (New)
       const promptFileUrls = [];
       for (const file of promptFiles) {
         const fd = new FormData();
@@ -277,157 +276,26 @@ export default function PromptUploadPage() {
         promptFileUrls.push(url);
       }
 
-      // 4. Prepare Prompt Data
-      const creatorId = profile?.id || user.id;
+      // 2. Call Controller to handle DB orchestration
+      const promptData = await PromptController.publishPrompt({
+        title, tagline, price, category, subCategory, platform,
+        selectedModels, coverUrl, screenshotUrls, promptFileUrls,
+        inputNeeds, inputData, targetAudience, outputFormat,
+        verifiedDate, quickSetup, guideSteps, fillVariables,
+        whatToExpect, proTips, commonMistakes, howToAdapt,
+        complexity, tags, sellerNote, 
+        creatorId: profile?.id || user.id,
+        promptTab, systemText, promptText, chainSteps
+      });
 
-      const isMultiStep = promptTab === 'chain';
-      const stepCount = isMultiStep ? chainSteps.length : 1;
-
-      const promptInsert = {
-         creator_id: creatorId,
-         title,
-         tagline: tagline || title,
-         description: tagline || title,
-         price: parseInt(price),
-         category_id: category || null,
-         subcategory_id: subCategory ? parseInt(subCategory) : null,
-         platform_id: platform || null,
-         model_id: selectedModels.length > 0 ? selectedModels[0] : null,
-         cover_image_url: coverUrl,
-         is_published: true,
-         is_multi_step: isMultiStep,
-         step_count: stepCount,
-         cover_image_provider: 'cloudinary',
-         // New fields
-         input_types: inputNeeds.filter(n => n !== 'none'),
-         input_data: inputData,
-         prompt_file_urls: promptFileUrls,
-         target_audience: targetAudience,
-         output_format: outputFormat,
-         use_case_id: null as number | null,
-         verified_at: verifiedDate ? new Date().toISOString() : null, // Store as timestamp or string
-         quick_setup: quickSetup,
-         guide_steps: guideSteps.map(s => s.text),
-         fill_variables: fillVariables,
-         what_to_expect: whatToExpect,
-         pro_tips: proTips,
-         common_mistakes: commonMistakes,
-         how_to_adapt: howToAdapt,
-         complexity,
-         tags,
-         seller_note: sellerNote
-      };
-
-      // Resolve use_case_id
-      let finalUseCaseId: number | null = null;
-      if (selectedUseCase && subCategory) {
-        // Try to find existing
-        const { data: existingUC } = await supabase
-          .from('use_cases')
-          .select('id')
-          .eq('subcategory_id', subCategory)
-          .eq('name', selectedUseCase)
-          .maybeSingle();
-
-        if (existingUC) {
-          finalUseCaseId = existingUC.id;
-        } else {
-          // Create new
-          const { data: newUC, error: ucError } = await supabase
-            .from('use_cases')
-            .insert([{
-              name: selectedUseCase,
-              category_id: category,
-              subcategory_id: subCategory,
-              is_custom: true
-            }])
-            .select('id')
-            .single();
-          
-          if (newUC) {
-            finalUseCaseId = newUC.id;
-          } else {
-            console.warn("Failed to create new use case:", ucError);
-          }
-        }
+      if (promptData) {
+        setPublishedPromptId(String(promptData.id));
+        setIsPublished(true);
+        toast?.success("Prompt successfully published!");
       }
-      
-      promptInsert.use_case_id = finalUseCaseId;
-      
-      const { data: promptData, error: promptError } = await supabase
-        .from('prompts')
-        .insert([promptInsert])
-        .select('*')
-        .single();
-
-      if (promptError) {
-         console.error("Supabase insert error:", promptError);
-         alert(`Error publishing: ${promptError.message}\n\nDetails: ${promptError.details || 'None'}\nHint: ${promptError.hint || 'None'}`);
-         setIsPublishing(false);
-         return;
-      }
-      // Prioritize promptid if available (per user request), fallback to id
-      const promptId = promptData.promptid || promptData.id;
-
-      // 4. Insert Prompt Steps
-      if (isMultiStep) {
-        const stepsToInsert = chainSteps.map((s, idx) => ({
-          prompt_id: promptId,
-          step_number: idx + 1,
-          title: `Step ${idx + 1}`,
-          instruction: s.text,
-          step_type: 'prompt'
-        }));
-        const { error: stepsError } = await supabase.from('prompt_steps').insert(stepsToInsert);
-        if (stepsError) throw stepsError;
-      } else {
-        const instruction = promptTab === 'system' 
-          ? `System: ${systemText}\n\nUser: ${promptText}`
-          : promptText;
-          
-        const { error: stepError } = await supabase.from('prompt_steps').insert([{
-          prompt_id: promptId,
-          step_number: 1,
-          title: 'Main Prompt',
-          instruction: instruction,
-          step_type: 'prompt'
-        }]);
-        if (stepError) throw stepError;
-      }
-
-      // 5. Insert Prompt Images (Screenshots)
-      if (screenshotUrls.length > 0) {
-        const imagesToInsert = screenshotUrls.map((url, idx) => ({
-          prompt_id: promptId,
-          image_url: url,
-          provider: 'cloudinary',
-          sort_order: idx + 1
-        }));
-        const { error: imagesError } = await supabase.from('prompt_images').insert(imagesToInsert);
-        if (imagesError) throw imagesError;
-      }
-
-      // 6. Insert Prompt Models (if multiple models selected)
-      if (selectedModels.length > 0) {
-        const modelsToInsert = selectedModels.map(mId => ({
-          prompt_id: promptId,
-          model_id: mId,
-          platform_id: platform
-        }));
-        const { error: modelsError } = await supabase.from('prompt_models').insert(modelsToInsert);
-        if (modelsError) throw modelsError;
-      }
-      
-      // Successfully through all inserts, now mark as published
-      if (promptId) {
-        setPublishedPromptId(String(promptId));
-      }
-      
-      setIsPublished(true);
-      toast?.success("Prompt successfully published!");
     } catch (err: any) {
       console.error("Error publishing:", err);
-      alert("Error publishing: " + err.message);
+      toast.error("Error publishing: " + err.message);
     } finally {
       setIsPublishing(false);
     }

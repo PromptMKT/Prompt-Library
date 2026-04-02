@@ -11,7 +11,7 @@ import {
   Flame, TrendingUp, Zap, Globe, ArrowRight, BadgeCheck, Share2
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
+import { PromptController } from "@/backend/controllers/PromptController";
 
 // ─── DUMMY DATA ───────────────────────────────────────────────────────────────
 
@@ -443,44 +443,9 @@ export default function HomePage() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [promptsRes, catsRes] = await Promise.all([
-          supabase
-            .from('prompts')
-            .select(`
-              id, title, price, cover_image_url, created_at, purchases_count, average_rating,
-              creator:users(display_name, username),
-              platform:platforms(name)
-            `)
-            .eq('is_published', true)
-            .order('created_at', { ascending: false })
-            .limit(10),
-          supabase.from('categories').select('*').limit(5)
-        ]);
-        
-        if (promptsRes.error) {
-          console.error("Supabase prompts query error (home):", promptsRes.error);
-        }
-        if (catsRes.error) {
-          console.error("Supabase categories query error (home):", catsRes.error);
-        }
-        
-        if (promptsRes.data) {
-          setDbPrompts(promptsRes.data.map(p => ({
-            id: p.id,
-            title: p.title,
-            price: p.price,
-            created_at: p.created_at,
-            rating: 4.8,
-            sales: 0,
-            author: (p.creator as any)?.display_name || (p.creator as any)?.username || "Creator",
-            platform: (p.platform as any)?.name || "AI",
-            image: p.cover_image_url
-          })));
-        }
-
-        if (catsRes.data) {
-          setDbCategories(catsRes.data);
-        }
+        const { prompts: homePrompts, categories: homeCats } = await PromptController.getHomeData();
+        setDbPrompts(homePrompts);
+        setDbCategories(homeCats);
       } catch (err) {
         console.error("Error loading home data:", err);
       }

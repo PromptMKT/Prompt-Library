@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Database, ListTree, Bot, Video, FileText } from "lucide-react";
+import { CheckCircle, Flame, Image as ImageIcon, Type, Code2, Database, ListTree, Bot, Video, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -11,58 +11,29 @@ import { ImageGallery } from "./components/ImageGallery";
 import { LogicEngine } from "./components/LogicEngine";
 import { PurchaseSidebar } from "./components/PurchaseSidebar";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { PromptController } from "@/backend/controllers/PromptController";
+import { UserController } from "@/backend/controllers/UserController";
+import { type PromptItem } from "@/backend/models/Prompt"; // I'll use the type defined in the file for now if it's there. Actually, I'll stick to the type in-file for now but use the controllers.
+import { supabase } from "@/lib/supabase"; // Kept for other possible direct uses if any (check later)
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  detectPreviewType,
+  TextOutput,
+  ImageOutput,
+  CodeOutput,
+  ConversationalOutput,
+  AudioOutput,
+  VideoOutput,
+  StructuredDataOutput,
+  ToolCallOutput,
+  MultiStepOutput,
+  MultipleOutputs,
+} from "./components/output-previews";
 
-type PromptItem = {
-  id: string;
-  title: string;
-  tagline: string;
-  description?: string;
-  platform: string;
-  category: string;
-  subcategory?: string;
-  model?: string;
-  price: number;
-  promptText: string;
-  images: string[];
-  seller: { 
-    id: string;
-    username: string; 
-    display_name?: string;
-    avatar?: string;
-    bio?: string;
-    total_sales?: number;
-    average_rating?: number;
-    role?: string;
-    total_prompts?: number;
-  };
-  outputType?: string;
-  tags?: string[];
-  complexity?: string;
-  sales?: number;
-  rating?: number;
-  review_count?: number;
-  lastTested?: string;
-  is_multi_step?: boolean;
-  steps?: any[];
-  reviews?: any[];
-  created_at?: string;
-  inputTypes?: string[];
-  inputData?: Record<string, any[]>;
-  promptFileUrls?: string[];
-  quick_setup?: string;
-  guide_steps?: string[];
-  fill_variables?: string;
-  what_to_expect?: string;
-  pro_tips?: string;
-  common_mistakes?: string;
-  how_to_adapt?: string;
-  seller_note?: string;
-  useCase?: string;
-};
+// PromptItem is now imported from @/backend/models/Prompt
+
 
 const OUTPUT_TYPES = [
   { 
@@ -234,111 +205,7 @@ function OutputTypeBar({ prompt }: { prompt: PromptItem }) {
   );
 }
 
-function mapFallbackPrompt(id: string): PromptItem | null {
-  const fallbackPrompts: any[] = [];
-  const fallback = fallbackPrompts.find((p) => String(p.id) === id);
-  if (!fallback) return null;
-
-  return {
-    id,
-    title: fallback.title || "Untitled Prompt",
-    tagline: fallback.short_description || "Ready-to-use prompt",
-    platform: fallback.platform || "AI",
-    category: fallback.category || "Prompt",
-    price: Number(fallback.price || 0),
-    promptText: fallback.promptText || fallback.prompt_text || "No preview available.",
-    images: Array.isArray(fallback.images) ? fallback.images : [],
-    seller: {
-      id: "fallback-id",
-      username: fallback.seller || "creator",
-      avatar: "",
-    },
-    outputType: fallback.output_type || fallback.outputType || undefined,
-    tags: Array.isArray(fallback.tags) ? fallback.tags : [],
-    complexity: fallback.complexity || fallback.difficulty || "Intermediate",
-    sales: Number(fallback.sales || 0),
-    rating: Number(fallback.rating || 4.9),
-    lastTested: fallback.last_tested || "Recent",
-  };
-}
-
-function mapDefaultFallbackPrompt(id: string): PromptItem {
-  return {
-    id,
-    title: "Demo Prompt",
-    tagline: "Ready-to-use prompt",
-    platform: "AI",
-    category: "Prompt",
-    price: 0,
-    promptText: "No preview available.",
-    images: [],
-    seller: {
-      id: "default-none",
-      username: "creator",
-      avatar: "",
-    },
-    outputType: undefined,
-    tags: [],
-    complexity: "Intermediate",
-    sales: 0,
-    rating: 4.9,
-    lastTested: "Recent",
-  };
-}
-
-function mapDbPrompt(row: any, sellerData?: any): PromptItem {
-  const seller = sellerData || {};
-  return {
-    id: String(row.id),
-    title: row.title || "Untitled Prompt",
-    tagline: row.tagline || row.short_description || row.description || "Ready-to-use prompt",
-    description: row.description || row.tagline,
-    platform: row.platforms?.name || row.platform || "AI",
-    category: row.categories?.name || row.category || "Prompt",
-    subcategory: row.subcategories?.name,
-    useCase: row.use_cases?.name || row.use_case,
-    model: row.models?.name,
-    price: Number(row.price || 0),
-    promptText: row.prompt_text || row.promptText || "No preview available.",
-    images: row.prompt_images?.length
-      ? row.prompt_images.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)).map((img: any) => img.image_url)
-      : row.cover_image_url
-        ? [row.cover_image_url]
-        : [],
-    seller: {
-      id: seller.id || row.creator_id,
-      username: seller.display_name || seller.username || "creator",
-      display_name: seller.display_name,
-      avatar: seller.avatar_url || seller.avatar || "",
-      bio: seller.bio,
-      total_sales: Number(seller.total_sales || 0),
-      average_rating: Number(seller.average_rating || 0),
-      role: seller.role === 'buyer' && Number(seller.total_prompts || 0) > 0 ? 'creator' : seller.role,
-    },
-    outputType: row.output_type || row.outputType || undefined,
-    tags: Array.isArray(row.tags) ? row.tags : [],
-    complexity: row.complexity || "Intermediate",
-    sales: Number(row.purchases_count || row.sales || 0),
-    rating: Number(row.average_rating || row.rating || 4.9),
-    review_count: Number(row.review_count || 0),
-    lastTested: row.verified_at || row.updated_at || row.created_at || "Recent",
-    is_multi_step: !!row.is_multi_step,
-    steps: row.prompt_steps || [],
-    reviews: row.reviews || [],
-    created_at: row.created_at,
-    inputTypes: row.input_types || [],
-    inputData: row.input_data || {},
-    promptFileUrls: row.prompt_file_urls || [],
-    quick_setup: row.quick_setup,
-    guide_steps: row.guide_steps || [],
-    fill_variables: row.fill_variables,
-    what_to_expect: row.what_to_expect,
-    pro_tips: row.pro_tips,
-    common_mistakes: row.common_mistakes,
-    how_to_adapt: row.how_to_adapt,
-    seller_note: row.seller_note
-  };
-}
+// Removed redundant mapping and fallback functions; logic moved to PromptController.
 
 export default function PromptDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
@@ -351,135 +218,25 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
   const [activeTab, setActiveTab] = useState("prompt");
   const { user } = useAuth();
 
+  const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
+
   useEffect(() => {
-    const fetchPromptData = async () => {
+    const fetchPageData = async () => {
       try {
-        console.log("Fetching prompt for ID:", params.id, "Type:", typeof params.id);
-        
-        const { data: mainData, error: mainError } = await supabase
-          .from("prompts")
-          .select(`
-            *,
-            platforms(name),
-            categories(name),
-            subcategories(name),
-            use_cases(name),
-            models(name),
-            prompt_steps(id, step_number, title, instruction, step_type),
-            prompt_images(image_url, sort_order),
-            reviews(*)
-          `)
-          .eq("id", params.id)
-          .maybeSingle();
-
-        if (mainData) {
-          let sellerInfo = null;
-          if (mainData.creator_id) {
-            const { data: sData } = await supabase
-              .from("users")
-              .select("*")
-              .eq("id", mainData.creator_id)
-              .maybeSingle();
-            sellerInfo = sData;
-          }
-
-          const mapped = mapDbPrompt(mainData, sellerInfo);
-          setPrompt(mapped);
-          fetchRelated(mapped);
-          fetchSellerPromptCount(mapped.seller.id);
-          
-          // Check if already purchased
-          if (user) {
-            const { data: purchaseData } = await supabase
-              .from('purchases')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('prompt_id', params.id)
-              .maybeSingle();
-            
-            if (purchaseData) {
-              setIsPurchased(true);
-            }
-          }
-          return;
+        const data = await PromptController.getPromptPageData(params.id, user?.id);
+        if (data) {
+          setPrompt(data.prompt as any);
+          setRelatedPrompts(data.related as any);
+          setIsPurchased(data.isPurchased);
         }
-
-        console.warn("No prompt found in database for ID:", params.id);
-        // Fallback for demo IDs or non-existent database entries
-        const fallbackPrompt = mapFallbackPrompt(params.id);
-        if (fallbackPrompt) {
-          setPrompt(fallbackPrompt);
-          fetchRelated(fallbackPrompt);
-          return;
-        }
-
-        const def = mapDefaultFallbackPrompt(params.id);
-        setPrompt(def);
-        fetchRelated(def);
-      } catch (err: any) {
-        console.error("Critical error fetching prompt detail:", err);
-        const fallbackPrompt = mapFallbackPrompt(params.id);
-        setPrompt(fallbackPrompt || mapDefaultFallbackPrompt(params.id));
+      } catch (err) {
+        console.error("Error loading prompt details:", err);
       } finally {
         setLoading(false);
       }
     };
-
-    const fetchRelated = async (p: PromptItem) => {
-      try {
-        const { data } = await supabase
-          .from("prompts")
-          .select(`
-            id, 
-            title, 
-            description, 
-            price, 
-            cover_image_url, 
-            created_at,
-            platforms(name),
-            categories(name),
-            users(display_name, username)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(4);
-          
-        if (data) {
-          setRelatedPrompts(data.map(row => mapDbPrompt(row)));
-        }
-      } catch (err) {
-        console.error("Error fetching related:", err);
-      }
-    };
-
-    const fetchSellerPromptCount = async (sellerId: string) => {
-      try {
-        const { count } = await supabase
-          .from("prompts")
-          .select('*', { count: 'exact', head: true })
-          .eq('creator_id', sellerId)
-          .eq('is_published', true);
-        
-        if (count !== null) {
-          setPrompt(prev => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              seller: {
-                ...prev.seller,
-                total_prompts: count
-              }
-            };
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching seller prompt count:", err);
-      }
-    };
-
-    fetchPromptData();
-  }, [params.id, user]);
-
-  const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
+    fetchPageData();
+  }, [params.id, user?.id]);
 
   if (loading) {
     return (
@@ -598,6 +355,10 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
 
             <div className="flex gap-8 border-b border-border/40 mb-8 overflow-x-auto overflow-y-hidden scrollbar-hide select-none pt-2">
               <div onClick={() => setActiveTab("prompt")} className={`whitespace-nowrap pb-4 text-[14px] font-semibold cursor-pointer border-b-2 transition-all relative top-px ${activeTab === "prompt" ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}>Prompt</div>
+              <div onClick={() => setActiveTab("preview")} className={`whitespace-nowrap pb-4 text-[14px] font-semibold cursor-pointer border-b-2 transition-all relative top-px flex items-center gap-1.5 ${activeTab === "preview" ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}>
+                <Sparkles className="w-3.5 h-3.5" />
+                Output Preview
+              </div>
               {prompt.is_multi_step && <div onClick={() => setActiveTab("steps")} className={`whitespace-nowrap pb-4 text-[14px] font-semibold cursor-pointer border-b-2 transition-all relative top-px ${activeTab === "steps" ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}>Steps ({prompt.steps?.length})</div>}
               <div onClick={() => setActiveTab("variables")} className={`whitespace-nowrap pb-4 text-[14px] font-semibold cursor-pointer border-b-2 transition-all relative top-px ${activeTab === "variables" ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}>Variables Guide</div>
               <div onClick={() => setActiveTab("reviews")} className={`whitespace-nowrap pb-4 text-[14px] font-semibold cursor-pointer border-b-2 transition-all relative top-px ${activeTab === "reviews" ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}>Reviews ({prompt.review_count})</div>
@@ -612,6 +373,74 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
+                {activeTab === "preview" && (() => {
+                  const previewType = detectPreviewType({
+                    title: prompt.title,
+                    promptText: prompt.promptText,
+                    images: prompt.images,
+                    category: prompt.category,
+                    subcategory: prompt.subcategory,
+                    outputType: prompt.outputType,
+                    platform: prompt.platform,
+                    tags: prompt.tags,
+                    steps: prompt.steps,
+                    is_multi_step: prompt.is_multi_step,
+                  });
+
+                  const previewProps = {
+                    prompt: {
+                      title: prompt.title,
+                      promptText: prompt.promptText,
+                      images: prompt.images,
+                      category: prompt.category,
+                      subcategory: prompt.subcategory,
+                      outputType: prompt.outputType,
+                      platform: prompt.platform,
+                      tags: prompt.tags,
+                      steps: prompt.steps,
+                      is_multi_step: prompt.is_multi_step,
+                    },
+                    isPurchased,
+                  };
+
+                  const typeLabel: Record<string, string> = {
+                    text: "Text Output",
+                    image: "Image / Visual Output",
+                    code: "Code Output",
+                    conversational: "Conversational",
+                    audio: "Audio / TTS",
+                    video: "Video Output",
+                    structured: "Structured Data",
+                    toolcall: "Agent / Tool Call",
+                    multistep: "Multi-step / Chain",
+                    multiple: "Multiple Variations",
+                  };
+
+                  return (
+                    <div className="space-y-4 mb-10">
+                      <div className="flex items-center gap-2">
+                        <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">
+                          Output Preview
+                        </div>
+                        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          {typeLabel[previewType] || "Text Output"}
+                        </span>
+                      </div>
+
+                      {previewType === "image" && <ImageOutput {...previewProps} />}
+                      {previewType === "code" && <CodeOutput {...previewProps} />}
+                      {previewType === "conversational" && <ConversationalOutput {...previewProps} />}
+                      {previewType === "audio" && <AudioOutput {...previewProps} />}
+                      {previewType === "video" && <VideoOutput {...previewProps} />}
+                      {previewType === "structured" && <StructuredDataOutput {...previewProps} />}
+                      {previewType === "toolcall" && <ToolCallOutput {...previewProps} />}
+                      {previewType === "multistep" && <MultiStepOutput {...previewProps} />}
+                      {previewType === "multiple" && <MultipleOutputs {...previewProps} />}
+                      {previewType === "text" && <TextOutput {...previewProps} />}
+                    </div>
+                  );
+                })()}
+
                 {activeTab === "prompt" && (
                   <div className="space-y-8 mb-10">
                     <div className="space-y-4">

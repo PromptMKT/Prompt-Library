@@ -48,3 +48,4 @@ ts.log
 complete_database_fix.sql
 fix_database_policies.sql
 updater.js
+/tmp/

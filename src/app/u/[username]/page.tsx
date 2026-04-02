@@ -16,6 +16,7 @@ import { VisitorSidebarContent } from "./components/VisitorSidebarContent";
 import { ProfileReviews } from "./components/ProfileReviews";
 import { ProfileAbout } from "./components/ProfileAbout";
 import { useAuth } from "@/components/AuthProvider";
+import { UserController } from "@/backend/controllers/UserController";
 import { supabase } from "@/lib/supabase";
 
 type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
@@ -102,18 +103,9 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
         });
 
         // ── 1.5. Check if current user is following ──
-        // use profile?.id instead of authUser.id because follower_id references public.users(id)
-        if (profile && profile.id !== userId) {
-          const { data: followData } = await supabase
-            .from("follows")
-            .select("id")
-            .eq("follower_id", profile.id)
-            .eq("following_id", userId)
-            .single();
-
-          if (followData) {
-            setIsFollowing(true);
-          }
+        if (profile?.id && profile.id !== userId) {
+          const followStatus = await UserController.checkFollowStatus(profile.id as string, userId as string);
+          setIsFollowing(followStatus);
         }
 
 
@@ -308,31 +300,16 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     }
 
     try {
-      if (isFollowing) {
-        // Unfollow
-        const { error } = await supabase
-          .from("follows")
-          .delete()
-          .eq("follower_id", profile.id)
-          .eq("following_id", user.id);
-
-        if (error) throw error;
-        setIsFollowing(false);
-        setUser({ ...user, followers: Math.max(0, user.followers - 1) });
-        toast("Unfollowed");
-      } else {
-        // Follow
-        const { error } = await supabase
-          .from("follows")
-          .insert({
-            follower_id: profile.id,
-            following_id: user.id
-          });
-
-        if (error) throw error;
-        setIsFollowing(true);
-        setUser({ ...user, followers: user.followers + 1 });
+      await UserController.toggleFollow(profile.id, user.id, isFollowing);
+      
+      const newFollowedState = !isFollowing;
+      setIsFollowing(newFollowedState);
+      setUser({ ...user, followers: Math.max(0, user.followers + (newFollowedState ? 1 : -1)) });
+      
+      if (newFollowedState) {
         toast.success(`✓ Following ${user.name}`);
+      } else {
+        toast("Unfollowed");
       }
     } catch (err: any) {
       toast.error("Error: " + err.message);

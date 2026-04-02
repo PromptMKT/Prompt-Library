@@ -1,0 +1,47 @@
+export interface PromptItem {
+  id: string;
+  title: string;
+  tagline: string;
+  description?: string;
+  platform: string;
+  category: string;
+  subcategory?: string;
+  model?: string;
+  price: number;
+  promptText: string;
+  images: string[];
+  seller: { 
+    id: string;
+    username: string; 
+    display_name?: string;
+    avatar?: string;
+    bio?: string;
+    total_sales?: number;
+    average_rating?: number;
+    role?: string;
+    total_prompts?: number;
+  };
+  outputType?: string;
+  tags?: string[];
+  complexity?: string;
+  sales?: number;
+  rating?: number;
+  review_count?: number;
+  lastTested?: string;
+  is_multi_step?: boolean;
+  steps?: any[];
+  reviews?: any[];
+  created_at?: string;
+  inputTypes?: string[];
+  inputData?: Record<string, any[]>;
+  promptFileUrls?: string[];
+  quick_setup?: string;
+  guide_steps?: string[];
+  fill_variables?: string;
+  what_to_expect?: string;
+  pro_tips?: string;
+  common_mistakes?: string;
+  how_to_adapt?: string;
+  seller_note?: string;
+  useCase?: string;
+}

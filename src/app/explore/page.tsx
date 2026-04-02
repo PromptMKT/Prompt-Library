@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
+import { PromptController } from "@/backend/controllers/PromptController";
 import { supabase } from "@/lib/supabase";
 import { ExploreFilterSidebar } from "./components/ExploreFilterSidebar";
 import { ExplorePromptCard } from "./components/ExplorePromptCard";
@@ -225,165 +226,23 @@ function ExploreContent() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
-    const loadPrompts = async () => {
+    const loadExploreData = async () => {
       try {
-        const baseSelect = `
-          id,
-          title,
-          description,
-          price,
-          cover_image_url,
-          created_at,
-          platform_id,
-          category_id,
-          subcategory_id,
-          creator_id,
-          purchases_count,
-          average_rating
-        `;
-
-        const joinedQuery = await supabase
-          .from("prompts")
-          .select(`
-            ${baseSelect},
-            platforms(name),
-            categories(name),
-            subcategories(name),
-            users!prompts_creator_id_fkey(username, email, avatar_url)
-          `)
-          .order("created_at", { ascending: false })
-          .limit(400);
-
-        let rows: any[] = [];
-
-        if (joinedQuery.error) {
-          const plainQuery = await supabase
-            .from("prompts")
-            .select(baseSelect)
-            .order("created_at", { ascending: false })
-            .limit(400);
-
-          if (plainQuery.error) throw plainQuery.error;
-
-          const [platformsRes, categoriesRes, subcategoriesRes, usersRes] = await Promise.all([
-            supabase.from("platforms").select("id, name"),
-            supabase.from("categories").select("id, name"),
-            supabase.from("subcategories").select("id, name"),
-            supabase.from("users").select("id, username, email, avatar_url"),
-          ]);
-
-          const platformMap = new Map<string, string>();
-          for (const row of platformsRes.data || []) platformMap.set(String(row.id), row.name || String(row.id));
-
-          const categoryMap = new Map<string, string>();
-          for (const row of categoriesRes.data || []) categoryMap.set(String(row.id), row.name || String(row.id));
-
-          const subcategoryMap = new Map<string, string>();
-          for (const row of subcategoriesRes.data || []) subcategoryMap.set(String(row.id), row.name || String(row.id));
-
-          const userMap = new Map<string, { username?: string; email?: string }>();
-          for (const row of usersRes.data || []) {
-            userMap.set(String(row.id), { 
-              username: row.username || undefined, 
-              email: row.email || undefined 
-            });
-          }
-
-          rows = (plainQuery.data || []).map((row: any) => ({
-            ...row,
-            platforms: { name: platformMap.get(String(row.platform_id)) || String(row.platform_id || "AI") },
-            categories: { name: categoryMap.get(String(row.category_id)) || String(row.category_id || "Prompt") },
-            subcategories: row.subcategory_id
-              ? { name: subcategoryMap.get(String(row.subcategory_id)) || String(row.subcategory_id) }
-              : null,
-            users: userMap.get(String(row.creator_id)) || null,
-          }));
-        } else {
-          rows = joinedQuery.data || [];
-        }
-
-        if (!rows || rows.length === 0) {
-          setDataset(EMPTY_DATASET);
-          return;
-        }
-
-        const mappedPrompts: (PromptRecord & { creator_id?: string })[] = rows.map((row: any) => {
-          const userData = row.users || {};
-          const sellerName = userData.username || userData.display_name || "Creator";
-
-          return {
-            id: String(row.id),
-            title: row.title || "Untitled Prompt",
-            short_description: row.description || "Prompt system that ships outcomes.",
-            images: row.cover_image_url ? [row.cover_image_url] : [],
-            rating: Number(row.average_rating || 4.8),
-            sales: Number(row.purchases_count || 0),
-            tags: [],
-            seller: sellerName,
-            creator_id: row.creator_id || null,
-            price: Number(row.price || 0),
-            platform: row.platforms?.name || String(row.platform_id || "AI"),
-            category: row.categories?.name || String(row.category_id || "Prompt"),
-            subcategory: row.subcategories?.name || (row.subcategory_id ? String(row.subcategory_id) : undefined),
-            output_type: undefined,
-            difficulty: undefined,
-            prompt_text: undefined,
-            createdAt: row.created_at,
-          };
-        });
-
-        // Improved Top Creators calculation (Group by creator_id)
-        const sellerStats = new Map<string, { prompts: number; sales: number; name: string }>();
-        for (const prompt of mappedPrompts) {
-          const cid = prompt.creator_id || "anonymous";
-          const current = sellerStats.get(cid) || { prompts: 0, sales: 0, name: prompt.seller || "Creator" };
-          current.prompts += 1;
-          current.sales += Number(prompt.sales || 0);
-          
-          // If we had a generic name but now found a specific one, update it
-          const currentName = prompt.seller || "Creator";
-          if (current.name === "Creator" && currentName !== "Creator") {
-            current.name = currentName;
-          }
-          
-          sellerStats.set(cid, current);
-        }
-
-        const topCreators = Array.from(sellerStats.entries())
-          .filter(([cid]) => cid !== "anonymous") // Only show real identified creators
-          .map(([cid, stats]) => ({
-            name: stats.name,
-            prompts: stats.prompts,
-            sales: stats.sales,
-            score: stats.sales * 10 + stats.prompts * 100,
-          }))
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 6);
-
-        const trendingTags = Array.from(new Set(
-          mappedPrompts
-            .flatMap((prompt) => [prompt.category, prompt.subcategory, prompt.platform].filter(Boolean) as string[])
-            .map((value) => value.trim())
-            .filter(Boolean)
-        )).slice(0, 12);
-
-        setDataset({
-          topCreators,
-          trendingTags: ["All", ...trendingTags],
-          prompts: mappedPrompts,
-        });
+        const data = await PromptController.getExplorePageData();
+        setDataset(data as any);
 
         // Also fetch user's wishlist IDs
         const wishIds = await getWishlistedIds();
         if (wishIds) {
           setWishlistedIds(new Set(wishIds));
         }
-      } catch {
+      } catch (err) {
+        console.error("Error loading explore data:", err);
         setDataset(EMPTY_DATASET);
       }
     };
 
-    loadPrompts();
+    loadExploreData();
   }, []);
 
   const prompts = useMemo(() => dataset.prompts || [], [dataset]);
