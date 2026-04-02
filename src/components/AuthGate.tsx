@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
-const PROTECTED_PREFIXES = ["/profile", "/upload"];
+const PROTECTED_PREFIXES = ["/profile"];
 
 function requiresAuth(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

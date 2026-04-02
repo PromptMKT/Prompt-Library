@@ -64,7 +64,7 @@ export const Navbar = () => {
     router.push("/");
   };
 
-  const uploadHref = isAuthenticated ? "/upload" : "/sign-in?next=%2Fupload";
+  const uploadHref = "/upload";
   const profileHref = isAuthenticated && profile?.username ? `/u/${profile.username}` : (isAuthenticated ? "/u/profile" : "/sign-in?next=%2Fprofile");
 
   return (

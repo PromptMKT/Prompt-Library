@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Zap, Star, Gem, Check } from "lucide-react";
+import { Zap, Star, Gem } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PACKAGES = [
@@ -10,17 +10,33 @@ const PACKAGES = [
   { id: "pro", coins: 1200, label: "Pro pack", price: 849, savings: "Save 20%", popular: false, icon: Gem },
 ];
 
-export function CoinPackages({ onPurchaseAction }: { onPurchaseAction: (id: string) => void }) {
+export function CoinPackages({
+  onPurchaseAction,
+  onCustomPurchaseAction,
+  isPurchasing = false,
+}: {
+  onPurchaseAction: (id: string) => void;
+  onCustomPurchaseAction?: (coins: number) => void;
+  isPurchasing?: boolean;
+}) {
+  const [customCoins, setCustomCoins] = React.useState<string>("");
+
+  const parsedCoins = Number.parseInt(customCoins || "0", 10);
+  const safeCoins = Number.isFinite(parsedCoins) && parsedCoins > 0 ? parsedCoins : 0;
+  const rupees = ((safeCoins / 50) * 20).toFixed(2);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {PACKAGES.map((pkg) => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {PACKAGES.map((pkg) => (
         <div 
           key={pkg.id}
           className={cn(
             "group bg-white dark:bg-[#11121d] border-2 rounded-[2.56rem] p-10 text-center relative overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer",
             pkg.popular 
               ? "border-[#7C3AED] shadow-[0_20px_40px_rgba(124,58,237,0.1)] ring-1 ring-[#7C3AED20]" 
-              : "border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm"
+              : "border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm",
+            isPurchasing && "opacity-60 pointer-events-none"
           )}
           onClick={() => onPurchaseAction(pkg.id)}
         >
@@ -57,12 +73,60 @@ export function CoinPackages({ onPurchaseAction }: { onPurchaseAction: (id: stri
               pkg.popular 
                 ? "bg-[#7C3AED] text-white hover:bg-[#6D28D9] shadow-primary/20" 
                 : "bg-slate-50 dark:bg-white/[0.04] text-[#1a1b25] dark:text-white border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-white/[0.08]"
-            )}>
-              Buy {pkg.id === 'pro' ? 'Pro' : pkg.id === 'popular' ? 'Popular' : 'Starter'}
+            )} disabled={isPurchasing}>
+              {isPurchasing
+                ? "Processing..."
+                : `Buy ${pkg.id === 'pro' ? 'Pro' : pkg.id === 'popular' ? 'Popular' : 'Starter'}`}
             </button>
           </div>
         </div>
-      ))}
+        ))}
+      </div>
+
+      <div className="bg-white dark:bg-[#11121d] border border-slate-100 dark:border-slate-800 rounded-[1.75rem] p-5 md:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_auto] gap-3 items-end">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Custom Coins</label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={customCoins}
+              onChange={(e) => setCustomCoins(e.target.value)}
+              placeholder="Enter number of coins"
+              disabled={isPurchasing}
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0e1018] text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#7C3AED]"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Equivalent Rupees</label>
+            <input
+              type="text"
+              readOnly
+              value={`₹ ${rupees}`}
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-[#141826] text-sm font-black text-slate-700 dark:text-slate-200"
+            />
+          </div>
+
+          <button
+            type="button"
+            disabled={isPurchasing || safeCoins <= 0 || !onCustomPurchaseAction}
+            onClick={() => {
+              if (!onCustomPurchaseAction || safeCoins <= 0) return;
+              onCustomPurchaseAction(safeCoins);
+            }}
+            className={cn(
+              "h-12 px-8 rounded-xl text-[11px] font-black uppercase tracking-[0.18em] transition-all",
+              isPurchasing || safeCoins <= 0 || !onCustomPurchaseAction
+                ? "bg-slate-300 text-white cursor-not-allowed"
+                : "bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
+            )}
+          >
+            {isPurchasing ? "Processing..." : "Buy"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
