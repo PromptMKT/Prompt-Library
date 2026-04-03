@@ -244,8 +244,24 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/");
+  };
+
   return (
     <main className="min-h-dvh bg-[#0a0a0f] text-white selection:bg-purple-500/30 selection:text-white">
+      <button
+        type="button"
+        onClick={handleGoBack}
+        aria-label="Go back"
+        className="absolute left-2 top-2 z-30 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
       <div className="grid min-h-dvh lg:grid-cols-[40%_60%]">
         <aside className="relative hidden lg:flex flex-col justify-between p-12 border-r border-white/5 bg-[#0f0f1a]">
           <div className="absolute top-0 right-0 w-125 h-125 bg-purple-600/10 rounded-full blur-[100px] -mr-64 -mt-64 pointer-events-none" />

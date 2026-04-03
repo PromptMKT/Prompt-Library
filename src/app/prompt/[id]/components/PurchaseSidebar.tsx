@@ -133,7 +133,7 @@ export function PurchaseSidebar({
 
       {/* SELLER CARD */}
       <div className="p-4 bg-card shadow-sm dark:shadow-none rounded-2xl border border-border/40 mt-4">
-        <div className="flex items-center gap-3 mb-3">
+        <Link href={`/u/${encodeURIComponent(username)}`} className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity">
            <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary to-amber-300 flex items-center justify-center font-bold text-primary-foreground text-sm overflow-hidden">
              {avatar ? <img src={avatar} className="w-full h-full object-cover" /> : username.substring(0, 2).toUpperCase()}
           </div>
@@ -144,7 +144,7 @@ export function PurchaseSidebar({
               {sellerData.role ? ` · ${sellerData.role.charAt(0).toUpperCase() + sellerData.role.slice(1)}` : " · Creator"}
             </div>
           </div>
-        </div>
+        </Link>
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="bg-background/50 rounded-lg p-2 text-center">
             <div className="text-base font-bold text-primary font-mono">{sellerData.total_prompts || 0}</div>
@@ -160,10 +160,10 @@ export function PurchaseSidebar({
           {sellerData.bio || "AI Prompt Enthusiast & Digital Asset Creator"}
         </div>
 
-        <div className="flex gap-2">
-          <Link href={`/explore?q=${encodeURIComponent(username)}`} className="flex-2">
+        <div className="flex gap-2 w-full">
+          <Link href={`/u/${encodeURIComponent(username)}`} className="w-[60%] shrink-0">
             <Button variant="outline" className="w-full h-9 rounded-lg border-border/40 bg-transparent text-muted-foreground text-xs hover:border-primary hover:text-primary transition-colors">
-              View store →
+              View Profile →
             </Button>
           </Link>
           <Button variant="outline" className="flex-1 h-9 rounded-lg border-border/40 bg-transparent text-muted-foreground text-xs hover:border-primary hover:text-primary transition-colors">
