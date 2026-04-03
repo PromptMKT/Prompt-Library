@@ -57,6 +57,11 @@ export default function DashboardPage() {
     async function fetchDashboardData() {
       if (!user) return;
 
+      // Some prompts may have been saved against public.users.id, others against auth.users.id.
+      // Query both so dashboard metrics stay correct for existing data.
+      const creatorIds = [profile?.id, user.id].filter(Boolean) as string[];
+      if (creatorIds.length === 0) return;
+
       const { data: prompts, error } = await supabase
         .from('prompts')
         .select(`
@@ -64,7 +69,7 @@ export default function DashboardPage() {
           platform:platforms(name),
           category:categories(name)
         `)
-        .eq('creator_id', user.id)
+        .in('creator_id', creatorIds)
         .order('purchases_count', { ascending: false });
 
       if (error) {
@@ -260,11 +265,25 @@ export default function DashboardPage() {
             setRealChartData(processedData);
           }
         }
+      } else {
+        setRawPrompts([]);
+        setPromptRows([]);
+        setTopPerforming([]);
+        setTotalSales("0");
+        setTotalEarnings("0");
+        setActivePromptsCount("0");
+        setAvgRating("0.0");
+        setRealCategorySegments([]);
+        setRecentPurchases([]);
+        setRecentReviewsLive([]);
+        setRealReviews([]);
+        setRealTopBuyers([]);
+        setRealChartData([]);
       }
     }
 
     fetchDashboardData();
-  }, [user, timeRange]);
+  }, [user, profile?.id, timeRange]);
 
   // Keep static mock data for buyers/reviews/activity until those tables exist
   // Buyers tracking not yet implemented in DB

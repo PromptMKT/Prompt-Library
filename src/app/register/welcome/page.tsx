@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Link from "next/link";
 import { Coins, Sparkles, Rocket, LayoutDashboard, Store } from "lucide-react";
+import { useState } from 'react';
 
 export default function WelcomePage() {
   const supabase = createClient(
@@ -11,40 +12,28 @@ export default function WelcomePage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const [coins, setCoins] = useState<number>(0);
+
   useEffect(() => {
-    const addBonusCoins = async () => {
+    const fetchCoins = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Check if bonus already awarded
-        const { data, error } = await supabase
-          .from('coin_transactions')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('transaction_type', 'bonus');
+      if (!user) return;
 
-        if (error) {
-          console.error('Error checking for bonus:', error);
-          return;
-        }
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('total_coins')
+        .eq('auth_user_id', user.id)
+        .single();
 
-        if (data.length === 0) {
-          const { error: insertError } = await supabase
-            .from('coin_transactions')
-            .insert({
-              user_id: user.id,
-              transaction_type: 'bonus',
-              amount: 200,
-              description: 'Initial bonus coins'
-            });
-
-          if (insertError) {
-            console.error('Error adding bonus coins:', insertError);
-          }
-        }
+      if (error) {
+        console.error('Error fetching wallet coins:', error);
+        return;
       }
+
+      setCoins(Number(profile?.total_coins || 0));
     };
 
-    addBonusCoins();
+    fetchCoins();
   }, [supabase]);
 
   return (
@@ -56,7 +45,7 @@ export default function WelcomePage() {
         </div>
 
         <div>
-          <p className="text-5xl font-black tracking-tight text-primary">200</p>
+          <p className="text-5xl font-black tracking-tight text-primary">{coins.toLocaleString()}</p>
           <p className="text-xs font-black tracking-[0.2em] uppercase text-slate-400 mt-1">Credited to your wallet</p>
         </div>
 
@@ -73,7 +62,7 @@ export default function WelcomePage() {
             <Sparkles className="w-4 h-4 text-primary" /> Sell your first prompt
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 inline-flex items-center gap-2">
-            <Coins className="w-4 h-4 text-primary" /> 200 in wallet now
+            <Coins className="w-4 h-4 text-primary" /> {coins.toLocaleString()} in wallet now
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 inline-flex items-center gap-2">
             <Rocket className="w-4 h-4 text-primary" /> Personalized feed ready

@@ -21,6 +21,7 @@ export type UserProfile = {
   created_at?: string;
   updated_at?: string;
   coins?: number;
+  total_coins?: number;
 };
 
 type AuthContextValue = {
@@ -57,7 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     if (primary.data) {
-      fetchedProfile = primary.data;
+      fetchedProfile = {
+        ...primary.data,
+        coins: (primary.data as any).total_coins ?? 0,
+        total_coins: (primary.data as any).total_coins ?? 0,
+      };
     } 
 
     // If we can't find a record in the users table, 
@@ -71,6 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: user.email || "",
         display_name: (user.user_metadata?.display_name as string) || (user.email?.split("@")[0] || "User"),
         role: "buyer",
+        coins: 0,
+        total_coins: 0,
         is_temporary: true,
       };
     }

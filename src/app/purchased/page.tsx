@@ -6,18 +6,36 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function PurchasedPage() {
+  const { profile } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPurchased = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
           setLoading(false);
           return;
+        }
+
+        let publicUserId = profile?.id;
+        if (!publicUserId) {
+          const { data: profileRow, error: profileError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('auth_user_id', authUser.id)
+            .single();
+
+          if (profileError || !profileRow?.id) {
+            setLoading(false);
+            return;
+          }
+
+          publicUserId = profileRow.id;
         }
 
         const { data, error } = await supabase
@@ -34,7 +52,7 @@ export default function PurchasedPage() {
               users!prompts_creator_id_fkey (username)
             )
           `)
-          .eq('user_id', user.id)
+          .eq('user_id', publicUserId)
           .eq('status', 'completed')
           .order('purchased_at', { ascending: false });
 
@@ -63,7 +81,7 @@ export default function PurchasedPage() {
     };
 
     fetchPurchased();
-  }, []);
+  }, [profile?.id]);
 
   if (loading) {
     return (

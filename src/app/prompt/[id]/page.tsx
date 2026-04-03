@@ -344,7 +344,7 @@ function mapDbPrompt(row: any, sellerData?: any): PromptItem {
 export default function PromptDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const [prompt, setPrompt] = useState<PromptItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
@@ -390,11 +390,11 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           fetchSellerPromptCount(mapped.seller.id);
           
           // Check if already purchased
-          if (user) {
+          if (user && profile?.id) {
             const { data: purchaseData } = await supabase
               .from('purchases')
               .select('id')
-              .eq('user_id', user.id)
+              .eq('user_id', profile.id)
               .eq('prompt_id', params.id)
               .maybeSingle();
             
@@ -478,7 +478,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
     };
 
     fetchPromptData();
-  }, [params.id, user]);
+  }, [params.id, user, profile?.id]);
 
   const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
 
