@@ -34,7 +34,6 @@ export function ProfileStats({
     { label: "Total sales", value: formatCompact(totalSales), color: "text-[#A78BFA]" },
     { label: "Avg rating", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "N/A", id: "reviews", color: avgRating > 0 ? "text-[#e8a838]" : "text-muted-foreground" },
     { label: "Reviews", value: String(reviewsCount), id: "reviews", color: "text-foreground" },
-    { label: "Response rate", value: "—", color: "text-muted-foreground" },
   ];
 
   const ownerStats = [
