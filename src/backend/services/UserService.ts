@@ -4,8 +4,9 @@ export class UserService {
   /**
    * Fetch a user's profile by their ID.
    */
-  static async getUserProfile(id: string) {
-    const { data, error } = await supabase
+  static async getUserProfile(id: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from("users")
       .select("*")
       .eq("id", id)
@@ -18,8 +19,9 @@ export class UserService {
   /**
    * Check if a specific user has purchased a specific prompt.
    */
-  static async checkPurchase(userId: string, promptId: string) {
-    const { data, error } = await supabase
+  static async checkPurchase(userId: string, promptId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from('purchases')
       .select('id')
       .eq('user_id', userId)
@@ -33,8 +35,9 @@ export class UserService {
   /**
    * Record a new purchase in the database.
    */
-  static async recordPurchase(userId: string, promptId: string, amount: number) {
-    const { error } = await supabase
+  static async recordPurchase(userId: string, promptId: string, amount: number, client?: any) {
+    const supabaseClient = client || supabase;
+    const { error } = await supabaseClient
       .from('purchases')
       .insert([{
         user_id: userId,
@@ -56,8 +59,9 @@ export class UserService {
   /**
    * Follow a user.
    */
-  static async followUser(followerId: string, followingId: string) {
-    const { error } = await supabase
+  static async followUser(followerId: string, followingId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { error } = await supabaseClient
       .from('follows')
       .insert([{ follower_id: followerId, following_id: followingId }]);
     
@@ -68,8 +72,9 @@ export class UserService {
   /**
    * Unfollow a user.
    */
-  static async unfollowUser(followerId: string, followingId: string) {
-    const { error } = await supabase
+  static async unfollowUser(followerId: string, followingId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { error } = await supabaseClient
       .from('follows')
       .delete()
       .eq('follower_id', followerId)
@@ -82,8 +87,9 @@ export class UserService {
   /**
    * Check if a user is following another user.
    */
-  static async isFollowing(followerId: string, followingId: string) {
-    const { data, error } = await supabase
+  static async isFollowing(followerId: string, followingId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from('follows')
       .select('id')
       .eq('follower_id', followerId)
@@ -97,10 +103,11 @@ export class UserService {
   /**
    * Get follower and following counts for a user.
    */
-  static async getFollowerCounts(userId: string) {
+  static async getFollowerCounts(userId: string, client?: any) {
+    const supabaseClient = client || supabase;
     const [followers, following] = await Promise.all([
-      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
-      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId)
+      supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
+      supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId)
     ]);
 
     if (followers.error) throw followers.error;
@@ -115,8 +122,9 @@ export class UserService {
   /**
    * Get real-time aggregated statistics for a user.
    */
-  static async getUserStats(userId: string) {
-    const { data: prompts, error } = await supabase
+  static async getUserStats(userId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data: prompts, error } = await supabaseClient
       .from('prompts')
       .select('purchases_count, average_rating')
       .eq('creator_id', userId)

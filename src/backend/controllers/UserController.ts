@@ -4,12 +4,12 @@ export class UserController {
   /**
    * Get formatted user profile data.
    */
-  static async getUserProfileDetails(id: string) {
+  static async getUserProfileDetails(id: string, client?: any) {
     try {
       const [profileData, followerCounts, stats] = await Promise.all([
-        UserService.getUserProfile(id),
-        UserService.getFollowerCounts(id),
-        UserService.getUserStats(id)
+        UserService.getUserProfile(id, client),
+        UserService.getFollowerCounts(id, client),
+        UserService.getUserStats(id, client)
       ]);
 
       if (!profileData) return null;
@@ -40,32 +40,32 @@ export class UserController {
   /**
    * Check if a user can access a prompt (already purchased).
    */
-  static async checkPromptAccess(userId: string, promptId: string) {
-    return await UserService.checkPurchase(userId, promptId);
+  static async checkPromptAccess(userId: string, promptId: string, client?: any) {
+    return await UserService.checkPurchase(userId, promptId, client);
   }
 
   /**
    * Process a prompt purchase action.
    */
-  static async processPurchase(userId: string, promptId: string, amount: number) {
-    return await UserService.recordPurchase(userId, promptId, amount);
+  static async processPurchase(userId: string, promptId: string, amount: number, client?: any) {
+    return await UserService.recordPurchase(userId, promptId, amount, client);
   }
 
   /**
    * Toggle follow/unfollow status.
    */
-  static async toggleFollow(followerId: string, followingId: string, currentState: boolean) {
+  static async toggleFollow(followerId: string, followingId: string, currentState: boolean, client?: any) {
     if (currentState) {
-      return await UserService.unfollowUser(followerId, followingId);
+      return await UserService.unfollowUser(followerId, followingId, client);
     } else {
-      return await UserService.followUser(followerId, followingId);
+      return await UserService.followUser(followerId, followingId, client);
     }
   }
 
   /**
    * Check if one user follows another.
    */
-  static async checkFollowStatus(followerId: string, followingId: string) {
-    return await UserService.isFollowing(followerId, followingId);
+  static async checkFollowStatus(followerId: string, followingId: string, client?: any) {
+    return await UserService.isFollowing(followerId, followingId, client);
   }
 }

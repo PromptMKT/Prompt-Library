@@ -4,8 +4,9 @@ export class PromptService {
   /**
    * Fetch a list of published prompts with optional limit and ordering.
    */
-  static async getPublishedPrompts(limit: number = 10) {
-    const { data, error } = await supabase
+  static async getPublishedPrompts(limit: number = 10, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from('prompts')
       .select(`
         id, title, price, cover_image_url, created_at, purchases_count, average_rating,
@@ -23,8 +24,9 @@ export class PromptService {
   /**
    * Fetch a single prompt by its ID with all related information.
    */
-  static async getPromptById(id: string) {
-    const { data, error } = await supabase
+  static async getPromptById(id: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from("prompts")
       .select(`
         *,
@@ -47,8 +49,9 @@ export class PromptService {
   /**
    * Fetch related prompts for a given prompt (e.g., in the same category).
    */
-  static async getRelatedPrompts(limit: number = 4) {
-    const { data, error } = await supabase
+  static async getRelatedPrompts(limit: number = 4, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from("prompts")
       .select(`
         id, title, description, price, cover_image_url, created_at,
@@ -66,8 +69,9 @@ export class PromptService {
   /**
    * Fetch the count of published prompts by a specific creator.
    */
-  static async getSellerPromptCount(creatorId: string) {
-    const { count, error } = await supabase
+  static async getSellerPromptCount(creatorId: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { count, error } = await supabaseClient
       .from("prompts")
       .select('*', { count: 'exact', head: true })
       .eq('creator_id', creatorId)
@@ -80,8 +84,9 @@ export class PromptService {
   /**
    * Fetch a comprehensive dataset for the explore page.
    */
-  static async getExploreData(limit: number = 400) {
-    const { data, error } = await supabase
+  static async getExploreData(limit: number = 400, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
       .from("prompts")
       .select(`
         id, title, description, price, cover_image_url, created_at,
@@ -107,9 +112,10 @@ export class PromptService {
     steps: any[];
     images: any[];
     models: any[];
-  }) {
+  }, client?: any) {
+    const supabaseClient = client || supabase;
     // 1. Insert the main prompt record
-    const { data: prompt, error: promptError } = await supabase
+    const { data: prompt, error: promptError } = await supabaseClient
       .from('prompts')
       .insert([promptData])
       .select()
@@ -124,7 +130,7 @@ export class PromptService {
 
     if (relatedData.steps.length > 0) {
       tasks.push(
-        supabase.from('prompt_steps').insert(
+        supabaseClient.from('prompt_steps').insert(
           relatedData.steps.map(step => ({ ...step, prompt_id: promptId }))
         )
       );
@@ -132,7 +138,7 @@ export class PromptService {
 
     if (relatedData.images.length > 0) {
       tasks.push(
-        supabase.from('prompt_images').insert(
+        supabaseClient.from('prompt_images').insert(
           relatedData.images.map(img => ({ ...img, prompt_id: promptId }))
         )
       );
@@ -140,7 +146,7 @@ export class PromptService {
 
     if (relatedData.models.length > 0) {
       tasks.push(
-        supabase.from('prompt_models').insert(
+        supabaseClient.from('prompt_models').insert(
           relatedData.models.map(model => ({ ...model, prompt_id: promptId }))
         )
       );

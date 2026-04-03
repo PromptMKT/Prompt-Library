@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PromptController } from "@/backend/controllers/PromptController";
+import { publishPromptAction } from "@/app/actions/prompt";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
   ChatGPT:['GPT-5.1 (latest)','GPT-5','GPT-5 Mini','GPT-4o','GPT-4o Mini','GPT-4 Turbo','o4','o4 Mini','o3','o3 Mini','o1','GPT-3.5 Turbo'],
@@ -276,8 +277,8 @@ export default function PromptUploadPage() {
         promptFileUrls.push(url);
       }
 
-      // 2. Call Controller to handle DB orchestration
-      const promptData = await PromptController.publishPrompt({
+      // 2. Call Server Action to handle DB orchestration and revalidation
+      const result = await publishPromptAction({
         title, tagline, price, category, subCategory, platform,
         selectedModels, coverUrl, screenshotUrls, promptFileUrls,
         inputNeeds, inputData, targetAudience, outputFormat,
@@ -288,10 +289,12 @@ export default function PromptUploadPage() {
         promptTab, systemText, promptText, chainSteps
       });
 
-      if (promptData) {
-        setPublishedPromptId(String(promptData.id));
+      if (result.success && result.promptId) {
+        setPublishedPromptId(String(result.promptId));
         setIsPublished(true);
         toast?.success("Prompt successfully published!");
+      } else {
+        throw new Error(result.error || "Failed to publish prompt");
       }
     } catch (err: any) {
       console.error("Error publishing:", err);

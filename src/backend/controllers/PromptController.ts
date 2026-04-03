@@ -54,9 +54,9 @@ export class PromptController {
   /**
    * Get detailed prompt data with mapping for the detail page.
    */
-  static async getPromptDetails(id: string) {
+  static async getPromptDetails(id: string, client?: any) {
     try {
-      const data = await PromptService.getPromptById(id);
+      const data = await PromptService.getPromptById(id, client);
       if (!data) return null;
 
       return {
@@ -117,14 +117,14 @@ export class PromptController {
   /**
    * Get all data needed for the prompt detail page.
    */
-  static async getPromptPageData(id: string, userId?: string) {
+  static async getPromptPageData(id: string, userId?: string, client?: any) {
     try {
-      const data = await this.getPromptDetails(id);
+      const data = await this.getPromptDetails(id, client);
       if (!data) return null;
 
       let sellerDetails = data.seller;
       if (data.seller.id) {
-        const profile = await UserController.getUserProfileDetails(data.seller.id);
+        const profile = await UserController.getUserProfileDetails(data.seller.id, client);
         if (profile) {
           sellerDetails = {
             ...sellerDetails,
@@ -132,17 +132,17 @@ export class PromptController {
           };
         }
         
-        const count = await PromptService.getSellerPromptCount(data.seller.id);
+        const count = await PromptService.getSellerPromptCount(data.seller.id, client);
         if (count !== null) {
           sellerDetails.total_prompts = count;
         }
       }
 
-      const related = await this.getRelatedPrompts();
+      const related = await this.getRelatedPrompts(client);
       
       let isPurchased = false;
       if (userId) {
-        isPurchased = await UserController.checkPromptAccess(userId, id);
+        isPurchased = await UserController.checkPromptAccess(userId, id, client);
       }
 
       return {
@@ -159,9 +159,9 @@ export class PromptController {
   /**
    * Get related prompts formatted for the UI.
    */
-  static async getRelatedPrompts() {
+  static async getRelatedPrompts(client?: any) {
     try {
-      const data = await PromptService.getRelatedPrompts(4);
+      const data = await PromptService.getRelatedPrompts(4, client);
       return (data || []).map((row: any) => ({
         id: String(row.id),
         title: row.title || "Untitled",
@@ -179,9 +179,9 @@ export class PromptController {
   /**
    * Get all data needed for the explore page.
    */
-  static async getExplorePageData() {
+  static async getExplorePageData(client?: any) {
     try {
-      const rows = await PromptService.getExploreData(400);
+      const rows = await PromptService.getExploreData(400, client);
       
       const mappedPrompts = (rows || []).map((row: any) => {
         const userData = row.users || {};
@@ -252,9 +252,10 @@ export class PromptController {
   /**
    * Get subcategories for a given category.
    */
-  static async getSubcategories(categoryId: string) {
+  static async getSubcategories(categoryId: string, client?: any) {
+    const supabaseClient = client || supabase;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('subcategories')
         .select('*')
         .eq('category_id', categoryId);
@@ -269,7 +270,7 @@ export class PromptController {
   /**
    * Orchestrate the publication of a new prompt.
    */
-  static async publishPrompt(data: any) {
+  static async publishPrompt(data: any, client?: any) {
     try {
       const {
         title, tagline, price, category, subCategory, platform,
@@ -357,7 +358,7 @@ export class PromptController {
         steps: stepsToInsert,
         images: imagesToInsert,
         models: modelsToInsert
-      });
+      }, client);
     } catch (error) {
       console.error("Controller Error (publishPrompt):", error);
       throw error;
