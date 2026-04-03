@@ -233,8 +233,8 @@ export class PromptController {
 
       const trendingTags = Array.from(new Set(
         mappedPrompts
-          .flatMap((prompt) => [prompt.category, prompt.subcategory, prompt.platform].filter(Boolean) as string[])
-          .map((value) => value.trim())
+          .flatMap((prompt: any) => [prompt.category, prompt.subcategory, prompt.platform].filter(Boolean) as string[])
+          .map((value: string) => value.trim())
           .filter(Boolean)
       )).slice(0, 12);
 

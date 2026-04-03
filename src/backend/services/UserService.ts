@@ -133,10 +133,10 @@ export class UserService {
     if (error) throw error;
 
     const totalPrompts = prompts.length;
-    const totalSales = prompts.reduce((acc, p) => acc + (p.purchases_count || 0), 0);
-    const validRatings = prompts.filter(p => (p.average_rating || 0) > 0);
+    const totalSales = prompts.reduce((acc: number, p: any) => acc + (p.purchases_count || 0), 0);
+    const validRatings = prompts.filter((p: any) => (p.average_rating || 0) > 0);
     const avgRating = validRatings.length > 0
-      ? Number((validRatings.reduce((acc, p) => acc + (p.average_rating || 0), 0) / validRatings.length).toFixed(1))
+      ? Number((validRatings.reduce((acc: number, p: any) => acc + (p.average_rating || 0), 0) / validRatings.length).toFixed(1))
       : 0;
 
     return {
