@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
 
 export default function SellerProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
+  const router = useRouter();
   const { profile, user: authUser, loading: authLoading } = useAuth();
   const params = React.use(paramsPromise);
 
@@ -72,6 +74,12 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
 
         const userId = userData.id || userData.auth_user_id;
 
+        // Fetch actual follower and following counts directly
+        const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
+        ]);
+
         // Build a clean display name with fallback chain:
         // display_name → username → email prefix
         const rawDisplayName = userData.display_name;
@@ -85,15 +93,17 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           name: fallbackName,                   // always has a value for rendering
           email: userData.email,
           avatar: userData.avatar_url,
+          cover_url: userData.cover_url || "",
           bio: userData.bio || "",
           location: userData.location || "",
           website: userData.website || "",
           coins: userData.total_coins || 0,
-          followers: userData.followers_count || 0,
-          following: userData.following_count || 0,
+          followers: followersCount || 0,
+          following: followingCount || 0,
           verified: userData.is_verified || false,
           avgRating: userData.average_rating || 0,
           interests: userData.interests || [],
+          technicalSkills: userData.technical_skills || [],
           totalSales: userData.total_sales || 0,
           totalPurchases: userData.total_purchases || 0,
           memberSince: userData.created_at
@@ -428,7 +438,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                         </div>
                         <button
                           className="py-3 px-8 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                          onClick={() => toast("Opening prompt editor...")}
+                          onClick={() => router.push("/upload")}
                         >
                           + New prompt
                         </button>

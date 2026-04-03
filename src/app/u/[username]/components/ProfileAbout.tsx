@@ -30,7 +30,6 @@ export function ProfileAbout({
 }: ProfileAboutProps) {
   const creatorStats = [
     { label: "Member since", value: user?.memberSince || "—" },
-    { label: "Response rate", value: "—", color: "text-muted-foreground" },
     { label: "Prompts published", value: promptsCount.toLocaleString() },
     { label: "Total reviews", value: reviewsCount.toLocaleString(), color: "text-[#A78BFA]" },
     { label: "Total sales", value: totalSales.toLocaleString() },
@@ -39,16 +38,31 @@ export function ProfileAbout({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      {/* About */}
-      <div className="mb-6">
+
+      {/* About / Bio */}
+      <div>
         <div className="text-[10px] font-bold tracking-[1.2px] uppercase text-muted-foreground mb-2.5">About this creator</div>
         <div className="text-[13px] text-muted-foreground leading-[1.7]">
           {user?.bio || "This creator hasn't added a bio yet."}
         </div>
       </div>
 
+      {/* Technical Skills */}
+      {user?.technicalSkills?.length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold tracking-[1.2px] uppercase text-muted-foreground mb-2.5">Technical Skills</div>
+          <div className="flex flex-wrap gap-1.5">
+            {user.technicalSkills.map((skill: string, i: number) => (
+              <span key={i} className="text-[11px] py-1 px-3 rounded-[20px] bg-secondary border border-border/60 text-foreground/70 font-medium">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Creator stats */}
-      <div className="mb-6">
+      <div>
         <div className="text-[10px] font-bold tracking-[1.2px] uppercase text-muted-foreground mb-2.5">Creator stats</div>
         <div className="grid grid-cols-2 gap-2.5">
           {creatorStats.map((stat, i) => (
@@ -62,9 +76,9 @@ export function ProfileAbout({
         </div>
       </div>
 
-      {/* Interests / specialisations */}
+      {/* Interests / Specialisations */}
       {user?.interests?.length > 0 && (
-        <div className="mb-6">
+        <div>
           <div className="text-[10px] font-bold tracking-[1.2px] uppercase text-muted-foreground mb-2.5">Specialisations</div>
           <div className="flex flex-wrap gap-1.5">
             {user.interests.map((skill: string, i: number) => (
@@ -78,7 +92,7 @@ export function ProfileAbout({
 
       {/* AI platforms covered */}
       {platformBreakdown.length > 0 && (
-        <div className="mb-6">
+        <div>
           <div className="text-[10px] font-bold tracking-[1.2px] uppercase text-muted-foreground mb-2.5">AI platforms covered</div>
           <div className="flex flex-wrap gap-1.5">
             {platformBreakdown.map((plat) => {

@@ -4,8 +4,6 @@ import * as React from "react"
 import { motion } from "framer-motion"
 import { Eye, Heart, Share2, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { toggleWishlistAction, isWishlisted as checkWishlisted } from "@/app/actions/wishlist"
-import { toast } from "sonner"
 
 interface PromptCardProps {
   id: string
@@ -20,7 +18,6 @@ interface PromptCardProps {
   }
   previewImage: string
   promptPreview?: string
-  initialWishlisted?: boolean
 }
 
 const Stars = ({ rating }: { rating: number }) => (
@@ -42,33 +39,15 @@ const Stars = ({ rating }: { rating: number }) => (
   </div>
 )
 
-const ActionStrip = ({ 
-  isWishlisted, 
-  onWishlistToggle 
-}: { 
-  isWishlisted: boolean, 
-  onWishlistToggle: (e: React.MouseEvent) => void 
-}) => (
+const ActionStrip = () => (
   <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-6 group-hover:translate-x-0 z-30 duration-200">
-    <button 
-      className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm text-primary flex items-center justify-center shadow-xl hover:bg-primary hover:text-white transition-all transform hover:scale-110"
-      onClick={(e) => { e.stopPropagation(); toast("Opening preview...") }}
-    >
+    <button className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm text-primary flex items-center justify-center shadow-xl hover:bg-primary hover:text-white transition-all transform hover:scale-110">
       <Eye className="w-4 h-4" />
     </button>
-    <button 
-      className={cn(
-        "w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-xl transition-all transform hover:scale-110",
-        isWishlisted ? "text-rose-500" : "text-slate-500 hover:text-rose-500"
-      )}
-      onClick={onWishlistToggle}
-    >
-      <Heart className={cn("w-4 h-4", isWishlisted && "fill-rose-500")} />
+    <button className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm text-slate-500 flex items-center justify-center shadow-xl hover:text-rose-500 transition-all transform hover:scale-110">
+      <Heart className="w-4 h-4" />
     </button>
-    <button 
-      className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm text-slate-500 flex items-center justify-center shadow-xl hover:text-blue-500 transition-all transform hover:scale-110"
-      onClick={(e) => { e.stopPropagation(); toast("Link copied to clipboard!") }}
-    >
+    <button className="w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm text-slate-500 flex items-center justify-center shadow-xl hover:text-blue-500 transition-all transform hover:scale-110">
       <Share2 className="w-4 h-4" />
     </button>
   </div>
@@ -84,34 +63,7 @@ export function PromptCard({
   author,
   previewImage,
   promptPreview,
-  initialWishlisted = false,
 }: PromptCardProps) {
-  const [isWishlisted, setIsWishlisted] = React.useState(initialWishlisted)
-
-  React.useEffect(() => {
-    // Sync with DB if not provided
-    if (initialWishlisted === undefined) {
-      checkWishlisted(id).then(setIsWishlisted)
-    }
-  }, [id, initialWishlisted])
-
-  const handleWishlistToggle = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    // Optimistic update
-    const previousState = isWishlisted
-    setIsWishlisted(!previousState)
-
-    const result = await toggleWishlistAction(id)
-    if (result.success) {
-      setIsWishlisted(result.wishlisted ?? !previousState)
-      toast.success(result.wishlisted ? "Added to wishlist" : "Removed from wishlist")
-    } else {
-      // Revert on failure
-      setIsWishlisted(previousState)
-      toast.error(result.error || "Failed to update wishlist")
-    }
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -131,10 +83,7 @@ export function PromptCard({
           <div className="w-full h-full bg-linear-to-br from-primary/15 via-transparent to-primary/10" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <ActionStrip 
-          isWishlisted={isWishlisted} 
-          onWishlistToggle={handleWishlistToggle} 
-        />
+        <ActionStrip />
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
           {platform}
         </span>

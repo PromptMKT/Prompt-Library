@@ -115,11 +115,11 @@ export function VisitorProfileView({ user, prompts }: VisitorProfileViewProps) {
                                 <span className="spec-tag">RAG systems</span>
                             </div>
                             <div className="profile-meta">
-                                <span className="meta-item">📍 {user.location}</span>
-                                <span className="meta-item">🔗 <a href={`https://${user.website}`} target="_blank" rel="noreferrer" style={{ color: "var(--violet3)" }}>{user.website}</a></span>
-                                <span className="meta-item">👥 <strong style={{ color: "var(--text)" }}>{user.followers}</strong> followers · <strong style={{ color: "var(--text)" }}>{user.following}</strong> following</span>
-                                <span className="meta-item">⭐ <strong style={{ color: "var(--amber)" }}>{user.avgRating}</strong> avg rating</span>
-                                <span className="meta-live"><span className="live-dot"></span>Active 2h ago</span>
+                                <span className="meta-item text-[13px]">📍 {user.location}</span>
+                                <span className="meta-item text-[14px]">🔗 <a href={`https://${user.website}`} target="_blank" rel="noreferrer" style={{ color: "var(--violet3)" }} className="text-[14px]">{user.website}</a></span>
+                                <span className="meta-item text-[15px]">👥 <strong className="text-[15px]" style={{ color: "var(--text)" }}>{user.followers}</strong> followers <span className="opacity-30 mx-1">·</span> <strong className="text-[15px]" style={{ color: "var(--text)" }}>{user.following}</strong> following</span>
+                                <span className="meta-item text-[14px]">⭐ <strong style={{ color: "var(--amber)" }}>{user.avgRating}</strong> avg rating</span>
+                                <span className="meta-live text-[14px]"><span className="live-dot"></span>Active 2h ago</span>
                             </div>
                         </div>
                     </div>
