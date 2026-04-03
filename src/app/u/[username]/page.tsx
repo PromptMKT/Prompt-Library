@@ -74,6 +74,12 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
 
         const userId = userData.id || userData.auth_user_id;
 
+        // Fetch actual follower and following counts directly
+        const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
+        ]);
+
         // Build a clean display name with fallback chain:
         // display_name → username → email prefix
         const rawDisplayName = userData.display_name;
@@ -92,8 +98,8 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           location: userData.location || "",
           website: userData.website || "",
           coins: userData.total_coins || 0,
-          followers: userData.followers_count || 0,
-          following: userData.following_count || 0,
+          followers: followersCount || 0,
+          following: followingCount || 0,
           verified: userData.is_verified || false,
           avgRating: userData.average_rating || 0,
           interests: userData.interests || [],

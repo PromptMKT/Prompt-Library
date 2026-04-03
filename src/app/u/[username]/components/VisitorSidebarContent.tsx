@@ -139,16 +139,7 @@ export function VisitorSidebarContent({
                     </div>
                 )}
 
-                {/* 5. Share */}
-                <div className="flex items-center gap-2 p-3 bg-secondary/15 border border-border/30 rounded-lg">
-                    <span className="text-[10px] text-muted-foreground flex-1">Share this profile</span>
-                    <button
-                        className="text-[10px] font-semibold py-1 px-3 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-all"
-                        onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }}
-                    >
-                        Copy link
-                    </button>
-                </div>
+
             </div>
         </div>
     );

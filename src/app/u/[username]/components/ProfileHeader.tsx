@@ -1,6 +1,7 @@
 "use client";
 
-import { Camera, Edit, MapPin, Link as LinkIcon, Share2, Loader2, CheckCircle2, XCircle, X, Plus } from "lucide-react";
+import { Camera, Edit, MapPin, Link as LinkIcon, Share2, Flag, Loader2, CheckCircle2, XCircle, X, Plus } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -277,6 +278,14 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
             >
               <Share2 className="w-3.5 h-3.5" />
             </button>
+            {!isOwner && (
+              <button
+                className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:border-red-500/40 hover:text-red-500 transition-all ml-1"
+                onClick={() => toast("Report profile feature coming soon")}
+              >
+                <Flag className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -458,17 +467,21 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
             {/* Meta row — location, website, followers */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-muted-foreground font-medium">
               {user.location && (
-                <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400/80" /> {user.location}</span>
+                <span className="flex items-center gap-2 text-[13px]"><MapPin className="w-4 h-4 text-red-400/80" /> {user.location}</span>
               )}
               {user.website && (
-                <a href={user.website.startsWith("http") ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
-                  <LinkIcon className="w-4 h-4" /> {user.website.replace(/^https?:\/\//, "")}
+                <a href={user.website.startsWith("http") ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors text-[14px]">
+                  <LinkIcon className="w-3.5 h-3.5" /> {user.website.replace(/^https?:\/\//, "")}
                 </a>
               )}
-              <span className="flex items-center gap-2">
-                <span><strong className="text-foreground font-bold">{(user.followers || 0).toLocaleString()}</strong> followers</span>
+              <span className="flex items-center gap-2 text-[14px]">
+                <Link href={`/u/${user.username}/followers`} className="hover:text-primary transition-colors flex items-center gap-1">
+                  <strong className="text-foreground font-bold hover:text-primary">{(user.followers || 0).toLocaleString()}</strong> followers
+                </Link>
                 <span className="opacity-30 mx-1">·</span>
-                <span><strong className="text-foreground font-bold">{(user.following || 0).toLocaleString()}</strong> following</span>
+                <Link href={`/u/${user.username}/following`} className="hover:text-primary transition-colors flex items-center gap-1">
+                  <strong className="text-foreground font-bold hover:text-primary">{(user.following || 0).toLocaleString()}</strong> following
+                </Link>
               </span>
             </div>
           </div>
