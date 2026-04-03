@@ -10,20 +10,22 @@
 !.yarn/releases
 !.yarn/versions
 
+
 # testing
 /coverage
 
 # next.js
 /.next/
 /out/
-
+/raw_static_designs/*
 # production
 /build
-
+/database
+/.vscode
 # misc
 .DS_Store
 *.pem
-
+/supabase
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -39,3 +41,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Temporary and Scratch files
+ts_errors.log
+ts_errors.txt
+ts.log
+complete_database_fix.sql
+fix_database_policies.sql
+updater.js
