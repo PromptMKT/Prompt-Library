@@ -89,6 +89,15 @@ const contributors = [
   { name: "Mia Santos",      role: "Content Creator",   likes: "38.5K", posts: "520", views: "140K", seed: "mia"  },
 ];
 
+const showcaseCards = [
+  {id:1,type:'text',icon:'📧',platform:'ChatGPT',tags:['Email','B2B'],title:'Cold Email that Converts — B2B Outreach',rating:4.9,reviews:127,sales:489,author:'PN',authorName:'Priya N.',price:30, image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80"},
+  {id:2,type:'image',icon:'📸',platform:'Midjourney',tags:['Photography','Product'],title:'Cinematic Product Shot — Dark Studio',rating:4.8,reviews:89,sales:312,author:'RK',authorName:'Ravi K.',price:45, image: "https://images.unsplash.com/photo-1527203561188-dae1bc1a417f?w=600&q=80"},
+  {id:3,type:'code',icon:'⚙️',platform:'Claude',tags:['React','UI'],title:'Full Stack Architecture Doc Generator',rating:5.0,reviews:34,sales:78,author:'DK',authorName:'Dev K.',price:60, image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80"},
+  {id:4,type:'text',icon:'📣',platform:'ChatGPT',tags:['Social','Viral'],title:'Twitter Thread that Goes Viral — 12-Tweet Framework',rating:4.6,reviews:201,sales:445,author:'SR',authorName:'Sneha R.',price:25, image: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=600&q=80"},
+  {id:5,type:'image',icon:'🎨',platform:'FLUX',tags:['Art','Fantasy'],title:'Fantasy Portrait — Oil Painting Realism',rating:4.8,reviews:143,sales:234,author:'RI',authorName:'Riya I.',price:35, image: "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=600&q=80"},
+  {id:6,type:'agent',icon:'🤖',platform:'Claude',tags:['Strategy','Startup'],title:'Investor Pitch Narrative Builder — Agent',rating:4.9,reviews:28,sales:56,author:'AS',authorName:'Aryan S.',price:80, image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80"},
+];
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 const Stars = ({ rating }: { rating: number }) => (
@@ -134,7 +143,7 @@ const PortraitCard = ({ image, badge, title, price, rating, author, href }: { im
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="glass-card group cursor-pointer rounded-2xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 flex flex-col w-full max-w-80 min-h-107.5"
+    className="glass-card group cursor-pointer rounded-2xl overflow-hidden bg-card border border-border/60 hover:border-primary hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 flex flex-col w-full max-w-60 min-h-[340px]"
     onClick={() => { window.location.href = href; }}
   >
     <div className="aspect-[9/16] relative overflow-hidden">
@@ -170,10 +179,10 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     whileHover={{ y: -6 }}
-    className="group cursor-pointer rounded-xl overflow-hidden border border-slate-200/80 bg-white transition-colors duration-300 flex flex-col shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-80 min-h-107.5"
+    className="group cursor-pointer rounded-xl overflow-hidden border border-slate-200/80 bg-white transition-colors duration-300 flex flex-col shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-60 min-h-[320px]"
     onClick={() => { window.location.href = href; }}
   >
-    <div className="h-62.5 w-full relative overflow-hidden shrink-0 bg-slate-100">
+    <div className="h-44 w-full relative overflow-hidden shrink-0 bg-slate-100">
       <img src={p.image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <ActionStrip />
@@ -221,7 +230,7 @@ const SectionCard200 = ({
   >
     <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl hover:border-primary transition-all relative group h-full">
       {imageOnly ? (
-        <div className="h-[430px] w-full relative overflow-hidden bg-secondary">
+        <div className="h-[320px] w-full relative overflow-hidden bg-secondary">
           <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
           
           {/* Top-Left Platform Badge */}
@@ -249,7 +258,7 @@ const SectionCard200 = ({
       ) : (
         <>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r z-10 from-primary via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="h-[200px] relative overflow-hidden bg-secondary">
+          <div className="h-[160px] relative overflow-hidden bg-secondary">
             <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">
               {p.platform}
@@ -287,7 +296,7 @@ const SectionCard200 = ({
 
 // Stacked batch card
 const BatchCard = ({ title, img, href }: { title: string; img: string; href: string }) => (
-  <motion.div whileHover={{ y: -6 }} className="relative group cursor-pointer w-full max-w-80 min-h-107.5" onClick={() => { window.location.href = href; }}>
+  <motion.div whileHover={{ y: -6 }} className="relative group cursor-pointer w-full max-w-64 min-h-[250px]" onClick={() => { window.location.href = href; }}>
     <div className="absolute inset-0 bg-card border border-border rounded-3xl -rotate-3 scale-95 opacity-40 shadow-sm" />
     <div className="absolute inset-0 bg-card border border-border rounded-3xl -rotate-1 scale-[0.97] opacity-60 shadow-sm" />
     <div className="glass-card relative bg-card border border-border/60 hover:border-primary rounded-3xl overflow-hidden shadow-sm transition-all hover:shadow-2xl hover:shadow-primary/20">
@@ -368,10 +377,10 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="bg-white rounded-xl overflow-hidden border border-slate-200/80 hover:border-purple-500 transition-colors duration-300 flex flex-col group cursor-pointer shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-80 min-h-107.5"
+    className="bg-white rounded-xl overflow-hidden border border-slate-200/80 hover:border-purple-500 transition-colors duration-300 flex flex-col group cursor-pointer shadow-sm hover:shadow-xl hover:shadow-purple-500/10 h-full w-full max-w-64 min-h-[320px]"
     onClick={() => { window.location.href = href; }}
   >
-    <div className="h-62.5 w-full relative overflow-hidden shrink-0 bg-slate-100">
+    <div className="h-48 w-full relative overflow-hidden shrink-0 bg-slate-100">
       <img src={p.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
       
       {/* Top-Left Platform Badge */}
@@ -439,6 +448,10 @@ export default function HomePage() {
   const [liked, setLiked] = useState<number[]>([]);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [flippedCards, setFlippedCards] = useState<number[]>([]);
+
+  const filteredShowcaseCards = activeFilter === 'all' ? showcaseCards : showcaseCards.filter(c => c.type === activeFilter);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -743,6 +756,106 @@ export default function HomePage() {
                 </button>
               </motion.div>
             ))}
+          </div>
+        </section>
+
+        {/* ── PROMPT SHOWCASE ──────────────────────────────────────────────────── */}
+        <section>
+          <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+            <div>
+              <div className="text-[11px] font-black text-indigo-500 uppercase tracking-widest mb-1">Trending this week</div>
+              <h2 className="heading-h2 m-0 p-0">Prompts people are buying</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {['all', 'text', 'image', 'code', 'agent'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors border",
+                    activeFilter === filter 
+                      ? "bg-amber-400/20 border-amber-400/40 text-amber-500" 
+                      : "bg-transparent border-border/80 text-muted-foreground hover:border-amber-400/50 hover:text-amber-500"
+                  )}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {filteredShowcaseCards.map(c => {
+              const isFlipped = flippedCards.includes(c.id);
+              return (
+                <div key={c.id} className="relative glass-card bg-card border border-border/60 hover:border-primary rounded-[2rem] overflow-hidden cursor-pointer transition-all hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary/20 flex flex-col group">
+                  <div className="h-[190px] relative bg-gradient-to-br from-secondary to-muted flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={c.image} alt={c.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <div className="absolute top-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] font-bold font-mono text-white border border-white/10 z-10">
+                      {c.platform}
+                    </div>
+                    <button 
+                      className="absolute top-3 right-3 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] font-mono text-slate-300 hover:text-white border border-white/10 hover:border-white/30 transition-colors z-20" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setFlippedCards(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id]); 
+                      }}
+                    >
+                      Prompt ↔ Output
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isFlipped && (
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 bg-slate-900 text-[10px] font-mono text-slate-400 leading-relaxed p-9 px-5 z-10"
+                        >
+                          <div className="line-clamp-6">
+                            {c.type === 'image' 
+                              ? `Prompt: ${c.title}...\n\nDark marble surface, soft rim lighting, 8K resolution, photorealistic, Hasselblad medium format camera...` 
+                              : `You are an expert [ROLE]. Your task is to [TASK].\n\nContext: [CONTEXT]\nRequirements: [REQUIREMENTS]\nFormat: [FORMAT]...`}
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[60px] bg-gradient-to-t from-slate-900 to-transparent"></div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {c.tags.map(t => (
+                        <span key={t} className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-mono uppercase font-black">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-sm font-bold text-foreground line-clamp-2 mb-2 leading-snug">
+                      {c.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 mb-4">
+                      <span className="text-amber-500 text-[10px] tracking-widest">{'★'.repeat(Math.round(c.rating))}</span>
+                      <span className="text-[11px] font-bold text-foreground">{c.rating}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">({c.reviews} reviews)</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-primary flex items-center justify-center text-white font-bold text-[8px] uppercase">{c.author}</div>
+                        <span>{c.authorName} · <span className="text-foreground">{c.sales} sales</span></span>
+                      </div>
+                      <div className="text-sm font-bold font-mono text-amber-500">
+                        ⬡ {c.price}
+                      </div>
+                    </div>
+                    <button className="w-full py-3 mt-4 bg-primary text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:brightness-110 transition-all shadow-md">
+                      Buy Now — ⬡ {c.price}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

@@ -465,15 +465,15 @@ function ExploreContent() {
       : "flex flex-col divide-y divide-border/45";
 
   return (
-    <div className="min-h-screen bg-background text-foreground px-3 sm:px-4 lg:px-6 py-5">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
       <div className="h-10" />
 
-      <div className="fixed top-16 left-0 right-0 z-110 h-10 border-y border-border/40 bg-background/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 flex items-center justify-between text-[11px] text-muted-foreground">
+      <div className="fixed top-16 left-0 right-0 z-[110] h-10 border-y border-border/40 bg-background/95 backdrop-blur-sm px-10 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>Tutorials</span>
         <span>Explore here</span>
       </div>
 
-      <div className="max-w-470 mx-auto grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 lg:gap-6">
+      <main className="max-w-[1440px] mx-auto px-10 pt-4 pb-40 grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 lg:gap-6">
         <div className="hidden lg:block" />
 
         <section className="space-y-4 min-w-0">
@@ -793,7 +793,7 @@ function ExploreContent() {
             </div>
           ) : null}
         </section>
-      </div>
+      </main>
     </div>
   );
 }

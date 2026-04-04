@@ -141,13 +141,13 @@ export function ExplorePromptCard({
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
         "group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-md hover:shadow-xl hover:border-purple-500 transition-all duration-300",
-        "w-full max-w-70 flex flex-col"
+        "w-full max-w-60 flex flex-col"
       )}
     >
       {/* ── CARD CONTENT (Wrapped in a single Link for consistency) ── */}
       <Link href={`/prompt/${id}`} className="flex-1 flex flex-col relative z-0">
         {/* ── IMAGE SECTION ── */}
-        <div className="h-42.5 w-full relative overflow-hidden bg-slate-100">
+        <div className="h-36 w-full relative overflow-hidden bg-slate-100">
           {image ? (
             <img 
               src={image} 

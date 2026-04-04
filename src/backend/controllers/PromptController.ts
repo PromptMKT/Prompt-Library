@@ -3,9 +3,6 @@ import { UserController } from "./UserController";
 import { supabase } from "@/lib/supabase";
 
 export class PromptController {
-  /**
-   * Get formatted prompts for the home page.
-   */
   static async getHomePrompts() {
     try {
       const data = await PromptService.getPublishedPrompts(10);
@@ -25,10 +22,6 @@ export class PromptController {
       throw error;
     }
   }
-
-  /**
-   * Get categories for the home page.
-   */
   static async getCategories() {
     try {
       const { data, error } = await supabase.from('categories').select('*').limit(5);
@@ -39,10 +32,6 @@ export class PromptController {
       throw error;
     }
   }
-
-  /**
-   * Get all data needed for the home page.
-   */
   static async getHomeData() {
     const [prompts, categories] = await Promise.all([
       this.getHomePrompts(),
@@ -51,9 +40,7 @@ export class PromptController {
     return { prompts, categories };
   }
 
-  /**
-   * Get detailed prompt data with mapping for the detail page.
-   */
+
   static async getPromptDetails(id: string) {
     try {
       const data = await PromptService.getPromptById(id);
@@ -114,9 +101,7 @@ export class PromptController {
     }
   }
 
-  /**
-   * Get all data needed for the prompt detail page.
-   */
+  
   static async getPromptPageData(id: string, userId?: string) {
     try {
       const data = await this.getPromptDetails(id);
