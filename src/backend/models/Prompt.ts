@@ -44,4 +44,5 @@ export interface PromptItem {
   how_to_adapt?: string;
   seller_note?: string;
   useCase?: string;
+  views_count?: number;
 }

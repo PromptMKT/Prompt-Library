@@ -9,6 +9,7 @@ interface ProfileTabsProps {
   reviewsCount?: number;
   purchasedCount?: number;
   wishlistCount?: number;
+  draftsCount?: number;
   isOwner?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function ProfileTabs({
   reviewsCount = 0,
   purchasedCount = 0,
   wishlistCount = 0,
+  draftsCount = 0,
   isOwner = false,
 }: ProfileTabsProps) {
   const visitorTabs = [
@@ -29,6 +31,7 @@ export function ProfileTabs({
 
   const ownerTabs = [
     { id: "prompts", label: "Published", count: promptsCount },
+    { id: "drafts", label: "Drafts", count: draftsCount },
     { id: "purchased", label: "Purchased", count: purchasedCount },
     { id: "wishlist", label: "Wishlist", count: wishlistCount },
     { id: "activity", label: "Activity" },

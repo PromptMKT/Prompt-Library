@@ -19,7 +19,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { UserController } from "@/backend/controllers/UserController";
 import { supabase } from "@/lib/supabase";
 
-type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
+type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about" | "drafts";
 
 export default function SellerProfilePage({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
   const { profile, user: authUser, loading: authLoading } = useAuth();
@@ -115,7 +115,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           .select(`
             id, title, description, price, cover_image_url, is_published,
             created_at, purchases_count, average_rating, review_count,
-            tags, platform_id, category_id, tagline,
+            tags, platform_id, category_id, tagline, views_count,
             platforms(name), categories(name)
           `)
           .eq("creator_id", userId)
@@ -135,6 +135,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           image: p.cover_image_url || null,
           promptText: p.description || p.tagline || "",
           tags: p.tags || [],
+          viewsCount: Number(p.views_count || 0),
           createdAt: p.created_at,
         }));
         setSellerPrompts(mapped);
@@ -251,6 +252,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
       totalReviews,
       purchasedCount: purchasedPrompts.length,
       wishlistCount: wishlistPrompts.length,
+      draftsCount: sellerPrompts.filter((p) => p.status === "draft").length,
     };
   }, [sellerPrompts, reviews, purchasedPrompts, wishlistPrompts, user]);
 
@@ -366,6 +368,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
               reviewsCount={stats.totalReviews}
               purchasedCount={stats.purchasedCount}
               wishlistCount={stats.wishlistCount}
+              draftsCount={stats.draftsCount}
             />
 
             <div className="min-h-[400px]">
@@ -425,8 +428,30 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                       <div className="text-center py-20 text-muted-foreground text-sm">No prompts found</div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
-                        {filteredPrompts.map((p) => (
-                          <SellerPromptCard key={p.id} prompt={p} />
+                        {filteredPrompts.filter(p => activeTab === 'prompts' ? p.status === 'live' : true).map((p) => (
+                          <SellerPromptCard key={p.id} prompt={p} isOwner={isOwner} />
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* ═══ DRAFTS TAB (owner only) ═══ */}
+                {activeTab === "drafts" && isOwner && (
+                  <motion.div key="drafts" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-black uppercase tracking-[0.14em] text-foreground/80">Draft Prompts</div>
+                      <span className="text-[11px] text-muted-foreground font-semibold">
+                        {stats.draftsCount} draft{stats.draftsCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {stats.draftsCount === 0 ? (
+                      <div className="text-center py-20 text-muted-foreground text-sm">You don't have any saved drafts</div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
+                        {sellerPrompts.filter(p => p.status === 'draft').map((p) => (
+                          <SellerPromptCard key={p.id} prompt={p} isOwner={isOwner} />
                         ))}
                       </div>
                     )}
@@ -468,7 +493,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
                         {purchasedPrompts.map((p) => (
-                          <SellerPromptCard key={p.id} prompt={p} />
+                          <SellerPromptCard key={p.id} prompt={p} isOwner={false} />
                         ))}
                       </div>
                     )}
@@ -489,7 +514,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
                         {wishlistPrompts.map((p) => (
-                          <SellerPromptCard key={p.id} prompt={p} />
+                          <SellerPromptCard key={p.id} prompt={p} isOwner={false} />
                         ))}
                       </div>
                     )}

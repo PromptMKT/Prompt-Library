@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { Eye } from "lucide-react";
 import "../visitor-profile.css";
 
 interface VisitorProfileViewProps {
@@ -233,6 +234,9 @@ export function VisitorProfileView({ user, prompts }: VisitorProfileViewProps) {
                                                         </div>
                                                         <div className="card-right">
                                                             <div className="card-rating">★ <strong>{p.rating}</strong> · <strong>{p.reviewsCount}</strong> sales</div>
+                                                            <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground/60 mt-1 justify-end">
+                                                                <Eye className="w-2.5 h-2.5" /> {p.viewsCount || 0} views
+                                                            </div>
                                                             <button className="buy-btn" onClick={(e) => handleBuy(e, p)}>Buy now</button>
                                                         </div>
                                                     </div>

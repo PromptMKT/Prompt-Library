@@ -13,7 +13,8 @@ import {
   Bot, 
   Video, 
   FileText, 
-  Sparkles 
+  Sparkles,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -275,9 +276,19 @@ export default function PromptDetailClient({
                 <span className="text-muted-foreground text-sm font-medium mt-0.5">({prompt.review_count || 0})</span>
               </div>
               <div className="h-4 w-px bg-border/60" />
-              <span className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                <span className="p-1 px-2 rounded-md bg-secondary/50 text-foreground font-mono text-xs">◈ SAVED {prompt.sales || 0} TIMES</span>
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Analytics</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                    <span className="p-1 px-2 rounded-md bg-secondary/50 text-foreground font-mono text-xs">◈ SAVED {prompt.sales || 0} TIMES</span>
+                  </span>
+                  <span className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+                    <span className="p-1 px-2 rounded-md bg-secondary/50 text-foreground font-mono text-xs flex items-center gap-1.5">
+                      <Eye className="w-3 h-3" /> {prompt.views_count || 0} VIEWS
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-8 border-b border-border/40 mb-8 overflow-x-auto overflow-y-hidden scrollbar-hide select-none pt-2">
