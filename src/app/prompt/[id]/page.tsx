@@ -15,7 +15,6 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { purchasePromptWithCoins } from "@/app/actions/purchase-actions";
 
 type PromptItem = {
   id: string;
@@ -344,7 +343,7 @@ function mapDbPrompt(row: any, sellerData?: any): PromptItem {
 export default function PromptDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
   const router = useRouter();
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [prompt, setPrompt] = useState<PromptItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
@@ -390,15 +389,13 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
           fetchSellerPromptCount(mapped.seller.id);
           
           // Check if already purchased
-          if (user && profile?.id) {
-            const { data: purchaseData } = await supabase
-              .from('purchases')
-              .select('id')
-              .eq('user_id', profile.id)
-              .eq('prompt_id', params.id)
-              .maybeSingle();
-            
-            if (purchaseData) {
+          if (user) {
+            const statusResponse = await fetch(`/api/purchase/status?promptId=${encodeURIComponent(params.id)}`, {
+              method: "GET",
+            });
+            const statusResult = await statusResponse.json();
+
+            if (statusResponse.ok && statusResult?.success && statusResult?.data?.purchased) {
               setIsPurchased(true);
             }
           }
@@ -478,7 +475,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
     };
 
     fetchPromptData();
-  }, [params.id, user, profile?.id]);
+  }, [params.id, user]);
 
   const [relatedPrompts, setRelatedPrompts] = useState<PromptItem[]>([]);
 
@@ -506,7 +503,12 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
     toast.loading("Processing your purchase...", { id: "purchase-toast" });
 
     try {
-      const result = await purchasePromptWithCoins(prompt.id);
+      const response = await fetch("/api/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptId: prompt.id }),
+      });
+      const result = await response.json();
 
       if (result.success) {
         toast.success("Prompt purchased successfully!", { id: "purchase-toast" });

@@ -3,60 +3,23 @@
 import { useState, useEffect } from "react";
 import { Download, ShoppingBag, Eye, Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { useAuth } from "@/components/AuthProvider";
 
 export default function PurchasedPage() {
-  const { profile } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPurchased = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) {
-          setLoading(false);
-          return;
+        const response = await fetch("/api/purchase/history", { method: "GET" });
+        const result = await response.json();
+
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.message || "Failed to load purchase history.");
         }
 
-        let publicUserId = profile?.id;
-        if (!publicUserId) {
-          const { data: profileRow, error: profileError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('auth_user_id', authUser.id)
-            .single();
-
-          if (profileError || !profileRow?.id) {
-            setLoading(false);
-            return;
-          }
-
-          publicUserId = profileRow.id;
-        }
-
-        const { data, error } = await supabase
-          .from('purchases')
-          .select(`
-            id,
-            purchased_at,
-            amount_paid,
-            prompts (
-              id,
-              title,
-              cover_image_url,
-              platforms (name),
-              users!prompts_creator_id_fkey (username)
-            )
-          `)
-          .eq('user_id', publicUserId)
-          .eq('status', 'completed')
-          .order('purchased_at', { ascending: false });
-
-        if (error) throw error;
+        const data = result.data || [];
 
         const mapped = (data || []).map((item: any) => ({
           id: item.id,
@@ -81,7 +44,7 @@ export default function PurchasedPage() {
     };
 
     fetchPurchased();
-  }, [profile?.id]);
+  }, []);
 
   if (loading) {
     return (

@@ -8,8 +8,6 @@ import { TransactionHistory } from "./components/TransactionHistory";
 import { WalletSidebar } from "./components/WalletSidebar";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
-import { topUpCoins, topUpCoinsCustom } from "@/app/actions/purchase-actions";
 
 type TransactionRow = {
   id: string;
@@ -57,60 +55,53 @@ export default function WalletPage() {
       setBalanceLoading(true);
       setTransactionsLoading(true);
 
-      const { data: profileRow, error: profileError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+      const overviewResponse = await fetch("/api/coins/overview?limit=200", { method: "GET" });
 
-      if (profileError || !profileRow?.id) {
+      if (!overviewResponse.ok) {
+        let errorMessage = "Unable to load wallet data.";
+        try {
+          const overviewJson = await overviewResponse.json();
+          errorMessage = overviewJson?.message || errorMessage;
+        } catch {
+          // No-op: use fallback message.
+        }
+
         if (!cancelled) {
           setBalance(0);
           setTotalEarned(0);
           setTotalSpent(0);
           setTransactionRows([]);
-          setBalanceError(profileError?.message || "Unable to locate your profile.");
+          setBalanceError(errorMessage);
           setBalanceLoading(false);
           setTransactionsLoading(false);
         }
         return;
       }
 
-      const publicUserId = profileRow.id;
+      const overviewJson = await overviewResponse.json();
 
       if (cancelled) return;
 
-      const { data: transactionsData, error: transactionsError } = await supabase
-        .from("coin_transactions")
-        .select("*")
-        .eq("user_id", publicUserId)
-        .order("created_at", { ascending: false });
-
-      if (cancelled) return;
-
-      if (transactionsError) {
+      if (!overviewJson?.success) {
         setTransactionRows([]);
-        setBalanceError(transactionsError.message || "Unable to load your transactions.");
+        setBalanceError(overviewJson?.message || "Unable to load your transactions.");
         setBalance(0);
         setTotalEarned(0);
         setTotalSpent(0);
       } else {
-        const rows: TransactionRow[] = transactionsData.map((item) => ({
+        const rows: TransactionRow[] = (overviewJson?.data?.transactions || []).map((item: any) => ({
           id: String(item.id),
-          type: item.transaction_type,
-          date: item.created_at,
+          type: item.transactionType,
+          date: item.createdAt,
           description: item.description || "N/A",
           amount: item.amount,
           status: "Completed",
         }));
         setTransactionRows(rows);
-        
-        const spent = rows.filter(t => t.amount < 0).reduce((acc, t) => acc + Math.abs(t.amount), 0);
-        const earned = rows.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-        const currentBalance = rows.reduce((acc, t) => acc + t.amount, 0);
-        setTotalSpent(spent);
-        setTotalEarned(earned);
-        setBalance(currentBalance);
+
+        setTotalSpent(Number(overviewJson?.data?.summary?.totalSpent || 0));
+        setTotalEarned(Number(overviewJson?.data?.summary?.totalEarned || 0));
+        setBalance(Number(overviewJson?.data?.summary?.balance || 0));
         setBalanceError(null);
       }
 
@@ -139,7 +130,12 @@ export default function WalletPage() {
     toast.loading("Processing top-up...", { id: "topup-toast" });
 
     try {
-      const result = await topUpCoins(packageId);
+      const response = await fetch("/api/coins/top-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packageId }),
+      });
+      const result = await response.json();
       if (!result.success) {
         toast.error(result.message || "Top-up failed.", { id: "topup-toast" });
         return;
@@ -166,7 +162,12 @@ export default function WalletPage() {
     toast.loading("Processing custom top-up...", { id: "topup-toast" });
 
     try {
-      const result = await topUpCoinsCustom(coins);
+      const response = await fetch("/api/coins/top-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coins }),
+      });
+      const result = await response.json();
       if (!result.success) {
         toast.error(result.message || "Top-up failed.", { id: "topup-toast" });
         return;
