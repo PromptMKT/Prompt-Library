@@ -457,7 +457,7 @@ export default function ExploreClient({
           <div className="pt-1 lg:pt-2 pb-0.5">
             <div className="inline-flex flex-col items-start gap-2">
               <ExploreAppleMark />
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-none font-extrabold tracking-tight text-foreground">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-none font-black tracking-tight text-foreground">
                 Explore Prompt
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-3xl">Prompt systems that ship outcomes, not guesses.</p>
@@ -480,7 +480,7 @@ export default function ExploreClient({
                       key={tab}
                       onClick={() => handleTabChange(tab)}
                       className={cn(
-                        "shrink-0 rounded-full border px-3 py-1.5 text-xs font-extrabold transition-colors",
+                        "shrink-0 rounded-full border px-3 py-1.5 text-xs font-black transition-colors",
                         activeTab === tab
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background/70 text-muted-foreground border-border/60 hover:text-foreground"
@@ -493,7 +493,7 @@ export default function ExploreClient({
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shrink-0">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em] text-primary shrink-0">
                   <Flame className="w-3.5 h-3.5" /> Trending
                 </span>
                 {trendTags.map((trend) => (
@@ -545,7 +545,7 @@ export default function ExploreClient({
 
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                  Showing <span className="text-foreground font-extrabold">{Math.min(filteredPrompts.length, visibleCount)}</span> of {filteredPrompts.length.toLocaleString()}
+                  Showing <span className="text-foreground font-black">{Math.min(filteredPrompts.length, visibleCount)}</span> of {filteredPrompts.length.toLocaleString()}
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -612,11 +612,11 @@ export default function ExploreClient({
         <section className="space-y-7 min-w-0">
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <h3 className="text-sm font-extrabold uppercase tracking-[0.16em] text-foreground/80">Trending This Week</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-foreground/80">Trending This Week</h3>
               <Badge variant="outline" className="rounded-full">{trendingPrompts.length} prompts</Badge>
             </div>
             {layoutMode === "list" ? (
-              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                 <span>Description</span>
                 <span>Category</span>
                 <span>Product</span>
@@ -656,11 +656,11 @@ export default function ExploreClient({
 
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <h3 className="text-sm font-extrabold uppercase tracking-[0.16em] text-foreground/80">New Arrivals</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-foreground/80">New Arrivals</h3>
               <Badge variant="outline" className="rounded-full">{newArrivals.length} this week</Badge>
             </div>
             {layoutMode === "list" ? (
-              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+              <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                 <span>Description</span>
                 <span>Category</span>
                 <span>Product</span>
@@ -700,20 +700,20 @@ export default function ExploreClient({
 
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <h3 className="text-sm font-extrabold uppercase tracking-[0.16em] text-foreground/80">All Prompts</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.16em] text-foreground/80">All Prompts</h3>
               <Badge variant="outline" className="rounded-full">{filteredPrompts.length} results</Badge>
             </div>
 
             {visiblePrompts.length === 0 ? (
               <div className="rounded-3xl border border-border/60 bg-card/70 p-10 text-center">
-                <p className="text-xl font-extrabold text-foreground">No prompts match these filters</p>
+                <p className="text-xl font-black text-foreground">No prompts match these filters</p>
                 <p className="text-sm text-muted-foreground mt-2">Try broadening price, rating, or category selections.</p>
                 <Button onClick={clearAll} className="mt-4">Reset Filters</Button>
               </div>
             ) : (
               <>
                 {layoutMode === "list" ? (
-                  <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+                  <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_180px_160px] gap-6 pb-2 text-[11px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                     <span>Description</span>
                     <span>Category</span>
                     <span>Product</span>
@@ -759,7 +759,7 @@ export default function ExploreClient({
                 type="button"
                 variant="outline"
                 onClick={() => setVisibleCount((current) => current + 24)}
-                className="h-12 min-w-60 rounded-full border-border/60 bg-card/70 font-extrabold"
+                className="h-12 min-w-60 rounded-full border-border/60 bg-card/70 font-black"
               >
                 Load 24 more prompts
               </Button>

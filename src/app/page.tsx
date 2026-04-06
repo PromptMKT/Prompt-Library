@@ -102,7 +102,7 @@ const Stars = ({ rating }: { rating: number }) => (
     {[1,2,3,4,5].map(s => (
       <Star key={s} className={cn("w-3 h-3", s <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
     ))}
-    <span className="text-[10px] font-extrabold text-muted-foreground ml-1">{rating}</span>
+    <span className="text-[10px] font-black text-muted-foreground ml-1">{rating}</span>
   </div>
 );
 
@@ -113,7 +113,7 @@ const SectionHeader = ({ title, sub, more = true }: { title: string; sub?: strin
       {sub && <p className="body-xs tracking-widest mt-2">{sub}</p>}
     </div>
     {more && (
-      <button className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group">
+      <button className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group">
         See all <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
       </button>
     )}
@@ -148,14 +148,14 @@ const PortraitCard = ({ image, badge, title, price, rating, author, href }: { im
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
       <ActionStrip />
       {badge && (
-        <span className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
+        <span className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
           {badge}
         </span>
       )}
       {(title || price) && (
         <div className="absolute bottom-3 left-3 right-3">
-          {title && <div className="text-[11px] font-extrabold text-white line-clamp-2 leading-snug mb-1">{title}</div>}
-          {price && <div className="text-sm font-extrabold text-primary">${price}</div>}
+          {title && <div className="text-[11px] font-black text-white line-clamp-2 leading-snug mb-1">{title}</div>}
+          {price && <div className="text-sm font-black text-primary">${price}</div>}
         </div>
       )}
     </div>
@@ -183,7 +183,7 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
       <img src={p.image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <ActionStrip />
-      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
+      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
         {p.platform}
       </span>
     </div>
@@ -196,7 +196,7 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
           <span className="text-[10px] font-bold text-muted-foreground">{p.author}</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-sm font-extrabold text-primary">${p.price}</span>
+          <span className="text-sm font-black text-primary">${p.price}</span>
         </div>
       </div>
     </div>
@@ -231,7 +231,7 @@ const SectionCard200 = ({
           <img src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
           
           {/* Top-Left Platform Badge */}
-          <span className="absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-extrabold tracking-widest uppercase shadow-md z-10 transition-transform duration-300 group-hover:translate-x-1">
+          <span className="absolute top-4 left-4 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-md z-10 transition-transform duration-300 group-hover:translate-x-1">
             {p.platform}
           </span>
 
@@ -241,13 +241,13 @@ const SectionCard200 = ({
           {/* Hover Content Section (Bottom 15%) */}
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-white/20 backdrop-blur-xl border-t border-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20 flex items-center justify-between shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)]">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-extrabold text-white/90 tracking-wider">RATING</span>
+              <span className="text-[10px] font-black text-white/90 tracking-wider">RATING</span>
               <div className="flex items-center gap-1">
                 <span className="text-white text-[10px] tracking-tight">★★★★★</span>
                 <span className="text-[11px] font-bold text-white">{p.rating.toFixed(1)}</span>
               </div>
             </div>
-            <button className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-xl text-white text-[10px] font-extrabold uppercase tracking-widest rounded-xl border border-white/40 shadow-xl transition-all active:scale-95">
+            <button className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-xl text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/40 shadow-xl transition-all active:scale-95">
               Buy Now ◈ {p.price}
             </button>
           </div>
@@ -300,7 +300,7 @@ const BatchCard = ({ title, img, href }: { title: string; img: string; href: str
       <div className="aspect-square relative overflow-hidden">
         <img src={img} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <span className="absolute bottom-3 left-3 right-3 text-[11px] font-extrabold uppercase tracking-widest text-white leading-tight">{title}</span>
+        <span className="absolute bottom-3 left-3 right-3 text-[11px] font-black uppercase tracking-widest text-white leading-tight">{title}</span>
       </div>
     </div>
   </motion.div>
@@ -313,7 +313,7 @@ const TrendingCard = ({ seed, idx, href }: { seed: string; idx: number; href: st
       <img src={`https://picsum.photos/seed/${seed}-${idx}/200`} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
     </div>
     <div className="p-2">
-      <div className="text-[9px] font-extrabold text-foreground truncate">Prompt #{idx+1}</div>
+      <div className="text-[9px] font-black text-foreground truncate">Prompt #{idx+1}</div>
       <div className="text-[8px] text-muted-foreground font-bold mt-0.5">◈ {12 + idx}</div>
     </div>
   </motion.div>
@@ -328,7 +328,7 @@ const ProfileCard = ({ c, href }: { c: typeof contributors[0]; href: string }) =
   >
     <div className="h-20 bg-gradient-to-br from-primary/80 to-violet-600/80 relative overflow-hidden">
       <img src={`https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&q=80&seed=${c.seed}`} className="w-full h-full object-cover opacity-30 mix-blend-overlay" alt="" />
-      <button className="absolute top-3 right-3 px-2.5 py-1 bg-white/90 backdrop-blur text-[9px] font-extrabold text-primary rounded-full flex items-center gap-1 shadow-lg hover:scale-105 transition-transform">
+      <button className="absolute top-3 right-3 px-2.5 py-1 bg-white/90 backdrop-blur text-[9px] font-black text-primary rounded-full flex items-center gap-1 shadow-lg hover:scale-105 transition-transform">
         Follow <Plus className="w-2.5 h-2.5" />
       </button>
     </div>
@@ -338,13 +338,13 @@ const ProfileCard = ({ c, href }: { c: typeof contributors[0]; href: string }) =
       </div>
       <div className="pt-1 mb-3 ml-[64px]">
         <div className="flex items-center gap-1.5 mb-1 text-left">
-          <h4 className="text-sm font-extrabold text-foreground tracking-tight line-clamp-1">{c.name}</h4>
+          <h4 className="text-sm font-black text-foreground tracking-tight line-clamp-1">{c.name}</h4>
           <BadgeCheck className="w-4 h-4 text-primary shrink-0" />
         </div>
         <p className="text-[10px] text-muted-foreground font-medium leading-snug text-left truncate">{c.role}</p>
       </div>
       <div className="flex items-center gap-2 mb-4 bg-secondary/60 rounded-xl px-3 py-2">
-        <span className="text-[8px] font-extrabold uppercase tracking-widest text-muted-foreground">EXP</span>
+        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">EXP</span>
         <div className="flex-1 h-1.5 rounded-full overflow-hidden flex">
           {["bg-blue-500","bg-emerald-400","bg-yellow-400","bg-orange-400","bg-rose-500"].map((c,i) => (
             <div key={i} className={cn("flex-1", c)} />
@@ -358,7 +358,7 @@ const ProfileCard = ({ c, href }: { c: typeof contributors[0]; href: string }) =
           { label: "Views",  value: c.views,  Icon: Eye },
         ].map(({ label, value, Icon }) => (
           <div key={label} className="flex flex-col items-center gap-1 py-1 group/stat">
-            <span className="text-[11px] font-extrabold text-foreground">{value}</span>
+            <span className="text-[11px] font-black text-foreground">{value}</span>
             <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
             <Icon className="w-3 h-3 text-muted-foreground/40 group-hover/stat:text-primary transition-colors" />
           </div>
@@ -381,7 +381,7 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
       <img src={p.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
       
       {/* Top-Left Platform Badge */}
-      <span className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-extrabold tracking-widest uppercase shadow-md z-10">
+      <span className="absolute top-4 left-4 px-3 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[10px] font-black tracking-widest uppercase shadow-md z-10">
         {p.platform}
       </span>
 
@@ -482,7 +482,7 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-extrabold uppercase tracking-widest"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-black uppercase tracking-widest"
           >
             <Sparkles className="w-3.5 h-3.5" /> 10,000+ Premium AI Prompts
           </motion.div>
@@ -510,10 +510,10 @@ export default function HomePage() {
             transition={{ delay: 0.3 }}
             className="flex items-center justify-center gap-4"
           >
-            <button className="h-14 px-10 bg-primary text-white text-sm font-extrabold uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-2xl shadow-primary/30 transition-all" suppressHydrationWarning>
+            <button className="h-14 px-10 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-2xl hover:brightness-110 shadow-2xl shadow-primary/30 transition-all" suppressHydrationWarning>
               Browse Prompts
             </button>
-            <button className="h-14 px-10 bg-secondary text-foreground text-sm font-extrabold uppercase tracking-widest rounded-2xl hover:bg-secondary/70 transition-all">
+            <button className="h-14 px-10 bg-secondary text-foreground text-sm font-black uppercase tracking-widest rounded-2xl hover:bg-secondary/70 transition-all">
               Sell Prompts →
             </button>
           </motion.div>
@@ -525,7 +525,7 @@ export default function HomePage() {
           >
             {[["10K+","Prompts"], ["4.9★","Avg. Rating"], ["50K+","Users"], ["200+","Sellers"]].map(([v,l]) => (
               <div key={l} className="text-center">
-                <div className="text-xl font-extrabold text-foreground">{v}</div>
+                <div className="text-xl font-black text-foreground">{v}</div>
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{l}</div>
               </div>
             ))}
@@ -680,7 +680,7 @@ export default function HomePage() {
                 <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] rounded-full bg-white flex items-center justify-center text-[44px] md:text-[52px] shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] group-hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)] transition-all border border-slate-100/80">
                   {prof.emoji}
                 </div>
-                <div className="text-[10px] md:text-[11px] font-extrabold tracking-[0.05em] text-center text-slate-800 leading-tight">
+                <div className="text-[10px] md:text-[11px] font-black tracking-[0.05em] text-center text-slate-800 leading-tight">
                   {prof.title.split('\n').map((line, idx) => (
                     <span key={idx} className="block">{line}</span>
                   ))}
@@ -695,11 +695,11 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-[3px] h-5 bg-purple-600 rounded-full" />
-              <h2 className="text-[18px] md:text-[20px] font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-[18px] md:text-[20px] font-black text-slate-900 tracking-tight">
                 Broad Categories
               </h2>
             </div>
-            <div className="text-[10px] md:text-[11px] font-extrabold uppercase tracking-widest text-slate-900 cursor-pointer hover:text-purple-600 transition-colors flex items-center gap-1">
+            <div className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-slate-900 cursor-pointer hover:text-purple-600 transition-colors flex items-center gap-1">
               See More <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -717,7 +717,7 @@ export default function HomePage() {
                   <Icon className="w-[18px] h-[18px] text-purple-600 mb-6 z-10" />
                   
                   <div className="flex flex-col gap-2 z-10 w-full mt-auto">
-                    <h3 className="text-[11px] font-extrabold text-slate-900 tracking-wide leading-tight">
+                    <h3 className="text-[11px] font-black text-slate-900 tracking-wide leading-tight">
                       {cat.name || cat.title}
                     </h3>
                     <p className="text-[10px] text-slate-500 font-semibold leading-relaxed truncate w-full">
@@ -745,8 +745,8 @@ export default function HomePage() {
               >
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary px-3 py-1 bg-primary/10 rounded-full">{guide.tag}</span>
-                    <h3 className="text-lg font-extrabold uppercase tracking-tight text-foreground mt-3">{guide.title}</h3>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary px-3 py-1 bg-primary/10 rounded-full">{guide.tag}</span>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-foreground mt-3">{guide.title}</h3>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
                 </div>
@@ -757,7 +757,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <button className="w-full py-4 rounded-2xl text-[11px] font-extrabold uppercase tracking-widest bg-secondary text-foreground group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                <button className="w-full py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-secondary text-foreground group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                   Explore Package
                 </button>
               </motion.div>
@@ -771,7 +771,7 @@ export default function HomePage() {
         <section className="space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">What People are Buying</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">What People are Buying</h2>
             </div>
             <div className="flex flex-wrap gap-2">
               {["all", "text", "image", "code", "agent"].map((f) => (
@@ -779,7 +779,7 @@ export default function HomePage() {
                   key={f}
                   onClick={() => setActiveFilter(f)}
                   className={cn(
-                    "px-6 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-widest transition-all border",
+                    "px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all border",
                     activeFilter === f 
                       ? "bg-purple-600 text-white border-purple-600 shadow-xl shadow-purple-600/20" 
                       : "bg-white text-slate-500 border-slate-200 hover:border-purple-300 hover:text-purple-600"
@@ -840,7 +840,7 @@ export default function HomePage() {
               <div key={group.label}>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{group.icon}</div>
-                  <h4 className="text-[11px] font-extrabold tracking-widest text-foreground">Trending in {group.label}</h4>
+                  <h4 className="text-[11px] font-black tracking-widest text-foreground">Trending in {group.label}</h4>
                   <Flame className="w-3.5 h-3.5 text-orange-500 ml-1" />
                 </div>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 snap-x">
@@ -894,7 +894,7 @@ export default function HomePage() {
       <footer className="border-t border-border/60 bg-card">
         <div className="max-w-[1440px] mx-auto px-10 py-20 grid md:grid-cols-4 gap-14">
           <div className="md:col-span-2 space-y-5">
-            <span className="text-3xl font-extrabold italic tracking-tighter text-primary block">PROMPTX</span>
+            <span className="text-3xl font-black italic tracking-tighter text-primary block">PROMPTX</span>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm font-medium">
               The world's leading marketplace for AI prompts. High-quality outputs, verified engineers, and instant delivery for Midjourney, ChatGPT, Runway & more.
             </p>
@@ -904,7 +904,7 @@ export default function HomePage() {
                   <img key={c.seed} src={`https://i.pravatar.cc/32?u=${c.seed}`} className="w-8 h-8 rounded-full border-2 border-card" alt="" />
                 ))}
               </div>
-              <div className="text-xs text-muted-foreground font-bold"><span className="text-foreground font-extrabold">50K+</span> happy users</div>
+              <div className="text-xs text-muted-foreground font-bold"><span className="text-foreground font-black">50K+</span> happy users</div>
             </div>
           </div>
           {[
@@ -912,7 +912,7 @@ export default function HomePage() {
             { title: "Company",     links: ["About",        "Sell Prompts",  "Contact", "Privacy"]  },
           ].map(col => (
             <div key={col.title} className="space-y-5">
-              <h4 className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-foreground">{col.title}</h4>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground">{col.title}</h4>
               <ul className="space-y-4">
                 {col.links.map(l => (
                   <li key={l}><a href="#" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">{l}</a></li>
@@ -922,7 +922,7 @@ export default function HomePage() {
           ))}
         </div>
         <div className="border-t border-border/40 text-center py-6">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.4em] text-muted-foreground/50">© 2026 PROMPTX · Built with Excellence</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/50">© 2026 PROMPTX · Built with Excellence</p>
         </div>
       </footer>
     </div>
