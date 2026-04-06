@@ -18,6 +18,7 @@ type ExplorePromptCardProps = {
   image: string;
   rating: number;
   usageCount: number;
+  viewsCount: number;
   tags: string[];
   creator: string;
   price: number;
@@ -58,6 +59,7 @@ export function ExplorePromptCard({
   image,
   rating,
   usageCount,
+  viewsCount,
   tags,
   creator,
   price,
@@ -170,6 +172,10 @@ export function ExplorePromptCard({
             <span className="text-purple-600 tracking-widest">★★★★★</span>
             <span className="font-mono font-bold text-slate-900">{normalizedRating.toFixed(1)}</span>
             <span className="text-slate-400 font-medium italic">({usageCount})</span>
+            <div className="h-3 w-px bg-slate-200 mx-0.5" />
+            <span className="flex items-center gap-1 text-[10px] text-slate-500 font-bold">
+              <Eye className="w-2.5 h-2.5" /> {viewsCount.toLocaleString()}
+            </span>
           </div>
           
           <div className="card-title line-clamp-3">

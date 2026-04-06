@@ -38,6 +38,7 @@ export type PromptRecord = {
   full_description?: string;
   models?: string[];
   targetAudience?: string[];
+  viewsCount?: number;
   createdAt?: string;
 };
 
@@ -639,6 +640,7 @@ export default function ExploreClient({
                     image={prompt.images?.[0] || ""}
                     rating={prompt.rating || 4.8}
                     usageCount={prompt.sales || 0}
+                    viewsCount={prompt.viewsCount || 0}
                     tags={prompt.tags || [prompt.category || "Prompt"]}
                     creator={prompt.seller || "Unknown creator"}
                     price={prompt.price || 0}
@@ -682,6 +684,7 @@ export default function ExploreClient({
                     image={prompt.images?.[0] || ""}
                     rating={prompt.rating || 4.8}
                     usageCount={prompt.sales || 0}
+                    viewsCount={prompt.viewsCount || 0}
                     tags={prompt.tags || [prompt.category || "Prompt"]}
                     creator={prompt.seller || "Unknown creator"}
                     price={prompt.price || 0}
@@ -734,6 +737,7 @@ export default function ExploreClient({
                         image={prompt.images?.[0] || ""}
                         rating={prompt.rating || 4.8}
                         usageCount={prompt.sales || 0}
+                        viewsCount={prompt.viewsCount || 0}
                         tags={prompt.tags || [prompt.category || "Prompt"]}
                         creator={prompt.seller || "Unknown creator"}
                         price={prompt.price || 0}

@@ -18,7 +18,8 @@ export class PromptController {
         sales: p.purchases_count || 0,
         author: p.users?.display_name || p.users?.username || "Creator",
         platform: p.platforms?.name || "AI",
-        image: p.cover_image_url
+        image: p.cover_image_url,
+        viewsCount: Number(p.views_count || 0)
       }));
     } catch (error) {
       console.error("Controller Error (getHomePrompts):", error);
@@ -91,6 +92,7 @@ export class PromptController {
         sales: Number(data.purchases_count || data.sales || 0),
         rating: Number(data.average_rating || data.rating || 4.9),
         review_count: Number(data.review_count || 0),
+        views_count: Number(data.views_count || 0),
         lastTested: data.verified_at || data.updated_at || data.created_at || "Recent",
         is_multi_step: !!data.is_multi_step,
         steps: data.prompt_steps || [],
@@ -106,7 +108,8 @@ export class PromptController {
         pro_tips: data.pro_tips,
         common_mistakes: data.common_mistakes,
         how_to_adapt: data.how_to_adapt,
-        seller_note: data.seller_note
+        seller_note: data.seller_note,
+        is_published: data.is_published
       };
     } catch (error) {
       console.error("Controller Error (getPromptDetails):", error);
@@ -143,6 +146,11 @@ export class PromptController {
       let isPurchased = false;
       if (userId) {
         isPurchased = await UserController.checkPromptAccess(userId, id, client);
+      }
+
+      // Visibility Check: If unpublished, only creator can see it
+      if (!data.is_published && data.seller.id !== userId) {
+        return null; // This will trigger a 404 in the page component
       }
 
       return {
@@ -204,6 +212,7 @@ export class PromptController {
           output_type: undefined,
           difficulty: undefined,
           prompt_text: undefined,
+          viewsCount: Number(row.views_count || 0),
           createdAt: row.created_at,
         };
       });
@@ -376,14 +385,26 @@ export class PromptController {
         .select(`
           *,
           models:prompt_models(
-            id:model_id,
-            name,
-            model_groups(platform_id)
+            model:models(
+              id,
+              name,
+              model_groups(platform_id)
+            )
           ),
-          prompt_steps(*)
+          prompt_steps(*),
+          prompt_images(*)
         `)
         .eq('id', id)
         .single();
+
+      // Transform models to match expected frontend format if needed
+      if (prompt && prompt.models) {
+        prompt.models = prompt.models.map((pm: any) => ({
+          id: pm.model?.id,
+          name: pm.model?.name,
+          platform_id: pm.model?.model_groups?.platform_id
+        }));
+      }
 
       return { prompt, error };
     } catch (error) {
@@ -397,7 +418,82 @@ export class PromptController {
    */
   static async updatePrompt(id: string, data: any, client?: any) {
     try {
-      return await PromptService.updatePrompt(id, data, client);
+      const {
+        title, tagline, price, category, subCategory, platform,
+        selectedModels, coverUrl, screenshotUrls, promptFileUrls,
+        inputNeeds, inputData, targetAudience, outputFormat,
+        verifiedDate, quickSetup, guideSteps, fillVariables,
+        whatToExpect, proTips, commonMistakes, howToAdapt,
+        complexity, tags, sellerNote, creatorId, promptTab,
+        systemText, promptText, chainSteps
+      } = data;
+
+      const isMultiStep = promptTab === 'chain';
+      const stepCount = isMultiStep ? chainSteps.length : 1;
+
+      // 1. Prepare main prompt object
+      const promptData = {
+        title,
+        tagline: tagline || title,
+        description: tagline || title,
+        price: parseInt(price),
+        category_id: category || null,
+        subcategory_id: subCategory ? parseInt(subCategory) : null,
+        platform_id: platform || null,
+        model_id: selectedModels?.length > 0 ? selectedModels[0] : null,
+        cover_image_url: coverUrl,
+        is_multi_step: isMultiStep,
+        step_count: stepCount,
+        input_types: inputNeeds?.filter((n: string) => n !== 'none'),
+        input_data: inputData,
+        prompt_file_urls: promptFileUrls,
+        target_audience: targetAudience,
+        output_format: outputFormat,
+        verified_at: verifiedDate ? new Date().toISOString() : null,
+        quick_setup: quickSetup,
+        guide_steps: guideSteps,
+        fill_variables: fillVariables,
+        what_to_expect: whatToExpect,
+        pro_tips: proTips,
+        common_mistakes: commonMistakes,
+        how_to_adapt: howToAdapt,
+        complexity,
+        tags,
+        seller_note: sellerNote
+      };
+
+      // 2. Prepare steps
+      let stepsToInsert = [];
+      if (isMultiStep) {
+        stepsToInsert = chainSteps.map((s: any, idx: number) => ({
+          step_number: idx + 1,
+          title: `Step ${idx + 1}`,
+          instruction: s.text,
+          step_type: 'prompt'
+        }));
+      } else {
+        const instruction = promptTab === 'system' 
+          ? `System: ${systemText}\n\nUser: ${promptText}`
+          : promptText;
+        stepsToInsert = [{
+          step_number: 1,
+          title: 'Main Prompt',
+          instruction: instruction,
+          step_type: 'prompt'
+        }];
+      }
+
+      // 3. Prepare models
+      const modelsToInsert = (selectedModels || []).map((mId: number) => ({
+        model_id: mId,
+        platform_id: platform
+      }));
+
+      return await PromptService.updateFullPrompt(id, promptData, {
+        steps: stepsToInsert,
+        images: [], 
+        models: modelsToInsert
+      }, client);
     } catch (error) {
       console.error("Controller Error (updatePrompt):", error);
       throw error;

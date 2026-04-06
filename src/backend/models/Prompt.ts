@@ -45,4 +45,5 @@ export interface PromptItem {
   seller_note?: string;
   useCase?: string;
   views_count?: number;
+  is_published?: boolean;
 }

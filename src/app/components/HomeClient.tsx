@@ -109,9 +109,15 @@ const SectionCard200 = ({
               <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 border border-border text-primary font-mono">{category2}</span>
             </div>
             <div className="text-sm font-bold text-foreground leading-snug mb-3 line-clamp-2 min-h-[2.75rem]">{p.title}</div>
-            <div className="flex items-center gap-1.5 mb-3 text-[11px]">
-              <span className="text-primary tracking-widest">★★★★★</span>
-              <span className="font-mono font-bold text-foreground">{Number(p.rating).toFixed(1)}</span>
+            <div className="flex items-center gap-3 mb-3 text-[11px]">
+              <div className="flex items-center gap-0.5">
+                <span className="text-primary tracking-widest">★★★★★</span>
+                <span className="font-mono font-bold text-foreground">{Number(p.rating).toFixed(1)}</span>
+              </div>
+              <div className="h-3 w-px bg-border/60" />
+              <div className="flex items-center gap-1.5 text-muted-foreground font-bold">
+                <Eye className="w-3.5 h-3.5" /> {p.viewsCount?.toLocaleString() || 0}
+              </div>
             </div>
             <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
               <div 

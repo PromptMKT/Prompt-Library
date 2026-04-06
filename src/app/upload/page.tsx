@@ -228,21 +228,34 @@ export default function PromptUploadPage() {
           setCommonMistakes(prompt.common_mistakes || "");
           setHowToAdapt(prompt.how_to_adapt || "");
 
-          if (prompt.image_url) {
-            setImagePreview(prompt.image_url);
+          if (prompt.cover_image_url) {
+            setImagePreview(prompt.cover_image_url);
           }
 
-          // Handle Prompt Text & System Text
-          if (prompt.prompt_type === 'system') {
-            setPromptTab('system');
-            setSystemText(prompt.system_prompt || "");
-            setPromptText(prompt.prompt_text || "");
-          } else if (prompt.prompt_type === 'chain') {
+          if (prompt.prompt_images && prompt.prompt_images.length > 0) {
+            const sortedImages = [...prompt.prompt_images].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            setScreenshots(sortedImages.map(img => img.image_url));
+          }
+
+          // Handle Prompt Text & System Text (Mapping from instructions)
+          const firstStep = prompt.prompt_steps?.[0];
+          const instruction = firstStep?.instruction || "";
+
+          if (prompt.is_multi_step) {
             setPromptTab('chain');
-            setChainSteps(prompt.prompt_steps?.map((p: any) => ({ id: p.id, text: p.step_text })) || [{ id: 1, text: "" }]);
+            setChainSteps(prompt.prompt_steps?.map((p: any) => ({ 
+              id: p.id, 
+              text: p.instruction 
+            })) || [{ id: 1, text: "" }]);
+          } else if (instruction.startsWith("System: ")) {
+            setPromptTab('system');
+            // Basic extraction logic matching the controller's format
+            const parts = instruction.split("\n\nUser: ");
+            setSystemText(parts[0].replace("System: ", ""));
+            setPromptText(parts[1] || "");
           } else {
             setPromptTab('single');
-            setPromptText(prompt.prompt_text || "");
+            setPromptText(instruction);
           }
 
           // Models
@@ -465,8 +478,14 @@ export default function PromptUploadPage() {
     <div className="min-h-screen bg-[#f8f9fc] text-slate-900 font-sans pb-32">
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-12">
         <div className="mb-10 max-w-2xl">
-          <h1 className="text-4xl md:text-[44px] leading-none font-black tracking-tighter text-slate-900 mb-3">List a prompt</h1>
-          <p className="text-slate-500 font-medium text-sm md:text-base">Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime.</p>
+          <h1 className="text-4xl md:text-[44px] leading-none font-black tracking-tighter text-slate-900 mb-3">
+            {isEditMode ? "Update your prompt" : "List a prompt"}
+          </h1>
+          <p className="text-slate-500 font-medium text-sm md:text-base">
+            {isEditMode 
+              ? "Refine your configuration. Changes will be live immediately after saving."
+              : "Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime."}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
@@ -1378,7 +1397,9 @@ export default function PromptUploadPage() {
                                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                   <span>Publishing...</span>
                                </div>
-                             ) : "Publish prompt 🚀"}
+                             ) : (
+                               isEditMode ? "Update prompt 🚀" : "Publish prompt 🚀"
+                             )}
                              {isPublishing && <motion.div layoutId="load" className="absolute bottom-0 left-0 h-1 bg-white/40" initial={{width:0}} animate={{width:'100%'}} transition={{duration:2}} />}
                           </button>
                         </div>
@@ -1434,7 +1455,9 @@ export default function PromptUploadPage() {
                           <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                         </div>
                         
-                        <h2 className="text-4xl md:text-[52px] leading-[1.1] font-black text-slate-900 mb-6 tracking-tight">Your prompt is live!</h2>
+                        <h2 className="text-4xl md:text-[52px] leading-[1.1] font-black text-slate-900 mb-6 tracking-tight">
+                          {isEditMode ? "Prompt updated!" : "Your prompt is live!"}
+                        </h2>
                         <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md">
                           It’s now visible on the Explore page. Share it to get your first buyers — sellers who share on day 1 get 10x more visibility.
                         </p>
