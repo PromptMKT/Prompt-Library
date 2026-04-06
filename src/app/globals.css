@@ -5,43 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-jakarta);
-  --font-mono: var(--font-mono);
-  --font-jakarta: var(--font-jakarta);
-  --font-jetbrains: var(--font-mono);
-
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  
-  --color-skyblue: var(--primary);
-  --color-violet: hsl(258 89% 66%);
-  
-  --radius-xl: 1rem;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
@@ -78,10 +44,12 @@
     --border: var(--border-color);
     --ring: var(--accent-primary);
     --radius: 14px;
+
+    --font-jakarta: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   }
 
   .dark {
-    /* Theme Tokens Overrides */
     --bg-main: #0B0B0F;
     --bg-surface: #181824;
     --bg-soft: #1F1F2E;
@@ -91,72 +59,33 @@
     --border-color: rgba(255, 255, 255, 0.08);
     --accent-primary: #8B5CF6;
     --accent-hover: #7C3AED;
+  }
 
-    /* Base Mappings - These will inherit from tokens */
+  * {
+    border-color: var(--border-color);
+    outline-color: hsla(var(--ring), 0.5);
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-secondary);
+    font-family: var(--font-jakarta) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, p, span, div, li, ul, ol, button, input {
+    font-family: var(--font-jakarta) !important;
   }
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-    outline-color: hsla(var(--ring), 0.5);
-  }
-  body {
-    background-color: var(--bg-main);
-    background-image: 
-      radial-gradient(circle at 50% -20%, var(--accent-primary) 0.08, transparent 50%),
-      radial-gradient(circle at 0% 100%, var(--accent-primary) 0.03, transparent 40%),
-      radial-gradient(circle at 100% 100%, var(--accent-primary) 0.03, transparent 40%);
-    background-attachment: fixed;
-    color: var(--text-secondary);
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary);
-    font-family: var(--font-jakarta);
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-  }
- 
-  h1 { font-size: 2rem; font-weight: 800; line-height: 1.1; }
-  h2 { font-size: 1.625rem; font-weight: 700; line-height: 1.15; }
-  h3 { font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
-  h4 { font-size: 1.1rem; font-weight: 700; line-height: 1.25; }
-  h5 { font-size: 1rem; font-weight: 700; line-height: 1.15; }
-  h6 { font-size: 0.9rem; font-weight: 700; line-height: 1.25; }
- 
-  p, span, div, li, ul, ol {
-    font-family: var(--font-jakarta);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    line-height: 1.5;
-  }
- 
-  /* Make common hardcoded light utility colors respect dark mode across pages */
-  .dark .text-slate-900 {
-    color: var(--text-primary) !important;
-  }
-
-  .dark .text-slate-700,
-  .dark .text-slate-600 {
-    color: var(--text-secondary) !important;
-  }
-
-  .dark .bg-white {
-    background-color: var(--bg-surface) !important;
-  }
-
-  .dark .bg-slate-100 {
-    background-color: var(--bg-soft) !important;
-  }
-
-  .dark .border-slate-200,
-  .dark .border-slate-100 {
-    border-color: var(--border-color) !important;
-  }
+  /* Fix hardcoded colors for dark mode */
+  .dark .text-slate-900 { color: var(--text-primary) !important; }
+  .dark .text-slate-700, .dark .text-slate-600 { color: var(--text-secondary) !important; }
+  .dark .bg-white { background-color: var(--bg-surface) !important; }
+  .dark .bg-slate-100 { background-color: var(--bg-soft) !important; }
+  .dark .border-slate-200, .dark .border-slate-100 { border-color: var(--border-color) !important; }
 }
 
 @layer utilities {

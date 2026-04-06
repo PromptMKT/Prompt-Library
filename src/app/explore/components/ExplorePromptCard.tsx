@@ -18,7 +18,7 @@ type ExplorePromptCardProps = {
   image: string;
   rating: number;
   usageCount: number;
-  viewsCount: number;
+  viewsCount?: number;
   tags: string[];
   creator: string;
   price: number;
@@ -59,7 +59,7 @@ export function ExplorePromptCard({
   image,
   rating,
   usageCount,
-  viewsCount,
+  viewsCount = 0,
   tags,
   creator,
   price,
@@ -149,7 +149,7 @@ export function ExplorePromptCard({
       {/* ── CARD CONTENT (Wrapped in a single Link for consistency) ── */}
       <Link href={`/prompt/${id}`} className="flex-1 flex flex-col relative z-0">
         {/* ── IMAGE SECTION ── */}
-        <div className="h-42.5 w-full relative overflow-hidden bg-slate-100">
+        <div className="h-[220px] w-full relative overflow-hidden bg-slate-100">
           {image ? (
             <img 
               src={image} 
@@ -161,7 +161,7 @@ export function ExplorePromptCard({
           )}
 
           {/* Top-Left Platform Badge */}
-          <span className="absolute top-3 left-3 px-2 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[9px] font-black tracking-widest uppercase shadow-md z-10">
+          <span className="absolute top-3 left-3 px-2 py-1 bg-black/70 backdrop-blur-md border border-white/10 text-white rounded-full text-[9px] font-extrabold tracking-widest uppercase shadow-md z-10">
             {platform}
           </span>
         </div>
@@ -178,7 +178,7 @@ export function ExplorePromptCard({
             </span>
           </div>
           
-          <div className="card-title line-clamp-3">
+          <div className="card-title line-clamp-3 h-[64px] mb-2">
             {displayTitle}
           </div>
           
@@ -271,17 +271,17 @@ export function ExplorePromptCard({
               </div>
 
               <div className="text-center space-y-6 px-4">
-                <h2 className="text-2xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-lg">{displayTitle}</h2>
+                <h2 className="text-2xl md:text-5xl font-extrabold text-white tracking-tight leading-tight drop-shadow-lg">{displayTitle}</h2>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                    <div className="flex items-center gap-3 text-slate-300 bg-white/5 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10">
-                      <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-[10px] font-black text-white">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-[10px] font-extrabold text-white">
                         {creatorInitials(creator)}
                       </div>
                       <span className="text-sm font-bold font-mono tracking-tight">@{creator}</span>
                    </div>
                    <Link href={`/prompt/${id}`} onClick={() => setIsViewOpen(false)}>
                      <button 
-                       className="px-10 py-3.5 rounded-full bg-purple-600 text-white font-black text-sm uppercase tracking-[0.1em] hover:bg-purple-500 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-purple-600/30"
+                       className="px-10 py-3.5 rounded-full bg-purple-600 text-white font-extrabold text-sm uppercase tracking-[0.1em] hover:bg-purple-500 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-purple-600/30"
                      >
                        Get Prompt Details
                      </button>
