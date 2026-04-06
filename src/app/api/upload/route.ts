@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const folder = (formData.get("folder") as string) || "prompts/general";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000).toString();
-    const str = `timestamp=${timestamp}${api_secret}`;
+    // For Cloudinary signing: fields MUST be in alphabetical order if multiple are used
+    const str = `folder=${folder}&timestamp=${timestamp}${api_secret}`;
     const signature = crypto.createHash("sha1").update(str).digest("hex");
 
     const cloudFormData = new FormData();
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
     cloudFormData.append("api_key", api_key);
     cloudFormData.append("timestamp", timestamp);
     cloudFormData.append("signature", signature);
+    cloudFormData.append("folder", folder);
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, {
       method: "POST",
@@ -48,9 +51,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.error?.message || "Failed to upload to Cloudinary" }, { status: res.status });
     }
 
-    return NextResponse.json({ secure_url: data.secure_url });
+    return NextResponse.json({ 
+      secure_url: data.secure_url,
+      public_id: data.public_id
+    });
   } catch (error: any) {
     console.error("API Error (upload):", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { public_id } = await req.json();
+
+    if (!public_id) {
+      return NextResponse.json({ error: "No public_id provided" }, { status: 400 });
+    }
+
+    // Cloudinary Credentials
+    const api_key = process.env.CLOUDINARY_API_KEY!;
+    const api_secret = process.env.CLOUDINARY_API_SECRET!;
+    const cloud_name = process.env.CLOUDINARY_CLOUD_NAME!;
+
+    const timestamp = Math.round(new Date().getTime() / 1000).toString();
+    const str = `public_id=${public_id}&timestamp=${timestamp}${api_secret}`;
+    const signature = crypto.createHash("sha1").update(str).digest("hex");
+
+    const cloudFormData = new FormData();
+    cloudFormData.append("public_id", public_id);
+    cloudFormData.append("api_key", api_key);
+    cloudFormData.append("timestamp", timestamp);
+    cloudFormData.append("signature", signature);
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/destroy`, {
+      method: "POST",
+      body: cloudFormData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.result !== "ok") {
+      return NextResponse.json({ error: data.error?.message || "Failed to delete from Cloudinary" }, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("API Error (delete):", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
