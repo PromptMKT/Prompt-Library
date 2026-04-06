@@ -364,4 +364,67 @@ export class PromptController {
       throw error;
     }
   }
+
+  /**
+   * Fetch a single prompt by ID with all relations.
+   */
+  static async getPromptById(id: string, client?: any) {
+    try {
+      const supabaseClient = client || supabase;
+      const { data: prompt, error } = await supabaseClient
+        .from('prompts')
+        .select(`
+          *,
+          models:prompt_models(
+            id:model_id,
+            name,
+            model_groups(platform_id)
+          ),
+          prompt_steps(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      return { prompt, error };
+    } catch (error) {
+      console.error("Controller Error (getPromptById):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing prompt using the service.
+   */
+  static async updatePrompt(id: string, data: any, client?: any) {
+    try {
+      return await PromptService.updatePrompt(id, data, client);
+    } catch (error) {
+      console.error("Controller Error (updatePrompt):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a prompt using the service.
+   */
+  static async deletePrompt(id: string, client?: any) {
+    try {
+      return await PromptService.deletePrompt(id, client);
+    } catch (error) {
+      console.error("Controller Error (deletePrompt):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle the publication status of a prompt using the service.
+   */
+  static async togglePromptStatus(id: string, isPublished: boolean, client?: any) {
+    try {
+      return await PromptService.togglePromptStatus(id, isPublished, client);
+    } catch (error) {
+      console.error("Controller Error (togglePromptStatus):", error);
+      throw error;
+    }
+  }
 }

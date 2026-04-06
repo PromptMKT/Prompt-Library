@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { PromptController } from "@/backend/controllers/PromptController";
 import { createClient } from "@/lib/supabase/server";
 import PromptDetailClient from "./components/PromptDetailClient";
+import { ViewTracker } from "./components/ViewTracker";
 import { type PromptItem } from "@/backend/models/Prompt";
 import { notFound } from "next/navigation";
 
@@ -40,12 +41,15 @@ async function PromptDataFetcher({ id }: { id: string }) {
     }
 
     return (
-      <PromptDetailClient 
-        prompt={data.prompt as PromptItem} 
-        initialIsPurchased={data.isPurchased} 
-        relatedPrompts={data.related as unknown as PromptItem[]}
-        user={user}
-      />
+      <>
+        <ViewTracker promptId={id} />
+        <PromptDetailClient 
+          prompt={data.prompt as PromptItem} 
+          initialIsPurchased={data.isPurchased} 
+          relatedPrompts={data.related as unknown as PromptItem[]}
+          user={user}
+        />
+      </>
     );
   } catch (err) {
     console.error("Error fetching prompt details on server:", err);

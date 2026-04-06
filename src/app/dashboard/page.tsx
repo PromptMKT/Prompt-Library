@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed } from "lucide-react";
+import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+import { deletePromptAction, togglePromptStatusAction } from "@/app/actions/prompt";
 import { useAuth } from "@/components/AuthProvider";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -619,6 +620,7 @@ export default function DashboardPage() {
                     <th className="text-left py-3 px-5 font-black">Sales</th>
                     <th className="text-left py-3 px-5 font-black">Revenue</th>
                     <th className="text-left py-3 px-5 font-black">Rating</th>
+                    <th className="text-right py-3 px-5 font-black">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -648,6 +650,44 @@ export default function DashboardPage() {
                             <span className="flex items-center gap-1">
                               <Star className="w-3.5 h-3.5 fill-primary text-primary" /> {r.toFixed(1)}
                             </span>
+                          </td>
+                          <td className="py-3 px-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link 
+                                href={`/upload?id=${p.id}`}
+                                className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                              <button 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Are you sure you want to ${p.is_published ? 'unpublish' : 'publish'} this prompt?`)) {
+                                    await togglePromptStatusAction(p.id, !p.is_published);
+                                    window.location.reload();
+                                  }
+                                }}
+                                className="p-2 rounded-lg hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 transition-colors"
+                                title={p.is_published ? "Unpublish" : "Publish"}
+                              >
+                                {p.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Are you sure you want to delete this prompt permanently?")) {
+                                    await deletePromptAction(p.id);
+                                    window.location.reload();
+                                  }
+                                }}
+                                className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

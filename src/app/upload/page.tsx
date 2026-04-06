@@ -11,7 +11,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PromptController } from "@/backend/controllers/PromptController";
-import { publishPromptAction } from "@/app/actions/prompt";
+import { publishPromptAction, updatePromptAction } from "@/app/actions/prompt";
+import { useSearchParams } from "next/navigation";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
   ChatGPT:['GPT-5.1 (latest)','GPT-5','GPT-5 Mini','GPT-4o','GPT-4o Mini','GPT-4 Turbo','o4','o4 Mini','o3','o3 Mini','o1','GPT-3.5 Turbo'],
@@ -111,6 +112,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 export default function PromptUploadPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const promptId = searchParams.get("id");
+  const isEditMode = !!promptId;
+
   const [activeSection, setActiveSection] = useState<number>(1);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
 
@@ -141,7 +146,7 @@ export default function PromptUploadPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // ── S3 ──
-  const [categoryType, setCategoryType] = useState<"output" | "goal" | "domain">("output");
+  const [categoryType, setCategoryType] = useState<"output" | "goal" | "domain" | any>("output");
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [targetAudience, setTargetAudience] = useState<string[]>([]);
@@ -188,6 +193,70 @@ export default function PromptUploadPage() {
     }
     init();
   }, []);
+
+  // Fetch data for editing
+  useEffect(() => {
+    if (isEditMode && promptId) {
+      async function fetchPromptData() {
+        try {
+          const { prompt, error } = await PromptController.getPromptById(promptId as string);
+          if (error || !prompt) {
+             toast.error("Could not load prompt for editing.");
+             return;
+          }
+
+          // Populate State
+          setTitle(prompt.title);
+          setTagline(prompt.tagline || "");
+          setPrice(prompt.price.toString());
+          setPlatform(prompt.platform_id);
+          setCategory(prompt.category_id);
+          setSubCategory(prompt.subcategory_id);
+          setSelectedUseCase(prompt.use_case || "");
+          setComplexity(prompt.complexity || "");
+          setSellerNote(prompt.seller_note || "");
+          setTags(prompt.tags || []);
+          setOutputFormat(prompt.output_format || "");
+          setTargetAudience(prompt.target_audience || []);
+          setVerifiedDate(prompt.last_verified_date || "");
+          
+          // User Guide
+          setQuickSetup(prompt.quick_setup || "");
+          setFillVariables(prompt.fill_variables || "");
+          setWhatToExpect(prompt.what_to_expect || "");
+          setProTips(prompt.pro_tips || "");
+          setCommonMistakes(prompt.common_mistakes || "");
+          setHowToAdapt(prompt.how_to_adapt || "");
+
+          if (prompt.image_url) {
+            setImagePreview(prompt.image_url);
+          }
+
+          // Handle Prompt Text & System Text
+          if (prompt.prompt_type === 'system') {
+            setPromptTab('system');
+            setSystemText(prompt.system_prompt || "");
+            setPromptText(prompt.prompt_text || "");
+          } else if (prompt.prompt_type === 'chain') {
+            setPromptTab('chain');
+            setChainSteps(prompt.prompt_steps?.map((p: any) => ({ id: p.id, text: p.step_text })) || [{ id: 1, text: "" }]);
+          } else {
+            setPromptTab('single');
+            setPromptText(prompt.prompt_text || "");
+          }
+
+          // Models
+          if (prompt.models) {
+            setSelectedModels(prompt.models.map((m: any) => m.id));
+          }
+
+        } catch (err) {
+          console.error("Error fetching prompt for edit:", err);
+        }
+      }
+      fetchPromptData();
+    }
+  }, [isEditMode, promptId]);
 
   useEffect(() => {
     if (category) {
@@ -252,33 +321,41 @@ export default function PromptUploadPage() {
   const handlePublish = async () => {
     if (completenessPct < 100 || !user) return;
     setIsPublishing(true);
+    
+    // API Upload Helper
+    const uploadFile = async (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      return data.secure_url;
+    };
+
     try {
-      // 1. Upload Assets (Cloudinary)
-      let coverUrl = "";
+      // 1. Upload Assets (API Route)
+      let coverUrl = imagePreview; // Default to existing if not changed
       if (coverFile) {
-        const fd = new FormData();
-        fd.append('file', coverFile);
-        coverUrl = await uploadToCloudinary(fd);
+        coverUrl = await uploadFile(coverFile);
       }
       
-      const screenshotUrls = [];
+      const screenshotUrls = [...screenshots]; // Keep existing screenshots if editing
       for (const file of screenshotFiles) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const url = await uploadToCloudinary(fd);
+        const url = await uploadFile(file);
         screenshotUrls.push(url);
       }
 
-      const promptFileUrls = [];
+      const promptFileUrls = []; // Usually files are re-uploaded or we'd need more logic to keep them
       for (const file of promptFiles) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const url = await uploadToCloudinary(fd);
+        const url = await uploadFile(file);
         promptFileUrls.push(url);
       }
 
-      // 2. Call Server Action to handle DB orchestration and revalidation
-      const result = await publishPromptAction({
+      // 2. Prepare Data
+      const promptData = {
         title, tagline, price, category, subCategory, platform,
         selectedModels, coverUrl, screenshotUrls, promptFileUrls,
         inputNeeds, inputData, targetAudience, outputFormat,
@@ -286,19 +363,32 @@ export default function PromptUploadPage() {
         whatToExpect, proTips, commonMistakes, howToAdapt,
         complexity, tags, sellerNote, 
         creatorId: profile?.id || user.id,
-        promptTab, systemText, promptText, chainSteps
-      });
+        promptTab, systemText, promptText, chainSteps,
+        useCase: selectedUseCase
+      };
 
-      if (result.success && result.promptId) {
-        setPublishedPromptId(String(result.promptId));
-        setIsPublished(true);
-        toast?.success("Prompt successfully published!");
+      // 3. Call Server Action (Create or Update)
+      let result: any;
+      if (isEditMode && promptId) {
+        result = await updatePromptAction(promptId, promptData);
       } else {
-        throw new Error(result.error || "Failed to publish prompt");
+        result = await publishPromptAction(promptData);
+      }
+
+      if (result.success) {
+        if (!isEditMode && result.promptId) {
+          setPublishedPromptId(String(result.promptId));
+        } else if (isEditMode) {
+          setPublishedPromptId(promptId);
+        }
+        setIsPublished(true);
+        toast?.success(`Prompt successfully ${isEditMode ? 'updated' : 'published'}!`);
+      } else {
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'publish'} prompt`);
       }
     } catch (err: any) {
-      console.error("Error publishing:", err);
-      toast.error("Error publishing: " + err.message);
+      console.error("Error saving prompt:", err);
+      toast.error("Error saving: " + err.message);
     } finally {
       setIsPublishing(false);
     }

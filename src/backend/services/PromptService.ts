@@ -158,4 +158,50 @@ export class PromptService {
 
     return prompt;
   }
+
+  /**
+   * Update an existing prompt and its related data.
+   */
+  static async updatePrompt(id: string, data: any, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data: updated, error } = await supabaseClient
+      .from('prompts')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return updated;
+  }
+
+  /**
+   * Delete a prompt (RLS and DB constraints should handle related data cleanup).
+   */
+  static async deletePrompt(id: string, client?: any) {
+    const supabaseClient = client || supabase;
+    const { error } = await supabaseClient
+      .from('prompts')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  }
+
+  /**
+   * Toggle the publication status of a prompt.
+   */
+  static async togglePromptStatus(id: string, isPublished: boolean, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('prompts')
+      .update({ is_published: isPublished })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
 }
