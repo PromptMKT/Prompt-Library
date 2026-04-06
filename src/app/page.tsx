@@ -771,7 +771,7 @@ export default function HomePage() {
         <section className="space-y-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">What People are Buying</h2>
+              <h2 className="heading-h2">What People are Buying</h2>
             </div>
             <div className="flex flex-wrap gap-2">
               {["all", "text", "image", "code", "agent"].map((f) => (
@@ -791,44 +791,38 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="bg-card border border-border/60 rounded-[3rem] p-10 space-y-16">
-            {/* ── PROMPT CARDS SHOWCASE ── */}
-            <div className="reveal">
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                <AnimatePresence mode="popLayout">
-                  {displayPrompts
-                    .filter(p => activeFilter === "all" || p.category === activeFilter)
-                    .slice(0, 10)
-                    .map((p, i) => (
-                      <motion.div
-                        key={p.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.2, delay: i * 0.05 }}
-                      >
-                        <ExplorePromptCard
-                          id={p.id.toString()}
-                          title={p.title}
-                          description={p.title}
-                          image={p.image}
-                          rating={p.rating || 4.8}
-                          usageCount={p.sales || 2100}
-                          tags={[p.category || "General"]}
-                          creator={p.author || "Creator Pro"}
-                          price={p.price || 24}
-                          category={p.category}
-                          platform={p.platform || "Midjourney"}
-                          mode="grid"
-                          initialWishlisted={false}
-                        />
-                      </motion.div>
-                    ))}
-                </AnimatePresence>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
+            <AnimatePresence mode="popLayout">
+              {displayPrompts
+                .filter(p => activeFilter === "all" || p.category === activeFilter)
+                .slice(0, 10)
+                .map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2, delay: i * 0.05 }}
+                  >
+                    <ExplorePromptCard
+                      id={p.id.toString()}
+                      title={p.title}
+                      description={p.title}
+                      image={p.image}
+                      rating={p.rating || 4.8}
+                      usageCount={p.sales || 2100}
+                      tags={[p.category || "General"]}
+                      creator={p.author || "Creator Pro"}
+                      price={p.price || 24}
+                      category={p.category}
+                      platform={p.platform || "Midjourney"}
+                      mode="grid"
+                      initialWishlisted={false}
+                    />
+                  </motion.div>
+                ))}
+            </AnimatePresence>
           </div>
         </section>
 

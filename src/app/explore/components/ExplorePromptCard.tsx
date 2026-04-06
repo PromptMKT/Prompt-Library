@@ -143,7 +143,7 @@ export function ExplorePromptCard({
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
         "group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-md hover:shadow-xl hover:border-purple-500 transition-all duration-300",
-        "w-full max-w-70 flex flex-col"
+        "w-full max-w-70 h-[440px] flex flex-col"
       )}
     >
       {/* ── CARD CONTENT (Wrapped in a single Link for consistency) ── */}
