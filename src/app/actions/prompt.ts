@@ -142,3 +142,69 @@ export async function togglePromptStatusAction(id: string, isPublished: boolean)
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Server action to add a single prompt step.
+ */
+export async function addPromptStepAction(promptId: string, stepData: any) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Verify ownership
+    const { data: existing } = await supabase
+      .from('prompts')
+      .select('creator_id')
+      .eq('id', promptId)
+      .single();
+
+    if (!existing || existing.creator_id !== user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const step = await PromptController.addPromptStep(promptId, stepData, supabase);
+    revalidatePath(`/prompt/${promptId}`);
+    
+    return { success: true, step };
+  } catch (error: any) {
+    console.error("Server Action Error (addPromptStepAction):", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Server action to reorder multiple prompt steps.
+ */
+export async function reorderPromptStepsAction(promptId: string, updates: { id: number, step_number: number }[]) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Verify ownership
+    const { data: existing } = await supabase
+      .from('prompts')
+      .select('creator_id')
+      .eq('id', promptId)
+      .single();
+
+    if (!existing || existing.creator_id !== user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await PromptController.reorderPromptSteps(promptId, updates, supabase);
+    revalidatePath(`/prompt/${promptId}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Server Action Error (reorderPromptStepsAction):", error);
+    return { success: false, error: error.message };
+  }
+}

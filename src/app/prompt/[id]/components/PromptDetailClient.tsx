@@ -465,14 +465,40 @@ export default function PromptDetailClient({
 
                           {prompt.guide_steps && prompt.guide_steps.length > 0 && (
                             <div className="space-y-4">
-                              <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Instructions</div>
-                              <div className="space-y-3">
-                                {prompt.guide_steps.map((step, idx) => (
-                                  <div key={idx} className="flex gap-4 items-start">
-                                    <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{idx + 1}</div>
-                                    <p className="text-sm text-foreground">{step}</p>
-                                  </div>
-                                ))}
+                              <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground/60 font-mono flex items-center gap-2">
+                                <div className="h-px w-4 bg-muted-foreground/20" />
+                                Instructions
+                              </div>
+                              <div className="grid grid-cols-1 gap-3 relative">
+                                {/* Vertical Connecting Line */}
+                                <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary/20 via-primary/10 to-transparent" />
+                                
+                                {prompt.guide_steps.map((step, idx) => {
+                                  let displayText = "";
+                                  try {
+                                    if (typeof step === 'string' && step.startsWith('{')) {
+                                      const parsed = JSON.parse(step);
+                                      displayText = parsed.text || step;
+                                    } else {
+                                      displayText = typeof step === 'string' ? step : (step as any).text;
+                                    }
+                                  } catch (e) {
+                                    displayText = typeof step === 'string' ? step : (step as any).text;
+                                  }
+
+                                  return (
+                                    <div key={idx} className="group flex gap-5 items-start relative p-4 rounded-2xl bg-card/40 border border-border/40 hover:border-primary/20 hover:bg-card/60 transition-all duration-300 shadow-sm">
+                                      <div className="relative z-10 w-10 h-10 rounded-xl bg-background border border-border/60 flex items-center justify-center text-[13px] font-black shrink-0 shadow-sm group-hover:border-primary/40 group-hover:text-primary transition-all">
+                                        {idx + 1}
+                                      </div>
+                                      <div className="space-y-1 pt-1">
+                                        <p className="text-[13px] text-foreground/90 leading-relaxed font-medium">
+                                          {displayText}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -546,20 +572,47 @@ export default function PromptDetailClient({
                 )}
 
                 {activeTab === "steps" && prompt.is_multi_step && (
-                  <div className="space-y-6 mb-10">
-                    <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono mb-3">Multi-step Workflow</div>
-                    <div className="space-y-4">
+                  <div className="space-y-8 mb-10">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-bold tracking-widest uppercase text-muted-foreground font-mono">Multi-step Pipeline</div>
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 font-mono text-[9px]">{prompt.steps?.length || 0} DEPLOYED STAGES</Badge>
+                    </div>
+
+                    <div className="space-y-6 relative">
+                      {/* Visual pipeline connector */}
+                      <div className="absolute left-[19px] top-6 bottom-6 w-[2px] bg-linear-to-b from-primary/30 to-border/10" />
+
                       {prompt.steps?.sort((a:any, b:any) => a.step_number - b.step_number).map((step: any, idx: number) => (
-                        <div key={idx} className="bg-card border border-border/40 rounded-2xl p-6 relative overflow-hidden group">
-                          <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                          <div className="flex items-start gap-4">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                        <div key={idx} className="relative group">
+                          <div className="flex gap-6 items-start">
+                            {/* Step Number Badge */}
+                            <div className="z-10 w-10 h-10 rounded-2xl bg-card border-2 border-border/80 group-hover:border-primary/40 flex items-center justify-center font-black text-[13px] text-muted-foreground group-hover:text-primary shrink-0 transition-all shadow-sm">
                               {step.step_number}
                             </div>
-                            <div className="space-y-1">
-                              {step.title && <h4 className="font-bold text-foreground">{step.title}</h4>}
-                              <Badge variant="outline" className="text-[10px] uppercase tracking-wider mb-2">{step.step_type}</Badge>
-                              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{step.instruction}</p>
+                            
+                            {/* Step Content Card */}
+                            <div className="flex-1 bg-card/50 backdrop-blur-sm border border-border/40 group-hover:border-primary/20 rounded-[28px] p-6 transition-all duration-300 shadow-xs hover:shadow-lg hover:shadow-primary/5">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="space-y-1">
+                                  {step.title ? (
+                                    <h4 className="font-bold text-[15px] text-foreground group-hover:text-primary transition-colors">{step.title}</h4>
+                                  ) : (
+                                    <h4 className="font-bold text-[15px] text-foreground/80">Stage {step.step_number}</h4>
+                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">{step.step_type || 'PROMPT'}</span>
+                                  </div>
+                                </div>
+                                <div className="p-2 rounded-xl bg-muted/30 group-hover:bg-primary/10 transition-colors">
+                                  <ListTree className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                </div>
+                              </div>
+                              
+                              <div className="bg-background/40 rounded-2xl p-4 border border-border/30">
+                                <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap italic">
+                                  "{step.instruction}"
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>

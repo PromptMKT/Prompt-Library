@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
+import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, ChevronUp, Trash2, GripVertical, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { uploadToCloudinary } from "@/app/actions/upload-cloudinary";
@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PromptController } from "@/backend/controllers/PromptController";
-import { publishPromptAction, updatePromptAction } from "@/app/actions/prompt";
+import { publishPromptAction, updatePromptAction, addPromptStepAction, reorderPromptStepsAction } from "@/app/actions/prompt";
 import { useSearchParams } from "next/navigation";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
@@ -140,6 +140,7 @@ export default function PromptUploadPage() {
   const [chainSteps, setChainSteps] = useState([{id: 1, text: ""}]);
 
   // ── S2 ──
+  const [isInitializing, setIsInitializing] = useState(isEditMode);
   const [platform, setPlatform] = useState("");
   const [selectedModels, setSelectedModels] = useState<number[]>([]);
   const [verifiedDate, setVerifiedDate] = useState("");
@@ -152,8 +153,9 @@ export default function PromptUploadPage() {
   const [targetAudience, setTargetAudience] = useState<string[]>([]);
   const [outputFormat, setOutputFormat] = useState("");
   const [selectedUseCase, setSelectedUseCase] = useState("");
-  const [useCaseSuggestions, setUseCaseSuggestions] = useState<string[]>([]);
-  const [dbUseCases, setDbUseCases] = useState<string[]>([]);
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | number>("");
+  const [useCaseSuggestions, setUseCaseSuggestions] = useState<any[]>([]);
+  const [dbUseCases, setDbUseCases] = useState<any[]>([]);
 
 
   // ── S4 ──
@@ -249,13 +251,16 @@ export default function PromptUploadPage() {
           setPlatform(prompt.platform_id);
           setCategory(prompt.category_id);
           setSubCategory(prompt.subcategory_id);
-          setSelectedUseCase(prompt.use_case || "");
+          setSelectedUseCaseId(prompt.use_case_id || "");
+          setSelectedUseCase(prompt.use_cases?.name || "");
           setComplexity(prompt.complexity || "");
           setSellerNote(prompt.seller_note || "");
           setTags(prompt.tags || []);
           setOutputFormat(prompt.output_format || "");
           setTargetAudience(prompt.target_audience || []);
-          setVerifiedDate(prompt.last_verified_date || "");
+          setVerifiedDate(prompt.verified_at || "");
+          setInputNeeds(prompt.input_types || []);
+          setInputData(prompt.input_data || {});
           
           // User Guide
           setQuickSetup(prompt.quick_setup || "");
@@ -264,6 +269,20 @@ export default function PromptUploadPage() {
           setProTips(prompt.pro_tips || "");
           setCommonMistakes(prompt.common_mistakes || "");
           setHowToAdapt(prompt.how_to_adapt || "");
+          
+          if (prompt.guide_steps && prompt.guide_steps.length > 0) {
+            setGuideSteps(prompt.guide_steps.map((step: any, i: number) => {
+              try {
+                if (typeof step === 'string' && step.startsWith('{')) {
+                  const parsed = JSON.parse(step);
+                  return { id: parsed.id || i + 1, text: parsed.text || step };
+                }
+                return { id: i + 1, text: typeof step === 'string' ? step : step.text };
+              } catch(e) {
+                return { id: i + 1, text: String(step) };
+              }
+            }));
+          }
 
           if (prompt.cover_image_url) {
             setImagePreview(prompt.cover_image_url);
@@ -300,7 +319,9 @@ export default function PromptUploadPage() {
             setPromptText(instruction);
           }
 
-          // Models
+          // Delay setting isInitializing to false to allow category/subcat effects to run or be skipped
+          setTimeout(() => setIsInitializing(false), 500);
+
           if (prompt.models) {
             setSelectedModels(prompt.models.map((m: any) => m.id));
           }
@@ -321,9 +342,11 @@ export default function PromptUploadPage() {
     } else {
       setSubcatsData([]);
     }
-    // Reset use case when category changes
-    setSubCategory("");
-    setSelectedUseCase("");
+    // Reset use case when category changes, but ONLY if not currently initializing edit data
+    if (!isInitializing) {
+      setSubCategory("");
+      setSelectedUseCase("");
+    }
   }, [category]);
 
   // Fetch use cases from DB and match with taxonomy data
@@ -342,22 +365,45 @@ export default function PromptUploadPage() {
         
         // 3. Fetch from DB
         supabase.from('use_cases')
-          .select('name')
+          .select('id, name')
           .eq('subcategory_id', subCategory)
           .then(({data}) => {
+            if(data) setDbUseCases(data);
             const dbNames = data?.map(d => d.name) || [];
-            // Merge suggestions, avoiding duplicates
             const allSuggestions = Array.from(new Set([...staticSuggestions, ...dbNames]));
-            setUseCaseSuggestions(allSuggestions);
+            // Map suggestions back to include IDs where available
+            setUseCaseSuggestions(allSuggestions.map(name => {
+              const dbMatch = data?.find(d => d.name.toLowerCase() === name.toLowerCase());
+              return { id: dbMatch?.id || null, name };
+            }));
           });
       } else {
         setUseCaseSuggestions([]);
+        setDbUseCases([]);
       }
     } else {
       setUseCaseSuggestions([]);
+      setDbUseCases([]);
     }
-    setSelectedUseCase("");
+    // Only reset use case text if user is actively changing subcategory
+    if (!isInitializing) {
+      setSelectedUseCase("");
+    }
   }, [subCategory, category, categoriesData, subcatsData]);
+
+  // Sync selectedUseCaseId when selectedUseCase text matches a DB use case
+  useEffect(() => {
+    if (!selectedUseCase) {
+      setSelectedUseCaseId("");
+      return;
+    }
+    const match = dbUseCases.find(uc => uc.name.toLowerCase() === selectedUseCase.toLowerCase());
+    if (match) {
+      setSelectedUseCaseId(match.id);
+    } else {
+      setSelectedUseCaseId("");
+    }
+  }, [selectedUseCase, dbUseCases]);
 
   useEffect(() => {
     if (platform) {
@@ -408,7 +454,7 @@ export default function PromptUploadPage() {
         complexity, tags, sellerNote, 
         creatorId: profile?.id || user.id,
         promptTab, systemText, promptText, chainSteps,
-        useCase: selectedUseCase
+        useCaseId: selectedUseCaseId
       };
 
       // 3. Call Server Action (Create or Update)
@@ -474,6 +520,52 @@ export default function PromptUploadPage() {
   const toggleAudience = (aud: string) => setTargetAudience(prev => prev.includes(aud) ? prev.filter(a => a !== aud) : [...prev, aud]);
   const handleTagAdd = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && tagsInput.trim()) { setTags([...tags, tagsInput.trim()]); setTagsInput(""); } };
   const getVarsCount = () => (promptText.match(/\[[A-Z_]+\]/g) || []).filter((v,i,a) => a.indexOf(v)===i).length;
+
+  const handleAddChainStep = async () => {
+    const newStep = { id: Date.now(), text: "" };
+    setChainSteps(prev => [...prev, newStep]);
+    
+    // ID 33: In Edit Mode, we should ideally persist this immediately if following the roadmap
+    if (isEditMode && promptId) {
+       const res = await addPromptStepAction(promptId, {
+         instruction: "",
+         step_number: chainSteps.length + 1,
+         step_type: 'prompt'
+       });
+       if (res.success && res.step) {
+         // Update the local ID with the DB ID
+         setChainSteps(prev => prev.map(s => s.id === newStep.id ? { ...s, id: res.step.id } : s));
+       }
+    }
+  };
+
+  const moveChainStep = async (idx: number, direction: 'up' | 'down') => {
+    const newSteps = [...chainSteps];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= newSteps.length) return;
+    
+    [newSteps[idx], newSteps[targetIdx]] = [newSteps[targetIdx], newSteps[idx]];
+    setChainSteps(newSteps);
+
+    // ID 34: Persist reorder if in edit mode
+    if (isEditMode && promptId) {
+      const updates = newSteps.map((s, i) => ({
+        id: typeof s.id === 'number' ? s.id : (s as any).id,
+        step_number: i + 1
+      })).filter(s => typeof s.id === 'number'); // Only steps that exist in DB
+
+      if (updates.length > 0) {
+        await reorderPromptStepsAction(promptId, updates);
+      }
+    }
+  };
+
+  const removeChainStep = (idx: number) => {
+    if (chainSteps.length <= 1) return;
+    setChainSteps(prev => prev.filter((_, i) => i !== idx));
+    // Note: Actual DB deletion could happen here in Edit Mode, 
+    // but typically we'll handle it during the final save or a dedicated delete action if requested.
+  };
 
   const checks = [
     { label: "Prompt text", done: promptTab === 'chain' ? chainSteps.some(s => s.text.length > 10) : promptText.length > 10 },
@@ -799,14 +891,77 @@ export default function PromptUploadPage() {
                         )}
 
                         {promptTab === 'chain' && (
-                          <div className="space-y-3">
+                          <div className="space-y-0 relative">
+                            {/* Vertical Pipeline Connector */}
+                            <div className="absolute left-[23px] top-6 bottom-6 w-0.5 bg-slate-200" />
+                            
                             {chainSteps.map((s, idx) => (
-                              <div key={s.id} className="border border-slate-200 rounded-xl overflow-hidden">
-                                 <div className="bg-slate-50 p-2 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-700"><span>Step {idx+1}</span></div>
-                                 <textarea value={s.text} onChange={e => { const nc = [...chainSteps]; nc[idx].text = e.target.value; setChainSteps(nc); }} className="w-full p-3 text-xs font-mono border-none outline-none min-h-[80px]" placeholder="Step prompt..." />
+                              <div key={s.id} className="relative group pb-6 last:pb-2">
+                                <div className="flex gap-4 items-start">
+                                   {/* Step Badge / Handle */}
+                                   <div className="z-10 w-11 h-11 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center text-xs font-black text-slate-400 group-hover:border-purple-300 group-hover:text-purple-600 transition-all shadow-sm shrink-0">
+                                      {idx + 1}
+                                   </div>
+
+                                   {/* Step Card */}
+                                   <div className="flex-1 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:border-purple-200">
+                                      <div className="bg-slate-50/80 p-3 border-b border-slate-200 flex justify-between items-center">
+                                         <div className="flex items-center gap-2">
+                                           <GripVertical className="w-3.5 h-3.5 text-slate-300 group-hover:text-purple-300" />
+                                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stage {idx+1}</span>
+                                         </div>
+                                         <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+                                              <button 
+                                                onClick={() => moveChainStep(idx, 'up')} 
+                                                disabled={idx === 0}
+                                                className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-purple-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                              >
+                                                <ChevronUp className="w-3.5 h-3.5" />
+                                              </button>
+                                              <div className="w-px h-3 bg-slate-200" />
+                                              <button 
+                                                onClick={() => moveChainStep(idx, 'down')} 
+                                                disabled={idx === chainSteps.length - 1}
+                                                className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-purple-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                              >
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                            <button 
+                                              onClick={() => removeChainStep(idx)}
+                                              className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                         </div>
+                                      </div>
+                                      <textarea 
+                                        value={s.text} 
+                                        onChange={e => { 
+                                          const nc = [...chainSteps]; 
+                                          nc[idx].text = e.target.value; 
+                                          setChainSteps(nc); 
+                                        }} 
+                                        className="w-full p-4 text-[13px] font-mono border-none outline-none min-h-[120px] bg-white text-slate-700 placeholder:text-slate-300 focus:ring-0" 
+                                        placeholder={`Describe the objective for stage ${idx+1}...`} 
+                                      />
+                                   </div>
+                                </div>
                               </div>
                             ))}
-                            <button onClick={()=>setChainSteps([...chainSteps, {id: Date.now(), text: ""}])} className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50">+ Add step</button>
+                            
+                            <div className="pl-[59px] pt-2">
+                              <button 
+                                onClick={handleAddChainStep} 
+                                className="w-full py-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl text-[13px] font-bold text-slate-400 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2 group shadow-xs"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-purple-100 group-hover:scale-110 transition-all">
+                                  <Plus className="w-3.5 h-3.5" />
+                                </div>
+                                Append next sequence stage
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1045,17 +1200,20 @@ export default function PromptUploadPage() {
                               <div className="flex flex-wrap gap-2">
                                 {useCaseSuggestions.map((uc) => (
                                   <button
-                                    key={uc}
+                                    key={uc.name}
                                     type="button"
-                                    onClick={() => setSelectedUseCase(uc)}
+                                    onClick={() => {
+                                      setSelectedUseCase(uc.name);
+                                      setSelectedUseCaseId(uc.id || "");
+                                    }}
                                     className={cn(
                                       "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border",
-                                      selectedUseCase === uc 
+                                      selectedUseCase === uc.name 
                                         ? "bg-purple-600 text-white border-purple-600" 
                                         : "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100"
                                     )}
                                   >
-                                    {uc}
+                                    {uc.name}
                                   </button>
                                 ))}
                               </div>

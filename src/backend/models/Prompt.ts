@@ -36,7 +36,7 @@ export interface PromptItem {
   inputData?: Record<string, any[]>;
   promptFileUrls?: string[];
   quick_setup?: string;
-  guide_steps?: string[];
+  guide_steps?: any[];
   fill_variables?: string;
   what_to_expect?: string;
   pro_tips?: string;

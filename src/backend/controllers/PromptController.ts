@@ -109,7 +109,8 @@ export class PromptController {
         common_mistakes: data.common_mistakes,
         how_to_adapt: data.how_to_adapt,
         seller_note: data.seller_note,
-        is_published: data.is_published
+        is_published: data.is_published,
+        useCaseId: data.use_case_id
       };
     } catch (error) {
       console.error("Controller Error (getPromptDetails):", error);
@@ -288,7 +289,7 @@ export class PromptController {
         verifiedDate, quickSetup, guideSteps, fillVariables,
         whatToExpect, proTips, commonMistakes, howToAdapt,
         complexity, tags, sellerNote, creatorId, promptTab,
-        systemText, promptText, chainSteps
+        systemText, promptText, chainSteps, useCaseId
       } = data;
 
       const isMultiStep = promptTab === 'chain';
@@ -300,9 +301,10 @@ export class PromptController {
         title,
         tagline: tagline || title,
         description: tagline || title,
-        price: parseInt(price),
+        price: parseInt(price) || 0,
         category_id: category || null,
-        subcategory_id: subCategory ? parseInt(subCategory) : null,
+        subcategory_id: (subCategory && !isNaN(parseInt(subCategory))) ? parseInt(subCategory) : null,
+        use_case_id: (useCaseId && !isNaN(parseInt(useCaseId))) ? parseInt(useCaseId) : null,
         platform_id: platform || null,
         model_id: selectedModels.length > 0 ? selectedModels[0] : null,
         cover_image_url: coverUrl,
@@ -315,7 +317,7 @@ export class PromptController {
         prompt_file_urls: promptFileUrls,
         target_audience: targetAudience,
         output_format: outputFormat,
-        verified_at: verifiedDate ? new Date().toISOString() : null,
+        verified_at: verifiedDate || null,
         quick_setup: quickSetup,
         guide_steps: guideSteps,
         fill_variables: fillVariables,
@@ -392,7 +394,8 @@ export class PromptController {
             )
           ),
           prompt_steps(*),
-          prompt_images(*)
+          prompt_images(*),
+          use_cases!prompts_use_case_id_fkey(name)
         `)
         .eq('id', id)
         .single();
@@ -436,9 +439,10 @@ export class PromptController {
         title,
         tagline: tagline || title,
         description: tagline || title,
-        price: parseInt(price),
+        price: parseInt(price) || 0,
         category_id: category || null,
-        subcategory_id: subCategory ? parseInt(subCategory) : null,
+        subcategory_id: (subCategory && !isNaN(parseInt(subCategory))) ? parseInt(subCategory) : null,
+        use_case_id: (data.useCaseId && !isNaN(parseInt(data.useCaseId))) ? parseInt(data.useCaseId) : null,
         platform_id: platform || null,
         model_id: selectedModels?.length > 0 ? selectedModels[0] : null,
         cover_image_url: coverUrl,
@@ -449,7 +453,7 @@ export class PromptController {
         prompt_file_urls: promptFileUrls,
         target_audience: targetAudience,
         output_format: outputFormat,
-        verified_at: verifiedDate ? new Date().toISOString() : null,
+        verified_at: verifiedDate || null,
         quick_setup: quickSetup,
         guide_steps: guideSteps,
         fill_variables: fillVariables,
@@ -520,6 +524,30 @@ export class PromptController {
       return await PromptService.togglePromptStatus(id, isPublished, client);
     } catch (error) {
       console.error("Controller Error (togglePromptStatus):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a single prompt step via the service.
+   */
+  static async addPromptStep(promptId: string, stepData: any, client?: any) {
+    try {
+      return await PromptService.addPromptStep(promptId, stepData, client);
+    } catch (error) {
+      console.error("Controller Error (addPromptStep):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reorder prompt steps via the service.
+   */
+  static async reorderPromptSteps(promptId: string, updates: { id: number, step_number: number }[], client?: any) {
+    try {
+      return await PromptService.reorderPromptSteps(promptId, updates, client);
+    } catch (error) {
+      console.error("Controller Error (reorderPromptSteps):", error);
       throw error;
     }
   }

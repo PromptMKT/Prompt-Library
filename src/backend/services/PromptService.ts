@@ -254,4 +254,35 @@ export class PromptService {
     if (error) throw error;
     return data;
   }
+
+  /**
+   * Add a single prompt step.
+   */
+  static async addPromptStep(promptId: string, stepData: any, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('prompt_steps')
+      .insert({ ...stepData, prompt_id: promptId })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Reorder multiple prompt steps at once.
+   */
+  static async reorderPromptSteps(promptId: string, updates: { id: number, step_number: number }[], client?: any) {
+    const supabaseClient = client || supabase;
+    
+    // Perform bulk upsert to update step_numbers based on IDs
+    const { data, error } = await supabaseClient
+      .from('prompt_steps')
+      .upsert(updates, { onConflict: 'id' })
+      .select();
+
+    if (error) throw error;
+    return data;
+  }
 }
