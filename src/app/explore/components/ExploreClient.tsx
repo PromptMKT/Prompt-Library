@@ -46,6 +46,10 @@ export type ExploreDataset = {
   topCreators: { name: string; prompts: number; sales: number; score: number }[];
   trendingTags: string[];
   prompts: PromptRecord[];
+  audiences?: any[];
+  categories?: any[];
+  platforms?: any[];
+  outputs?: any[];
 };
 
 type FilterSelections = Record<string, string[]>;
@@ -129,7 +133,10 @@ function matchesOption(sectionId: string, option: string, prompt: PromptRecord, 
 
   if (sectionId === "targetAudience") {
     const audience = value.endsWith("s") ? value.slice(0, -1) : value;
-    return (prompt.targetAudience || []).some((item) => normalize(item).includes(audience)) || promptText.includes(value);
+    const audienceArr = (prompt.targetAudience || []) as any;
+    const items = Array.isArray(audienceArr) ? audienceArr : (typeof audienceArr === 'string' ? [audienceArr] : []);
+    
+    return items.some((item: string) => normalize(item).includes(audience)) || promptText.includes(value);
   }
 
   if (sectionId === "outputFormat") {
@@ -214,7 +221,13 @@ export default function ExploreClient({
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [minRating, setMinRating] = useState<number | null>(null);
   const [complexity, setComplexity] = useState("All");
-  const [activeTab, setActiveTab] = useState<(typeof AUDIENCE_TABS)[number]>("All prompts");
+
+  const audiences = useMemo(() => {
+    const dbAuds = (dataset.audiences || []).map(a => `For ${a.name}`);
+    return ["All prompts", ...dbAuds];
+  }, [dataset]);
+
+  const [activeTab, setActiveTab] = useState<string>("All prompts");
   const [activeTrend, setActiveTrend] = useState("All");
   const [sortBy, setSortBy] = useState("Trending");
   const [layoutMode, setLayoutMode] = useState<"grid" | "list">("grid");
@@ -238,26 +251,30 @@ export default function ExploreClient({
   }, [dataset]);
 
   const dynamicSections = useMemo(() => {
-    const uniquePlatforms = Array.from(new Set(prompts.map((prompt) => prompt.platform).filter(Boolean) as string[]));
-    const uniqueCategories = Array.from(new Set(prompts.map((prompt) => prompt.category).filter(Boolean) as string[]));
-    const uniqueOutputTypes = Array.from(new Set(prompts.map((prompt) => prompt.output_type).filter(Boolean) as string[]));
+    const dbPlatforms = (dataset.platforms || []).map(p => p.name);
+    const dbCategories = (dataset.categories || []).map(c => c.name);
+    const dbOutputs = (dataset.outputs || []).map(o => o.name);
+    const dbAudiences = (dataset.audiences || []).map(a => a.name);
 
     return [
       {
         ...PLATFORM_SECTION,
-        options: uniquePlatforms.length > 0 ? uniquePlatforms : PLATFORM_SECTION.options,
+        options: dbPlatforms.length > 0 ? dbPlatforms : PLATFORM_SECTION.options,
       },
       {
         ...CATEGORY_SECTION,
-        options: uniqueCategories.length > 0 ? uniqueCategories : CATEGORY_SECTION.options,
+        options: dbCategories.length > 0 ? dbCategories : CATEGORY_SECTION.options,
       },
       {
         ...OUTPUT_FORMAT_SECTION,
-        options: uniqueOutputTypes.length > 0 ? uniqueOutputTypes : OUTPUT_FORMAT_SECTION.options,
+        options: dbOutputs.length > 0 ? dbOutputs : OUTPUT_FORMAT_SECTION.options,
       },
-      TARGET_AUDIENCE_SECTION,
+      {
+        ...TARGET_AUDIENCE_SECTION,
+        options: dbAudiences.length > 0 ? dbAudiences : TARGET_AUDIENCE_SECTION.options,
+      },
     ];
-  }, [prompts]);
+  }, [dataset]);
 
   const categorySubcategoryMap = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -334,7 +351,16 @@ export default function ExploreClient({
         if (activeTab !== "All prompts") {
           const tabWord = normalize(activeTab.replace(/^for /i, ""));
           const singular = tabWord.endsWith("s") ? tabWord.slice(0, -1) : tabWord;
-          if (!text.includes(tabWord) && !text.includes(singular)) return false;
+          
+          // Check targetAudience array specifically
+          const audienceArr = (prompt.targetAudience || []) as any;
+          const items = Array.isArray(audienceArr) ? audienceArr : (typeof audienceArr === 'string' ? [audienceArr] : []);
+
+          const inArray = items.some((a: string) => 
+            normalize(a).includes(singular) || normalize(a).includes(tabWord)
+          );
+          
+          if (!inArray && !text.includes(tabWord) && !text.includes(singular)) return false;
         }
 
         return true;
@@ -383,7 +409,7 @@ export default function ExploreClient({
   const visiblePrompts = filteredPrompts.slice(0, visibleCount);
   const canLoadMore = visibleCount < filteredPrompts.length;
 
-  const handleTabChange = (tab: (typeof AUDIENCE_TABS)[number]) => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setVisibleCount(16);
   };
@@ -467,12 +493,20 @@ export default function ExploreClient({
           <div className="rounded-2xl border border-border/40 bg-card/40 p-3 lg:p-3.5">
             <div className="flex flex-col gap-2.5">
               <div className="flex gap-1.5 overflow-x-auto pb-1">
-                {AUDIENCE_TABS.map((tab) => {
+                {audiences.map((tab) => {
                   const count = tab === "All prompts"
                     ? prompts.length
-                    : filteredPrompts.filter((prompt) =>
-                        getPromptText(prompt).includes(normalize(tab.replace(/^for /i, "")))
-                      ).length;
+                    : filteredPrompts.filter((prompt) => {
+                        const tabLabel = normalize(tab.replace(/^for /i, ""));
+                        const singular = tabLabel.endsWith("s") ? tabLabel.slice(0, -1) : tabLabel;
+                        
+                        const audienceArr = (prompt.targetAudience || []) as any;
+                        const items = Array.isArray(audienceArr) ? audienceArr : (typeof audienceArr === 'string' ? [audienceArr] : []);
+
+                        return items.some((a: string) => 
+                          normalize(a).includes(singular) || normalize(a).includes(tabLabel)
+                        );
+                      }).length;
 
                   return (
                     <button

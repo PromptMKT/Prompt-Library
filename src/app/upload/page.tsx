@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PromptController } from "@/backend/controllers/PromptController";
-import { publishPromptAction, updatePromptAction, addPromptStepAction, reorderPromptStepsAction } from "@/app/actions/prompt";
+import { publishPromptAction, updatePromptAction, addPromptStepAction, reorderPromptStepsAction, createCustomUseCaseAction } from "@/app/actions/prompt";
 import { useSearchParams } from "next/navigation";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
@@ -138,6 +138,12 @@ export default function PromptUploadPage() {
   const [promptText, setPromptText] = useState("");
   const [systemText, setSystemText] = useState("");
   const [chainSteps, setChainSteps] = useState([{id: 1, text: ""}]);
+  
+  // Taxonomies
+  const [audiencesData, setAudiencesData] = useState<any[]>([]);
+  const [outputsData, setOutputsData] = useState<any[]>([]);
+  const [tagsSuggestions, setTagsSuggestions] = useState<any[]>([]);
+
 
   // ── S2 ──
   const [isInitializing, setIsInitializing] = useState(isEditMode);
@@ -156,6 +162,7 @@ export default function PromptUploadPage() {
   const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | number>("");
   const [useCaseSuggestions, setUseCaseSuggestions] = useState<any[]>([]);
   const [dbUseCases, setDbUseCases] = useState<any[]>([]);
+  const [isCreatingUseCase, setIsCreatingUseCase] = useState(false);
 
 
   // ── S4 ──
@@ -223,12 +230,21 @@ export default function PromptUploadPage() {
 
   useEffect(() => {
     async function init() {
-      const [cats, plats] = await Promise.all([
-        supabase.from('categories').select('*'),
-        supabase.from('platforms').select('*')
-      ]);
-      if (cats.data) setCategoriesData(cats.data);
-      if (plats.data) setPlatformsData(plats.data);
+      try {
+        // ID 31 & 33 & 35 & 36: Centralized caching fetching via Controller instead of raw Supabase queries inline
+        const [cats, plats, auds, outs] = await Promise.all([
+          PromptController.getCategories(),
+          PromptController.getPlatformsWithModels(),
+          PromptController.getAudiences(),
+          PromptController.getOutputs()
+        ]);
+        if (cats) setCategoriesData(cats);
+        if (plats) setPlatformsData(plats);
+        if (auds) setAudiencesData(auds);
+        if (outs) setOutputsData(outs);
+      } catch (error) {
+        console.error("Taxonomy init failed:", error);
+      }
     }
     init();
   }, []);
@@ -405,18 +421,45 @@ export default function PromptUploadPage() {
     }
   }, [selectedUseCase, dbUseCases]);
 
+  // Flatten models from the centralized cached platforms data (Task 33)
   useEffect(() => {
-    if (platform) {
-       supabase.from('models')
-         .select('*, model_groups!inner(id, platform_id, name), model_tags(tags(id, name))')
-         .eq('model_groups.platform_id', platform)
-         .then(({data}) => {
-            if(data) setModelsData(data);
-         });
+    if (platform && platformsData.length > 0) {
+      const selectedPlat = platformsData.find(p => p.id === platform);
+      if (selectedPlat && selectedPlat.model_groups) {
+        const flatModels: any[] = [];
+        selectedPlat.model_groups.forEach((group: any) => {
+          if (group.models) {
+            group.models.forEach((m: any) => {
+              flatModels.push({
+                ...m,
+                model_groups: { name: group.name, platform_id: group.platform_id }
+              });
+            });
+          }
+        });
+        setModelsData(flatModels);
+      } else {
+        setModelsData([]);
+      }
     } else {
        setModelsData([]);
     }
-  }, [platform]);
+  }, [platform, platformsData]);
+
+  // ID 34: Debounced API query for Tags Autocomplete
+  useEffect(() => {
+    if (!tagsInput || tagsInput.trim() === '') {
+      setTagsSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await PromptController.searchTags(tagsInput);
+        if (res) setTagsSuggestions(res);
+      } catch (err) { }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [tagsInput]);
 
   // Functions
   const handlePublish = async () => {
@@ -992,6 +1035,8 @@ export default function PromptUploadPage() {
                             <div key={p.id} onClick={()=>setPlatform(p.id)} className={cn("px-3 py-2 border rounded-xl flex items-center justify-center text-center cursor-pointer text-[11px] font-bold transition-all", platform === p.id ? "bg-purple-50 border-purple-300 text-purple-700 shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300")}>{p.name}</div>
                           ))}
                         </div>
+
+
                       </div>
 
                       {modelsData.length > 0 && (
@@ -1044,6 +1089,32 @@ export default function PromptUploadPage() {
                               </div>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* GLOBAL SELECTED MODELS LIST */}
+                      {selectedModels.length > 0 && (
+                        <div className="pt-4 border-t border-slate-100 mb-4">
+                          <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2 block text-center sm:text-left">Selected Models</label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedModels.map(id => {
+                              let modelName = "Unknown Model";
+                              for (const plat of platformsData) {
+                                for (const group of plat.model_groups || []) {
+                                  const match = group.models?.find((m: any) => m.id === id);
+                                  if (match) modelName = match.name;
+                                }
+                              }
+                              return (
+                                <div key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700/80 border border-purple-100 text-[11px] font-medium rounded-lg backdrop-blur-sm transition-all hover:bg-purple-100/50">
+                                  {modelName}
+                                  <button onClick={(e) => { e.stopPropagation(); setSelectedModels(prev => prev.filter(mid => mid !== id)); }} className="ml-1 text-purple-400 hover:text-purple-600 focus:outline-none flex items-center justify-center rounded-full hover:bg-white p-0.5 transition-colors">
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 
@@ -1188,13 +1259,46 @@ export default function PromptUploadPage() {
                         <div className="mt-8 space-y-4">
                           <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">Use Case <span className="text-rose-500">*</span></label>
                           <div className="space-y-4">
-                            <input
-                              type="text"
-                              value={selectedUseCase}
-                              onChange={(e) => setSelectedUseCase(e.target.value)}
-                              placeholder="e.g. SEO blog articles, LinkedIn thought leadership, API generation..."
-                              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500"
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={selectedUseCase}
+                                onChange={(e) => setSelectedUseCase(e.target.value)}
+                                placeholder="e.g. SEO blog articles, LinkedIn thought leadership, API generation..."
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500 pr-24"
+                              />
+                              {selectedUseCase && !selectedUseCaseId && !isCreatingUseCase && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setIsCreatingUseCase(true);
+                                    try {
+                                      const res = await createCustomUseCaseAction(selectedUseCase, category, subCategory || undefined);
+                                      if (res.success && res.data) {
+                                        setSelectedUseCaseId(res.data.id);
+                                        setSelectedUseCase(res.data.name);
+                                        setDbUseCases(prev => [...prev, res.data]);
+                                        toast.success("New use case created!");
+                                      } else {
+                                        toast.error(res.error || "Failed to create use case");
+                                      }
+                                    } catch (err) {
+                                      toast.error("An error occurred");
+                                    } finally {
+                                      setIsCreatingUseCase(false);
+                                    }
+                                  }}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-purple-600 text-white text-[10px] font-bold rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                                >
+                                  CREATE NEW
+                                </button>
+                              )}
+                              {isCreatingUseCase && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                  <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                              )}
+                            </div>
                             
                             {useCaseSuggestions.length > 0 && (
                               <div className="flex flex-wrap gap-2">
@@ -1228,40 +1332,41 @@ export default function PromptUploadPage() {
                         <label className="text-[13px] font-bold text-slate-800 mb-1 block flex items-center gap-2">Target audience <span className="text-rose-500 text-xs">*</span></label>
                         <p className="text-[11px] font-medium text-slate-500 mb-4">Select all roles that would find this prompt valuable.</p>
                         <div className="flex flex-wrap gap-2">
-                          {["Designers", "Developers", "Marketers", "Founders", "Writers", "Students", "Creators", "Analysts", "Sales"].map(a => (
-                             <div key={a} onClick={()=>toggleAudience(a)} className={cn("px-4 py-2 border rounded-full text-center text-[11px] font-bold cursor-pointer transition-all", targetAudience.includes(a)?"bg-slate-900 border-slate-900 text-white":"bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50")}>{a} {targetAudience.includes(a) && "✕"}</div>
-                          ))}
+                          {audiencesData.length > 0 ? audiencesData.map(a => (
+                             <div key={a.id} onClick={()=>toggleAudience(a.name)} className={cn("px-4 py-2 border rounded-full text-center text-[11px] font-bold cursor-pointer transition-all", targetAudience.includes(a.name)?"bg-slate-900 border-slate-900 text-white":"bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50")}>{a.name} {targetAudience.includes(a.name) && "✕"}</div>
+                          )) : <div className="text-xs text-slate-400 py-2">Loading audiences...</div>}
                         </div>
                       </div>
 
                       <div className="pt-6 border-t border-slate-100">
                         <label className="text-[13px] font-bold text-slate-800 mb-4 block">Output format <span className="text-rose-500 text-xs">*</span></label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {[
-                            {n: 'Long-form text', d: 'Articles, essays, reports, documentation', i: AlignLeft},
-                            {n: 'Short copy', d: 'Emails, ads, captions, taglines', i: Type},
-                            {n: 'Structured data', d: 'JSON, tables, lists, YAML, XML', i: LayoutGrid},
-                            {n: 'Code', d: 'Scripts, components, queries, configs', i: Code},
-                            {n: 'Image / visual', d: 'Midjourney, DALL-E, FLUX, SD', i: Images},
-                            {n: 'Audio / music', d: 'TTS, voice clone, song, sound effects', i: Play},
-                            {n: 'Video', d: 'Sora, Runway, Kling, Veo output', i: Play},
-                            {n: 'Conversational', d: 'Multi-turn, roleplay, agent dialogue', i: FileText},
-                            {n: 'Tool call / function', d: 'API call, function output, action', i: Zap},
-                            {n: 'Multiple outputs', d: 'Variations, batch results, ranked', i: ListChecks}
-                          ].map(f => {
-                             const Icon = f.i;
+                          {outputsData.length > 0 ? outputsData.map(f => {
+                             const iconMap: Record<string, any> = {
+                               'Long-form text': AlignLeft,
+                               'Short copy': Type,
+                               'Structured data': LayoutGrid,
+                               'Code': Code,
+                               'Image / visual': Images,
+                               'Audio / music': Play,
+                               'Video': Play,
+                               'Conversational': FileText,
+                               'Tool call / function': Zap,
+                               'Multiple outputs': ListChecks
+                             };
+                             const Icon = iconMap[f.name] || FileText;
                              return (
-                             <div key={f.n} onClick={()=>setOutputFormat(f.n)} className={cn("p-4 border rounded-xl cursor-pointer transition-all flex items-start gap-3", outputFormat===f.n?"bg-purple-50 border-purple-300 ring-1 ring-purple-300 shadow-sm":"bg-white border-slate-200 hover:border-slate-300")}>
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", outputFormat===f.n ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-500")}>
+                             <div key={f.id} onClick={()=>setOutputFormat(f.name)} className={cn("p-4 border rounded-xl cursor-pointer transition-all flex items-start gap-3", outputFormat===f.name?"bg-purple-50 border-purple-300 ring-1 ring-purple-300 shadow-sm":"bg-white border-slate-200 hover:border-slate-300")}>
+                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", outputFormat===f.name ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-500")}>
                                   <Icon className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <div className={cn("text-[13px] font-bold mb-0.5", outputFormat===f.n?"text-purple-800":"text-slate-800")}>{f.n}</div>
-                                  <div className={cn("text-[11px] leading-relaxed", outputFormat===f.n?"text-purple-600/90":"text-slate-500")}>{f.d}</div>
+                                  <div className={cn("text-[13px] font-bold mb-0.5", outputFormat===f.name?"text-purple-800":"text-slate-800")}>{f.name}</div>
+                                  <div className={cn("text-[11px] leading-relaxed", outputFormat===f.name?"text-purple-600/90":"text-slate-500")}>{f.description || "Standard format template"}</div>
                                 </div>
                              </div>
                              )
-                          })}
+                          }) : <div className="text-xs text-slate-400 py-2">Loading output formats...</div>}
                         </div>
                       </div>
 
@@ -1469,7 +1574,7 @@ export default function PromptUploadPage() {
                     <div className="p-5 md:p-6 pt-0 border-t border-slate-100 mt-2 space-y-6">
                       
                       <div>
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Works best for</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Works best for (Tags)</label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {tags.map(t => (
                             <div key={t} className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-2">
@@ -1477,7 +1582,33 @@ export default function PromptUploadPage() {
                             </div>
                           ))}
                         </div>
-                        <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} onKeyDown={handleTagAdd} placeholder="Type a use case and press Enter..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500" />
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            value={tagsInput} 
+                            onChange={e => setTagsInput(e.target.value)} 
+                            onKeyDown={handleTagAdd} 
+                            placeholder="Type a tag and press Enter..." 
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500" 
+                          />
+                          {tagsSuggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                              {tagsSuggestions.map(ts => (
+                                <div 
+                                  key={ts.id} 
+                                  onClick={() => {
+                                    if (!tags.includes(ts.name)) setTags([...tags, ts.name]);
+                                    setTagsInput("");
+                                    setTagsSuggestions([]);
+                                  }}
+                                  className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm font-medium border-b border-slate-100 last:border-0"
+                                >
+                                  {ts.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div>

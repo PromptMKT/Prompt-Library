@@ -2,6 +2,107 @@ import { supabase } from "@/lib/supabase";
 
 export class PromptService {
   /**
+   * Fetch all categories along with their associated subcategories.
+   */
+  static async getAllCategoriesWithSubcategories(client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('categories')
+      .select('*, subcategories(*)');
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Fetch detail for a specific category (by ID or slug), including subcategories and prompts.
+   */
+  static async getCategoryDetail(idOrSlug: string, isSlug: boolean = false, client?: any) {
+    const supabaseClient = client || supabase;
+    const filterColumn = isSlug ? 'slug' : 'id';
+    
+    // Using a single query to fetch category + subcats + related prompts
+    // Prompts limited to recent 20 for the category landing page.
+    const { data, error } = await supabaseClient
+      .from('categories')
+      .select(`
+        *,
+        subcategories(*),
+        prompts(
+          id, title, price, cover_image_url, created_at, purchases_count, average_rating,
+          users!prompts_creator_id_fkey(display_name, username)
+        )
+      `)
+      .eq(filterColumn, idOrSlug)
+      .eq('prompts.is_published', true)
+      .limit(20, { foreignTable: 'prompts' })
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Fetch platforms with model groups and models (hierarchical).
+   */
+  static async getPlatformsWithModels(client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('platforms')
+      .select(`
+        *,
+        model_groups(
+          *,
+          models(*)
+        )
+      `);
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Search for tags by name (ID 34).
+   */
+  static async searchTags(query: string, limit: number = 20, client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('tags')
+      .select('id, name')
+      .ilike('name', `%${query}%`)
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Fetch all audiences and their subcategory relations (ID 35).
+   */
+  static async getAudiences(client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('audiences')
+      .select('id, name'); // Simplified to prevent relation errors if fkeys not strict
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Fetch all output formats and their subcategory relations (ID 36).
+   */
+  static async getOutputs(client?: any) {
+    const supabaseClient = client || supabase;
+    const { data, error } = await supabaseClient
+      .from('outputs')
+      .select('id, name, description'); // Included description
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
    * Fetch a list of published prompts with optional limit and ordering.
    */
   static async getPublishedPrompts(limit: number = 10, client?: any) {
@@ -92,6 +193,7 @@ export class PromptService {
       .select(`
         id, title, description, price, cover_image_url, created_at,
         purchases_count, average_rating, creator_id, views_count,
+        target_audience, output_format,
         platforms!prompts_platform_id_fkey(name),
         categories!prompts_category_id_fkey(name),
         subcategories!prompts_subcategory_id_fkey(name),

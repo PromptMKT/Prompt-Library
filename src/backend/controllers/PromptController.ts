@@ -30,11 +30,9 @@ export class PromptController {
   /**
    * Get categories for the home page.
    */
-  static async getCategories() {
+  static async getCategories(client?: any) {
     try {
-      const { data, error } = await supabase.from('categories').select('*').limit(5);
-      if (error) throw error;
-      return data || [];
+      return await PromptService.getAllCategoriesWithSubcategories(client);
     } catch (error) {
       console.error("Controller Error (getCategories):", error);
       throw error;
@@ -50,6 +48,66 @@ export class PromptController {
       this.getCategories()
     ]);
     return { prompts, categories };
+  }
+
+  /**
+   * Get detailed category landing page data (ID 32)
+   */
+  static async getCategoryDetail(slug: string, client?: any) {
+    try {
+      return await PromptService.getCategoryDetail(slug, true, client);
+    } catch (error) {
+      console.error("Controller Error (getCategoryDetail):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get platforms and their hierarchical models (ID 33)
+   */
+  static async getPlatformsWithModels(client?: any) {
+    try {
+      return await PromptService.getPlatformsWithModels(client);
+    } catch (error) {
+      console.error("Controller Error (getPlatformsWithModels):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search Tags (ID 34)
+   */
+  static async searchTags(query: string, client?: any) {
+    try {
+      return await PromptService.searchTags(query, 20, client);
+    } catch (error) {
+      console.error("Controller Error (searchTags):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Audiences (ID 35)
+   */
+  static async getAudiences(client?: any) {
+    try {
+      return await PromptService.getAudiences(client);
+    } catch (error) {
+      console.error("Controller Error (getAudiences):", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Outputs (ID 36)
+   */
+  static async getOutputs(client?: any) {
+    try {
+      return await PromptService.getOutputs(client);
+    } catch (error) {
+      console.error("Controller Error (getOutputs):", error);
+      throw error;
+    }
   }
 
   /**
@@ -196,6 +254,16 @@ export class PromptController {
         const userData = row.users || {};
         const sellerName = userData.username || userData.display_name || "Creator";
 
+        // Helper to safely transform stringified arrays from DB
+        const ensureArray = (val: any) => {
+          if (!val) return [];
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') {
+            try { return JSON.parse(val); } catch(e) { return [val]; }
+          }
+          return [];
+        };
+
         return {
           id: String(row.id),
           title: row.title || "Untitled Prompt",
@@ -203,16 +271,17 @@ export class PromptController {
           images: row.cover_image_url ? [row.cover_image_url] : [],
           rating: Number(row.average_rating || 4.8),
           sales: Number(row.purchases_count || 0),
-          tags: [],
+          tags: ensureArray(row.tags),
           seller: sellerName,
           creator_id: row.creator_id || null,
           price: Number(row.price || 0),
           platform: row.platforms?.name || "AI",
           category: row.categories?.name || "Prompt",
           subcategory: row.subcategories?.name,
-          output_type: undefined,
-          difficulty: undefined,
+          output_type: row.output_format,
+          difficulty: row.complexity,
           prompt_text: undefined,
+          targetAudience: ensureArray(row.target_audience),
           viewsCount: Number(row.views_count || 0),
           createdAt: row.created_at,
         };
@@ -248,10 +317,22 @@ export class PromptController {
           .filter(Boolean)
       )).slice(0, 12);
 
+      // ID 35 & 36: Fetch full taxonomy for real filters
+      const [allAudiences, allCategories, allPlatforms, allOutputs] = await Promise.all([
+        PromptService.getAudiences(client),
+        PromptService.getAllCategoriesWithSubcategories(client),
+        PromptService.getPlatformsWithModels(client),
+        PromptService.getOutputs(client)
+      ]);
+
       return {
         topCreators,
         trendingTags: ["All", ...trendingTags],
         prompts: mappedPrompts,
+        audiences: allAudiences,
+        categories: allCategories,
+        platforms: allPlatforms,
+        outputs: allOutputs
       };
     } catch (error) {
       console.error("Controller Error (getExplorePageData):", error);

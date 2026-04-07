@@ -208,3 +208,44 @@ export async function reorderPromptStepsAction(promptId: string, updates: { id: 
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Server action to dynamically create a custom use case during upload.
+ */
+export async function createCustomUseCaseAction(name: string, categoryId?: string, subcategoryId?: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized: Please sign in." };
+    }
+
+    if (!name || name.trim() === "") {
+      return { success: false, error: "Use Case name cannot be empty." };
+    }
+
+    const payload: any = {
+      name: name.trim(),
+      is_custom: true
+    };
+    if (categoryId) payload.category_id = categoryId;
+    if (subcategoryId) payload.subcategory_id = subcategoryId;
+
+    const { data, error } = await supabase
+      .from('use_cases')
+      .insert(payload)
+      .select('id, name')
+      .single();
+
+    if (error) {
+      console.error("Failed to insert use case:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Create Use Case Error:", error);
+    return { success: false, error: error.message || "Failed to create use case" };
+  }
+}
