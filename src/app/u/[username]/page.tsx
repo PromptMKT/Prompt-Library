@@ -82,7 +82,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
 
         // Build a clean display name with fallback chain:
         // display_name → username → email prefix
-        const rawDisplayName = userData.display_name;
+        const rawDisplayName = (userData as any).display_name;
         const fallbackName = rawDisplayName || userData.username || userData.email?.split("@")[0] || "User";
 
         setUser({
@@ -93,17 +93,17 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           name: fallbackName,                   // always has a value for rendering
           email: userData.email,
           avatar: userData.avatar_url,
-          cover_url: userData.cover_url || "",
+          cover_url: (userData as any).cover_url || "",
           bio: userData.bio || "",
-          location: userData.location || "",
-          website: userData.website || "",
+          location: (userData as any).location || "",
+          website: (userData as any).website || "",
           coins: userData.total_coins || 0,
           followers: followersCount || 0,
           following: followingCount || 0,
           verified: userData.is_verified || false,
           avgRating: userData.average_rating || 0,
-          interests: userData.interests || [],
-          technicalSkills: userData.technical_skills || [],
+          interests: (userData as any).interests || [],
+          technicalSkills: (userData as any).technical_skills || [],
           totalSales: userData.total_sales || 0,
           totalPurchases: userData.total_purchases || 0,
           memberSince: userData.created_at
@@ -117,7 +117,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
           const { data: followData } = await supabase
             .from("follows")
             .select("id")
-            .eq("follower_id", profile.id)
+            .eq("follower_id", profile.id!)
             .eq("following_id", userId)
             .single();
 

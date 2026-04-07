@@ -224,7 +224,7 @@ export default function DashboardPage() {
             
             setRealTopBuyers(sortedBuyers);
             setRecentPurchases(purchasesData.sort((a, b) => 
-              new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime()
+              new Date(b.purchased_at || 0).getTime() - new Date(a.purchased_at || 0).getTime()
             ).slice(0, 5));
           }
 

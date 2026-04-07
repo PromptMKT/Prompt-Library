@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function ProfileReviews() {
+export function ProfileReviews({ reviews = [], avgRating = 0 }: { reviews?: any[]; avgRating?: number }) {
   const [activeChip, setActiveChip] = useState("All reviews");
 
   const chips = [
@@ -14,7 +14,7 @@ export function ProfileReviews() {
    * static reviews removed as per request.
    * TODO: fetch these dynamically from the backend
    */
-  const reviews: any[] = [];
+  
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">

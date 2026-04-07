@@ -217,7 +217,7 @@ export default function PromptUploadPage() {
         // 3. Fetch from DB
         supabase.from('use_cases')
           .select('name')
-          .eq('subcategory_id', subCategory)
+          .eq('subcategory_id', Number(subCategory))
           .then(({data}) => {
             const dbNames = data?.map(d => d.name) || [];
             // Merge suggestions, avoiding duplicates
@@ -277,146 +277,56 @@ export default function PromptUploadPage() {
         promptFileUrls.push(url);
       }
 
-      // 4. Prepare Prompt Data
-      const creatorId = profile?.id || user.id;
-
-      const isMultiStep = promptTab === 'chain';
-      const stepCount = isMultiStep ? chainSteps.length : 1;
-
-      const promptInsert = {
-         creator_id: creatorId,
-         title,
-         tagline: tagline || title,
-         description: tagline || title,
-         price: parseInt(price),
-         category_id: category || null,
-         subcategory_id: subCategory ? parseInt(subCategory) : null,
-         platform_id: platform || null,
-         model_id: selectedModels.length > 0 ? selectedModels[0] : null,
-         cover_image_url: coverUrl,
-         is_published: true,
-         is_multi_step: isMultiStep,
-         step_count: stepCount,
-         cover_image_provider: 'cloudinary',
-         // New fields
-         input_types: inputNeeds.filter(n => n !== 'none'),
-         input_data: inputData,
-         prompt_file_urls: promptFileUrls,
-         target_audience: targetAudience,
-         output_format: outputFormat,
-         use_case_id: null as number | null,
-         verified_at: verifiedDate ? new Date().toISOString() : null, // Store as timestamp or string
-         quick_setup: quickSetup,
-         guide_steps: guideSteps.map(s => s.text),
-         fill_variables: fillVariables,
-         what_to_expect: whatToExpect,
-         pro_tips: proTips,
-         common_mistakes: commonMistakes,
-         how_to_adapt: howToAdapt,
-         complexity,
-         tags,
-         seller_note: sellerNote
+      // 4. Submit to API Route
+      const payload = {
+        title,
+        tagline,
+        price,
+        category,
+        subCategory,
+        platform,
+        selectedModels,
+        selectedUseCase,
+        coverUrl,
+        promptTab,
+        chainSteps,
+        systemText,
+        promptText,
+        screenshotUrls,
+        promptFileUrls,
+        inputNeeds,
+        inputData,
+        targetAudience,
+        outputFormat,
+        verifiedDate,
+        quickSetup,
+        guideSteps: guideSteps.map(s => s.text),
+        fillVariables,
+        whatToExpect,
+        proTips,
+        commonMistakes,
+        howToAdapt,
+        complexity,
+        tags,
+        sellerNote
       };
 
-      // Resolve use_case_id
-      let finalUseCaseId: number | null = null;
-      if (selectedUseCase && subCategory) {
-        // Try to find existing
-        const { data: existingUC } = await supabase
-          .from('use_cases')
-          .select('id')
-          .eq('subcategory_id', subCategory)
-          .eq('name', selectedUseCase)
-          .maybeSingle();
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-        if (existingUC) {
-          finalUseCaseId = existingUC.id;
-        } else {
-          // Create new
-          const { data: newUC, error: ucError } = await supabase
-            .from('use_cases')
-            .insert([{
-              name: selectedUseCase,
-              category_id: category,
-              subcategory_id: subCategory,
-              is_custom: true
-            }])
-            .select('id')
-            .single();
-          
-          if (newUC) {
-            finalUseCaseId = newUC.id;
-          } else {
-            console.warn("Failed to create new use case:", ucError);
-          }
-        }
-      }
-      
-      promptInsert.use_case_id = finalUseCaseId;
-      
-      const { data: promptData, error: promptError } = await supabase
-        .from('prompts')
-        .insert([promptInsert])
-        .select('*')
-        .single();
+      const resData = await response.json();
 
-      if (promptError) {
-         console.error("Supabase insert error:", promptError);
-         alert(`Error publishing: ${promptError.message}\n\nDetails: ${promptError.details || 'None'}\nHint: ${promptError.hint || 'None'}`);
-         setIsPublishing(false);
-         return;
-      }
-      // Prioritize promptid if available (per user request), fallback to id
-      const promptId = promptData.promptid || promptData.id;
-
-      // 4. Insert Prompt Steps
-      if (isMultiStep) {
-        const stepsToInsert = chainSteps.map((s, idx) => ({
-          prompt_id: promptId,
-          step_number: idx + 1,
-          title: `Step ${idx + 1}`,
-          instruction: s.text,
-          step_type: 'prompt'
-        }));
-        const { error: stepsError } = await supabase.from('prompt_steps').insert(stepsToInsert);
-        if (stepsError) throw stepsError;
-      } else {
-        const instruction = promptTab === 'system' 
-          ? `System: ${systemText}\n\nUser: ${promptText}`
-          : promptText;
-          
-        const { error: stepError } = await supabase.from('prompt_steps').insert([{
-          prompt_id: promptId,
-          step_number: 1,
-          title: 'Main Prompt',
-          instruction: instruction,
-          step_type: 'prompt'
-        }]);
-        if (stepError) throw stepError;
+      if (!response.ok) {
+        console.error("API insert error:", resData);
+        alert(`Error publishing: ${resData.error}\n\nDetails: ${resData.details || 'None'}`);
+        setIsPublishing(false);
+        return;
       }
 
-      // 5. Insert Prompt Images (Screenshots)
-      if (screenshotUrls.length > 0) {
-        const imagesToInsert = screenshotUrls.map((url, idx) => ({
-          prompt_id: promptId,
-          image_url: url,
-          provider: 'cloudinary',
-          sort_order: idx + 1
-        }));
-        const { error: imagesError } = await supabase.from('prompt_images').insert(imagesToInsert);
-        if (imagesError) throw imagesError;
-      }
-
-      // 6. Insert Prompt Models (if multiple models selected)
-      if (selectedModels.length > 0) {
-        const modelsToInsert = selectedModels.map(mId => ({
-          prompt_id: promptId,
-          model_id: mId,
-          platform_id: platform
-        }));
-        const { error: modelsError } = await supabase.from('prompt_models').insert(modelsToInsert);
-        if (modelsError) throw modelsError;
-      }
+      const promptId = resData.promptId;
       
       // Successfully through all inserts, now mark as published
       if (promptId) {

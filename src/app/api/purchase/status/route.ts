@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { hasPurchasedPrompt } from "@/services/purchase-service";
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,17 +9,38 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = await createServerSupabaseClient();
-    const result = await hasPurchasedPrompt(supabase, promptId);
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!result.success) {
-      const status = result.message === "Unauthorized" ? 401 : 400;
-      return NextResponse.json({ success: false, message: result.message }, { status });
+    if (authError || !user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, data: result.data });
-  } catch (error: unknown) {
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (profileError || !profile?.id) {
+      return NextResponse.json({ success: false, message: "User profile not found." }, { status: 404 });
+    }
+
+    const { data, error } = await supabase
+      .from("purchases")
+      .select("id")
+      .eq("user_id", profile.id)
+      .eq("prompt_id", promptId)
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, data: { purchased: !!data } });
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: getErrorMessage(error, "Failed to check purchase status.") },
+      { success: false, message: error?.message || "Failed to check purchase status." },
       { status: 500 }
     );
   }

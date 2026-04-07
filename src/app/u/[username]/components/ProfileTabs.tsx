@@ -7,6 +7,8 @@ interface ProfileTabsProps {
   onTabChange: (tab: any) => void;
   promptsCount?: number;
   reviewsCount?: number;
+  purchasedCount?: number;
+  wishlistCount?: number;
   isOwner?: boolean;
 }
 
@@ -15,6 +17,8 @@ export function ProfileTabs({
   onTabChange,
   promptsCount = 63,
   reviewsCount = 512,
+  purchasedCount = 0,
+  wishlistCount = 0,
   isOwner = false
 }: ProfileTabsProps) {
   const visitorTabs = [

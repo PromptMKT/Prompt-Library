@@ -36,12 +36,12 @@ export default function UserListPage({ type }: UserListPageProps) {
             // 1. Fetch the profile user by username
             const { data: targetUser, error: userError } = await supabase
                 .from("users")
-                .select("id, username, display_name")
+                .select("id, username")
                 .eq("username", params.username)
                 .maybeSingle();
 
             if (userError || !targetUser) { setLoading(false); return; }
-            setProfileUser(targetUser);
+            setProfileUser(targetUser as any);
 
             // 2. Fetch the relevant list from follows table
             const filterCol = type === "followers" ? "following_id" : "follower_id";
@@ -49,7 +49,7 @@ export default function UserListPage({ type }: UserListPageProps) {
 
             const { data: followRows, error } = await supabase
                 .from("follows")
-                .select(`users!${fkName}(id, username, display_name, bio, avatar_url)`)
+                .select(`users!${fkName}(id, username, bio, avatar_url)`)
                 .eq(filterCol, targetUser.id);
 
             if (followRows && !error) {

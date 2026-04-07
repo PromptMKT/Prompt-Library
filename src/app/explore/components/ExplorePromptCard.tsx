@@ -20,6 +20,7 @@ type ExplorePromptCardProps = {
   category?: string;
   platform?: string;
   mode?: "grid" | "list";
+  initialWishlisted?: boolean;
 };
 
 function withPromptPrefix(rawTitle: string): string {
