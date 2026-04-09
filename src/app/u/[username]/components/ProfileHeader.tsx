@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+
 
 interface ProfileHeaderProps {
   user: any;
@@ -51,20 +51,15 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.auth_user_id || user.id}-${type}-${Date.now()}.${fileExt}`;
 
-      const { data, error } = await supabase.storage
-        .from("profiles")
-        .upload(fileName, file, { upsert: true });
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage.from("profiles").getPublicUrl(fileName);
-
-      const filterCol = user.auth_user_id ? "auth_user_id" : "id";
-      const filterVal = user.auth_user_id || user.id;
-      const updatePayload = type === "avatar" ? { avatar_url: publicUrl } : { cover_url: publicUrl };
-
-      const { error: dbError } = await supabase.from("users").update(updatePayload).eq(filterCol, filterVal);
-      if (dbError) throw dbError;
+            const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+      const res = await fetch("/api/user/profile/photo", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || "Failed to upload photo");
 
       toast.success(`${type === "avatar" ? "Profile picture" : "Cover photo"} updated!`);
       // Reload is safest here so AuthProvider re-fetches the navbar avatar as well
@@ -102,12 +97,9 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
-      const { data } = await supabase
-        .from("users")
-        .select("id")
-        .eq("username", trimmed)
-        .maybeSingle();
-      setUsernameStatus(data ? "taken" : "available");
+            const res = await fetch("/api/user/profile/check-username?username=" + encodeURIComponent(trimmed));
+      const result = await res.json();
+      setUsernameStatus(result.available ? "available" : "taken");
     }, 500);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
@@ -151,8 +143,13 @@ export function ProfileHeader({ user, isFollowing, onFollow, onCopyLink, isOwner
       if (editForm.displayName.trim()) updates.display_name = editForm.displayName.trim();
       if (trimmedUsername !== user.username?.toLowerCase()) updates.username = trimmedUsername;
 
-      const { error } = await supabase.from("users").update(updates).eq(filterCol, filterVal);
-      if (error) throw error;
+            const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || "Failed to update profile");
 
       toast.success("Profile updated!");
       setIsEditing(false);

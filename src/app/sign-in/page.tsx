@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { ensureUserProfile, isValidEmail, sanitizeEmail, signInWithGoogle, signInWithGithub, toAuthMessage } from "@/lib/auth";
 import { Github } from "lucide-react";
-import { pepperPassword } from "@/app/actions/auth-actions";
 
 function SignInContent() {
   const router = useRouter();
@@ -45,11 +44,9 @@ function SignInContent() {
       return;
     }
 
-    const finalPassword = await pepperPassword(password);
-
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
-      password: finalPassword,
+      password: password,
     });
 
     if (signInError) {

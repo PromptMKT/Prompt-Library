@@ -172,8 +172,8 @@ export const getURL = () => {
 
 export async function signInWithGoogle(nextUrl?: string) {
   const redirectTo = nextUrl 
-    ? `${getURL()}/auth/callback?next=${encodeURIComponent(nextUrl)}`
-    : `${getURL()}/auth/callback`;
+    ? `${getURL()}/api/auth/callback?next=${encodeURIComponent(nextUrl)}`
+    : `${getURL()}/api/auth/callback`;
 
   const { data, error } = await defaultSupabase.auth.signInWithOAuth({
     provider: 'google',
@@ -186,8 +186,8 @@ export async function signInWithGoogle(nextUrl?: string) {
 
 export async function signInWithGithub(nextUrl?: string) {
   const redirectTo = nextUrl 
-    ? `${getURL()}/auth/callback?next=${encodeURIComponent(nextUrl)}`
-    : `${getURL()}/auth/callback`;
+    ? `${getURL()}/api/auth/callback?next=${encodeURIComponent(nextUrl)}`
+    : `${getURL()}/api/auth/callback`;
 
   const { data, error } = await defaultSupabase.auth.signInWithOAuth({
     provider: 'github',

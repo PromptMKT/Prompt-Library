@@ -5,7 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-import { uploadToCloudinary } from "@/app/actions/upload-cloudinary";
+const uploadToCloudinary = async (formData: FormData): Promise<string> => {
+  const response = await fetch('/api/upload/cloudinary', {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to upload');
+  return data.url;
+};
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

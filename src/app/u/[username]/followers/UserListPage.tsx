@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Users, Search } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 
 interface ListUser {
@@ -29,36 +28,23 @@ export default function UserListPage({ type }: UserListPageProps) {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
-    useEffect(() => {
+useEffect(() => {
         const load = async () => {
             setLoading(true);
-
-            // 1. Fetch the profile user by username
-            const { data: targetUser, error: userError } = await supabase
-                .from("users")
-                .select("id, username")
-                .eq("username", params.username)
-                .maybeSingle();
-
-            if (userError || !targetUser) { setLoading(false); return; }
-            setProfileUser(targetUser as any);
-
-            // 2. Fetch the relevant list from follows table
-            const filterCol = type === "followers" ? "following_id" : "follower_id";
-            const fkName = type === "followers" ? "follows_follower_id_fkey" : "follows_following_id_fkey";
-
-            const { data: followRows, error } = await supabase
-                .from("follows")
-                .select(`users!${fkName}(id, username, bio, avatar_url)`)
-                .eq(filterCol, targetUser.id);
-
-            if (followRows && !error) {
-                const list = followRows
-                    .map((row: any) => row.users)
-                    .filter(Boolean) as ListUser[];
-                setUsers(list);
+            try {
+                const res = await fetch(`/api/user/${params.username}/network?type=${type}`);
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    setProfileUser(json.data.profileUser);
+                    setUsers(json.data.users);
+                } else {
+                    console.error("Failed to load network:", json.error);
+                }
+            } catch (err) {
+                console.error("Error fetching network:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         load();
     }, [params.username, type]);

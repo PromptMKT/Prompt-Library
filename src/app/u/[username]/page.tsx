@@ -17,7 +17,6 @@ import { VisitorSidebarContent } from "./components/VisitorSidebarContent";
 import { ProfileReviews } from "./components/ProfileReviews";
 import { ProfileAbout } from "./components/ProfileAbout";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
 
 type TabType = "prompts" | "published" | "purchased" | "wishlist" | "activity" | "reviews" | "about";
 
@@ -36,215 +35,34 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
   const [isFollowing, setIsFollowing] = useState(false);
   const [promptFilter, setPromptFilter] = useState("All");
 
+
+
   useEffect(() => {
     if (authLoading) return;
 
     const fetchAll = async () => {
       try {
         setLoading(true);
-
-        // ── 1. Fetch target user ──
-        const { data: targetUser, error: userError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("username", params.username)
-          .maybeSingle();
-
-        if (userError) throw userError;
-
-        let userData = targetUser;
-
-        if (!userData && (params.username === "profile" || params.username === "me")) {
-          if (profile) {
-            userData = profile as any;
-          } else if (authUser) {
-            userData = {
-              id: authUser.id,
-              auth_user_id: authUser.id,
-              email: authUser.email,
-              display_name: authUser.email?.split("@")[0] || "User",
-            } as any;
-          }
+        const res = await fetch(`/api/user/${params.username}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch user");
         }
-
-        if (!userData) {
-          setLoading(false);
-          return;
-        }
-
-        const userId = userData.id || userData.auth_user_id;
-
-        // Fetch actual follower and following counts directly
-        const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
-          supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
-        ]);
-
-        // Build a clean display name with fallback chain:
-        // display_name → username → email prefix
-        const rawDisplayName = (userData as any).display_name;
-        const fallbackName = rawDisplayName || userData.username || userData.email?.split("@")[0] || "User";
-
-        setUser({
-          id: userId,
-          auth_user_id: userData.auth_user_id,
-          username: userData.username || params.username,
-          displayName: rawDisplayName || "",  // the actual DB display_name (may be null)
-          name: fallbackName,                   // always has a value for rendering
-          email: userData.email,
-          avatar: userData.avatar_url,
-          cover_url: (userData as any).cover_url || "",
-          bio: userData.bio || "",
-          location: (userData as any).location || "",
-          website: (userData as any).website || "",
-          coins: userData.total_coins || 0,
-          followers: followersCount || 0,
-          following: followingCount || 0,
-          verified: userData.is_verified || false,
-          avgRating: userData.average_rating || 0,
-          interests: (userData as any).interests || [],
-          technicalSkills: (userData as any).technical_skills || [],
-          totalSales: userData.total_sales || 0,
-          totalPurchases: userData.total_purchases || 0,
-          memberSince: userData.created_at
-            ? new Date(userData.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })
-            : "Just joined",
-        });
-
-        // ── 1.5. Check if current user is following ──
-        // use profile?.id instead of authUser.id because follower_id references public.users(id)
-        if (profile && profile.id !== userId) {
-          const { data: followData } = await supabase
-            .from("follows")
-            .select("id")
-            .eq("follower_id", profile.id!)
-            .eq("following_id", userId)
-            .single();
-
-          if (followData) {
-            setIsFollowing(true);
-          }
-        }
-
-
-        // ── 2. Fetch user's prompts ──
-        const { data: promptsData } = await supabase
-          .from("prompts")
-          .select(`
-            id, title, description, price, cover_image_url, is_published,
-            created_at, purchases_count, average_rating, review_count,
-            tags, platform_id, category_id, tagline,
-            platforms(name), categories(name)
-          `)
-          .eq("creator_id", userId)
-          .order("created_at", { ascending: false });
-
-        const mapped = (promptsData || []).map((p: any) => ({
-          id: String(p.id),
-          title: p.title || "Untitled Prompt",
-          description: p.description || p.tagline || "",
-          price: Number(p.price || 0),
-          platform: p.platforms?.name || "AI",
-          category: p.categories?.name || "Prompt",
-          sales: Number(p.purchases_count || 0),
-          reviewsCount: Number(p.review_count || 0),
-          rating: Number(p.average_rating || 0),
-          status: p.is_published ? "live" : "draft",
-          image: p.cover_image_url || null,
-          promptText: p.description || p.tagline || "",
-          tags: p.tags || [],
-          createdAt: p.created_at,
-        }));
-        setSellerPrompts(mapped);
-
-        // ── 3. Fetch reviews on this user's prompts ──
-        const promptIds = mapped.map((p: any) => p.id);
-        if (promptIds.length > 0) {
-          const { data: reviewsData } = await supabase
-            .from("reviews")
-            .select(`
-              id, rating, title, body, created_at, is_visible,
-              prompt_id, user_id,
-              prompts(title, categories(name)),
-              users!reviews_user_id_fkey(display_name, username, avatar_url)
-            `)
-            .in("prompt_id", promptIds)
-            .eq("is_visible", true)
-            .order("created_at", { ascending: false })
-            .limit(50);
-
-          setReviews(
-            (reviewsData || []).map((r: any) => ({
-              id: r.id,
-              rating: r.rating,
-              title: r.title,
-              body: r.body,
-              createdAt: r.created_at,
-              promptTitle: r.prompts?.title || "Unknown",
-              promptCategory: r.prompts?.categories?.name || "Prompt",
-              reviewerName: r.users?.display_name || r.users?.username || "Anonymous",
-              reviewerAvatar: r.users?.avatar_url || null,
-            }))
-          );
-        }
-
-        // ── 4. Fetch purchased prompts (owner only) ──
-        const isOwner =
-          profile?.username === (userData.username || params.username) ||
-          authUser?.id === userData.auth_user_id;
-
-        if (isOwner && authUser) {
-          const { data: purchasesData } = await supabase
-            .from("purchases")
-            .select(`
-              id, purchased_at, amount_paid,
-              prompts(id, title, description, price, cover_image_url, platforms(name), categories(name), average_rating, purchases_count)
-            `)
-            .eq("user_id", userId)
-            .order("purchased_at", { ascending: false });
-
-          setPurchasedPrompts(
-            (purchasesData || []).map((pur: any) => ({
-              id: String(pur.prompts?.id || pur.id),
-              title: pur.prompts?.title || "Untitled",
-              price: Number(pur.amount_paid || pur.prompts?.price || 0),
-              platform: pur.prompts?.platforms?.name || "AI",
-              category: pur.prompts?.categories?.name || "Prompt",
-              rating: Number(pur.prompts?.average_rating || 0),
-              sales: Number(pur.prompts?.purchases_count || 0),
-              image: pur.prompts?.cover_image_url || null,
-              purchasedAt: pur.purchased_at,
-              status: "owned",
-            }))
-          );
-
-          // ── 5. Fetch wishlist (owner only) ──
-          const { data: wishlistData } = await supabase
-            .from("wishlist")
-            .select(`
-              id, added_at,
-              prompts(id, title, description, price, cover_image_url, platforms(name), categories(name), average_rating, purchases_count)
-            `)
-            .eq("user_id", userId)
-            .order("added_at", { ascending: false });
-
-          setWishlistPrompts(
-            (wishlistData || []).map((w: any) => ({
-              id: String(w.prompts?.id || w.id),
-              title: w.prompts?.title || "Untitled",
-              price: Number(w.prompts?.price || 0),
-              platform: w.prompts?.platforms?.name || "AI",
-              category: w.prompts?.categories?.name || "Prompt",
-              rating: Number(w.prompts?.average_rating || 0),
-              sales: Number(w.prompts?.purchases_count || 0),
-              image: w.prompts?.cover_image_url || null,
-              addedAt: w.added_at,
-              status: "wishlist",
-            }))
-          );
+        const json = await res.json();
+        if (json.success && json.data) {
+          setUser(json.data.user);
+          setSellerPrompts(json.data.sellerPrompts);
+          setReviews(json.data.reviews);
+          setPurchasedPrompts(json.data.purchasedPrompts);
+          setWishlistPrompts(json.data.wishlistPrompts);
+          setIsFollowing(json.data.isFollowing);
+          // Set an overarching isOwner if the API returned it.
+          // The API returns isOwner relative to the authenticated session context.
+        } else {
+          setUser(null);
         }
       } catch (err) {
         console.error("Error loading profile data:", err);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -305,7 +123,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-2">
           <p className="text-2xl font-black">User not found</p>
-          <p className="text-muted-foreground text-sm">The profile you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground text-sm">The profile you\'re looking for doesn\'t exist.</p>
         </div>
       </div>
     );
@@ -318,31 +136,22 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     }
 
     try {
-      if (isFollowing) {
-        // Unfollow
-        const { error } = await supabase
-          .from("follows")
-          .delete()
-          .eq("follower_id", profile.id)
-          .eq("following_id", user.id);
+      const res = await fetch("/api/user/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Failed to toggle follow");
 
-        if (error) throw error;
-        setIsFollowing(false);
-        setUser({ ...user, followers: Math.max(0, user.followers - 1) });
-        toast("Unfollowed");
-      } else {
-        // Follow
-        const { error } = await supabase
-          .from("follows")
-          .insert({
-            follower_id: profile.id,
-            following_id: user.id
-          });
-
-        if (error) throw error;
+      if (json.action === "followed") {
         setIsFollowing(true);
         setUser({ ...user, followers: user.followers + 1 });
         toast.success(`✓ Following ${user.name}`);
+      } else {
+        setIsFollowing(false);
+        setUser({ ...user, followers: Math.max(0, user.followers - 1) });
+        toast("Unfollowed");
       }
     } catch (err: any) {
       toast.error("Error: " + err.message);
@@ -353,8 +162,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
     navigator.clipboard.writeText(window.location.href);
     toast.success("✓ Link copied to clipboard!");
   };
-
-  const handleProfileSave = ({ username, bio }: { username: string; bio: string }) => {
+    const handleProfileSave = ({ username, bio }: { username: string; bio: string }) => {
     const usernameChanged = username !== user.username;
     if (usernameChanged) {
       // Redirect to new username URL since the route param is based on username

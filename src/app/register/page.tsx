@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { ensureUserProfile, isRegisteredEmail, isRegisteredUsername, isValidEmail, sanitizeEmail, signInWithGoogle, signInWithGithub, toAuthMessage, validatePassword } from "@/lib/auth";
 import { Github, ArrowRight, Shield, Sparkles, Code2, Palette, Megaphone, Briefcase, Users, Globe, Rocket, ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { pepperPassword } from "@/app/actions/auth-actions";
 
 export default function RegisterPage() {
   const duplicateEmailMessage = "This email is already registered. Please sign in instead.";
@@ -162,11 +161,10 @@ export default function RegisterPage() {
 
       // Attempt to sign up immediately to catch "Email already registered" errors on Step 1
       const cleanEmail = sanitizeEmail(email);
-      const finalPassword = await pepperPassword(password);
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
-        password: finalPassword,
+        password: password,
         options: {
           data: {
             username: username.trim().toLowerCase(),

@@ -4,9 +4,14 @@ import { useMemo, useState, Suspense, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  getWishlistedIds 
-} from "@/app/actions/wishlist";
+
+const getWishlistedIds = async (): Promise<string[]> => {
+  const res = await fetch('/api/wishlist');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.promptIds || [];
+};
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";

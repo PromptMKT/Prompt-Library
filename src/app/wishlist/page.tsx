@@ -6,8 +6,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { toggleWishlistAction } from "@/app/actions/wishlist";
 import Link from "next/link";
+
+const toggleWishlistAction = async (promptId: string) => {
+  const response = await fetch('/api/wishlist/toggle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ promptId })
+  });
+  return response.json();
+};
 
 // Updated WishlistPromptCard to use real data and actions
 const WishlistPromptCard = ({ prompt: p, onRemove }: { prompt: any; onRemove: (id: string) => void }) => (
