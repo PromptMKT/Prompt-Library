@@ -148,7 +148,7 @@ export async function GET(
           id, rating, title, body, created_at, is_visible,
           prompt_id, user_id,
           prompts(title, categories(name)),
-          users!reviews_user_id_fkey(display_name, username, avatar_url)
+          users!reviews_user_id_fkey(username, avatar_url)
         `)
         .in("prompt_id", promptIds)
         .eq("is_visible", true)

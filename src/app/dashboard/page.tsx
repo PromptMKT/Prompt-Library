@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed } from "lucide-react";
+import { TrendingUp, Download, Plus, ArrowUpRight, Star, Wallet as WalletIcon, MessageCircle, CircleDashed, Edit, Trash2, Eye, EyeOff } from "lucide-react";
+
 import { useAuth } from "@/components/AuthProvider";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +42,7 @@ export default function DashboardPage() {
   const [totalEarnings, setTotalEarnings] = useState("0");
   const [totalSales, setTotalSales] = useState("0");
   const [avgRating, setAvgRating] = useState("0.0");
+  const [totalViews, setTotalViews] = useState("0");
   const [activePromptsCount, setActivePromptsCount] = useState("0");
   const [realReviews, setRealReviews] = useState<any[]>([]);
   const [realTopBuyers, setRealTopBuyers] = useState<any[]>([]);
@@ -57,19 +59,14 @@ export default function DashboardPage() {
     async function fetchDashboardData() {
       if (!user) return;
 
-      // Some prompts may have been saved against public.users.id, others against auth.users.id.
-      // Query both so dashboard metrics stay correct for existing data.
-      const creatorIds = [profile?.id, user.id].filter(Boolean) as string[];
-      if (creatorIds.length === 0) return;
-
       const { data: prompts, error } = await supabase
         .from('prompts')
         .select(`
-          id, title, price, is_published, purchases_count, average_rating,
+          id, title, price, is_published, purchases_count, average_rating, views_count,
           platform:platforms(name),
           category:categories(name)
         `)
-        .in('creator_id', creatorIds)
+        .eq('creator_id', user.id)
         .order('purchases_count', { ascending: false });
 
       if (error) {
@@ -82,6 +79,7 @@ export default function DashboardPage() {
         // Aggregate totals
         let earnings = 0;
         let sales = 0;
+        let views = 0;
         let totalRating = 0;
         let ratingCount = 0;
         let activeCount = 0;
@@ -89,9 +87,11 @@ export default function DashboardPage() {
         const tableRows = prompts.map(p => {
           const s = p.purchases_count || 0;
           const r = p.average_rating || 0;
+          const v = p.views_count || 0;
           const rev = s * (p.price || 0);
           
           sales += s;
+          views += v;
           earnings += rev;
           if (r > 0) {
             totalRating += r;
@@ -106,6 +106,7 @@ export default function DashboardPage() {
             platform: (p.platform as any)?.name || "Unknown",
             status: p.is_published ? "Live" : "Draft",
             sales: s.toString(),
+            views: v.toLocaleString(),
             revenue: rev.toLocaleString(),
             rating: r.toFixed(1)
           };
@@ -114,6 +115,7 @@ export default function DashboardPage() {
         setPromptRows(tableRows);
         setTotalSales(sales.toLocaleString());
         setTotalEarnings(earnings.toLocaleString());
+        setTotalViews(views.toLocaleString());
         setActivePromptsCount(activeCount.toString());
         setAvgRating(ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : "0.0");
 
@@ -195,7 +197,7 @@ export default function DashboardPage() {
           // Fetch Top Buyers
           const { data: purchasesData } = await supabase
             .from('purchases')
-            .select('user_id, amount_paid, purchased_at, users(display_name, username, avatar_url), prompts(title)')
+            .select('user_id, amount_paid, purchased_at, users(username, avatar_url), prompts(title)')
             .in('prompt_id', promptIds);
           
           if (purchasesData) {
@@ -265,25 +267,11 @@ export default function DashboardPage() {
             setRealChartData(processedData);
           }
         }
-      } else {
-        setRawPrompts([]);
-        setPromptRows([]);
-        setTopPerforming([]);
-        setTotalSales("0");
-        setTotalEarnings("0");
-        setActivePromptsCount("0");
-        setAvgRating("0.0");
-        setRealCategorySegments([]);
-        setRecentPurchases([]);
-        setRecentReviewsLive([]);
-        setRealReviews([]);
-        setRealTopBuyers([]);
-        setRealChartData([]);
       }
     }
 
     fetchDashboardData();
-  }, [user, profile?.id, timeRange]);
+  }, [user, timeRange]);
 
   // Keep static mock data for buyers/reviews/activity until those tables exist
   // Buyers tracking not yet implemented in DB
@@ -476,7 +464,7 @@ export default function DashboardPage() {
                 {[
                   [totalEarnings, "Coins earned"],
                   [totalSales, "Sales made"],
-                  ["0", "New reviews"], 
+                  [totalViews, "Total views"], 
                   ["0", "In escrow"],
                 ].map(([value, label]) => (
                   <div key={label} className="rounded-xl border border-border bg-secondary/60 px-3 py-3">
@@ -633,17 +621,20 @@ export default function DashboardPage() {
                 <thead>
                   <tr className="border-y border-border text-muted-foreground">
                     <th className="text-left py-3 px-5 font-black">Prompt</th>
-                    <th className="text-left py-3 px-5 font-black">Platform</th>
-                    <th className="text-left py-3 px-5 font-black">Status</th>
-                    <th className="text-left py-3 px-5 font-black">Sales</th>
-                    <th className="text-left py-3 px-5 font-black">Revenue</th>
-                    <th className="text-left py-3 px-5 font-black">Rating</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Platform</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Status</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Sales</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Views</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Revenue</th>
+                    <th className="py-4 px-5 text-left font-black uppercase tracking-widest text-[10px]">Rating</th>
+                    <th className="py-4 px-5 text-right font-black uppercase tracking-widest text-[10px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {promptRows.length > 0 ? (
                     rawPrompts.map((p, i) => {
                       const s = p.purchases_count || 0;
+                      const v = p.views_count || 0;
                       const r = p.average_rating || 0;
                       const rev = (s * (p.price || 0)).toLocaleString();
                       const status = p.is_published ? "Live" : "Draft";
@@ -662,11 +653,50 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 px-5 text-primary font-semibold">{s}</td>
+                          <td className="py-3 px-5 text-slate-500 font-semibold">{v}</td>
                           <td className="py-3 px-5 text-primary font-semibold">◈{rev}</td>
                           <td className="py-3 px-5 text-foreground">
                             <span className="flex items-center gap-1">
                               <Star className="w-3.5 h-3.5 fill-primary text-primary" /> {r.toFixed(1)}
                             </span>
+                          </td>
+                          <td className="py-3 px-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link 
+                                href={`/upload?id=${p.id}`}
+                                className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                              <button 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Are you sure you want to ${p.is_published ? 'unpublish' : 'publish'} this prompt?`)) {
+                                    await fetch(`/api/prompts/${p.id}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_published: !p.is_published }) });
+                                    window.location.reload();
+                                  }
+                                }}
+                                className="p-2 rounded-lg hover:bg-amber-500/10 text-muted-foreground hover:text-amber-500 transition-colors"
+                                title={p.is_published ? "Unpublish" : "Publish"}
+                              >
+                                {p.is_published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Are you sure you want to delete this prompt permanently?")) {
+                                    await fetch(`/api/prompts/${p.id}`, { method: "DELETE" });
+                                    window.location.reload();
+                                  }
+                                }}
+                                className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

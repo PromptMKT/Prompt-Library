@@ -687,6 +687,7 @@ export type Database = {
           input_types: string[] | null
           is_free: boolean | null
           is_multi_step: boolean | null
+          views_count: number | null
           is_published: boolean | null
           model_id: number | null
           output_format: string | null

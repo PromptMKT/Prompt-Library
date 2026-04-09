@@ -2,22 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
+import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, ChevronUp, Trash2, GripVertical, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-const uploadToCloudinary = async (formData: FormData): Promise<string> => {
-  const response = await fetch('/api/upload/cloudinary', {
-    method: 'POST',
-    body: formData,
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Failed to upload');
-  return data.url;
-};
+
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 const PLATFORM_MODELS: Record<string, string[]> = {
   ChatGPT:['GPT-5.1 (latest)','GPT-5','GPT-5 Mini','GPT-4o','GPT-4o Mini','GPT-4 Turbo','o4','o4 Mini','o3','o3 Mini','o1','GPT-3.5 Turbo'],
@@ -115,8 +108,12 @@ const TAXONOMY_DATA = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function PromptUploadPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const promptId = searchParams.get("id");
+  const isEditMode = !!promptId;
+
   const [activeSection, setActiveSection] = useState<number>(1);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
 
@@ -139,26 +136,35 @@ export default function PromptUploadPage() {
   const [promptText, setPromptText] = useState("");
   const [systemText, setSystemText] = useState("");
   const [chainSteps, setChainSteps] = useState([{id: 1, text: ""}]);
+  
+  // Taxonomies
+  const [audiencesData, setAudiencesData] = useState<any[]>([]);
+  const [outputsData, setOutputsData] = useState<any[]>([]);
+  const [tagsSuggestions, setTagsSuggestions] = useState<any[]>([]);
+
 
   // ── S2 ──
+  const [isInitializing, setIsInitializing] = useState(isEditMode);
   const [platform, setPlatform] = useState("");
   const [selectedModels, setSelectedModels] = useState<number[]>([]);
   const [verifiedDate, setVerifiedDate] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // ── S3 ──
-  const [categoryType, setCategoryType] = useState<"output" | "goal" | "domain">("output");
+  const [categoryType, setCategoryType] = useState<"output" | "goal" | "domain" | any>("output");
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [targetAudience, setTargetAudience] = useState<string[]>([]);
   const [outputFormat, setOutputFormat] = useState("");
   const [selectedUseCase, setSelectedUseCase] = useState("");
-  const [useCaseSuggestions, setUseCaseSuggestions] = useState<string[]>([]);
-  const [dbUseCases, setDbUseCases] = useState<string[]>([]);
+  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | number>("");
+  const [useCaseSuggestions, setUseCaseSuggestions] = useState<any[]>([]);
+  const [dbUseCases, setDbUseCases] = useState<any[]>([]);
+  const [isCreatingUseCase, setIsCreatingUseCase] = useState(false);
 
 
   // ── S4 ──
-  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [screenshots, setScreenshots] = useState<{url: string, publicId: string}[]>([]);
 
   // ── S5: USER GUIDE ──
   const [quickSetup, setQuickSetup] = useState("");
@@ -182,30 +188,186 @@ export default function PromptUploadPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [publishedPromptId, setPublishedPromptId] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [coverPublicId, setCoverPublicId] = useState<string | null>(null);
+  const [uploadingCount, setUploadingCount] = useState(0);
+
+  const handleDeleteFile = async (publicId: string) => {
+    if (!publicId) return;
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ public_id: publicId })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error("Delete Error:", err);
+      return false;
+    }
+  };
+
+  const handleFileUpload = async (file: File, type: 'cover' | 'screenshot') => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('folder', `prompts/${type}s`);
+    
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: fd
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Upload failed");
+    }
+
+    const data = await res.json();
+    return { url: data.secure_url, publicId: data.public_id };
+  };
 
   useEffect(() => {
     async function init() {
-      const [cats, plats] = await Promise.all([
-        supabase.from('categories').select('*'),
-        supabase.from('platforms').select('*')
-      ]);
-      if (cats.data) setCategoriesData(cats.data);
-      if (plats.data) setPlatformsData(plats.data);
+      try {
+        // ID 31 & 33 & 35 & 36: Centralized caching fetching via Controller instead of raw Supabase queries inline
+        const [catsRes, plats, auds, outs] = await Promise.all([
+          fetch('/api/categories').then(r => r.json()),
+          supabase.from('platforms').select('*, model_groups(*, models(*))'),
+          supabase.from('audiences').select('id, name'),
+          supabase.from('outputs').select('id, name, description')
+        ]);
+        if (catsRes?.data) setCategoriesData(catsRes.data);
+        if (plats.data) setPlatformsData(plats.data);
+        if (auds.data) setAudiencesData(auds.data);
+        if (outs.data) setOutputsData(outs.data);
+      } catch (error) {
+        console.error("Taxonomy init failed:", error);
+      }
     }
     init();
   }, []);
 
+useEffect(() => {
+      if (isEditMode && promptId) {
+        async function fetchPromptData() {
+          try {
+            const { data: rawPrompt, error } = await supabase.from('prompts').select('*, models:prompt_models(model:models(id, name, model_groups(platform_id))), prompt_steps(*), prompt_images(*), use_cases!prompts_use_case_id_fkey(name)').eq('id', promptId as string).single();
+            const prompt = rawPrompt as any;
+            if (prompt && prompt.models) {
+              prompt.models = prompt.models.map((pm: any) => ({
+                id: pm.model?.id,
+                name: pm.model?.name,
+                platform_id: pm.model?.model_groups?.platform_id
+              }));
+            }
+          if (error || !prompt) {
+             toast.error("Could not load prompt for editing.");
+             return;
+          }
+
+          // Populate State
+          setTitle(prompt.title);
+          setTagline(prompt.tagline || "");
+          setPrice(prompt.price.toString());
+          setPlatform(prompt.platform_id);
+          setCategory(prompt.category_id);
+          setSubCategory(prompt.subcategory_id);
+          setSelectedUseCaseId(prompt.use_case_id || "");
+          setSelectedUseCase(prompt.use_cases?.name || "");
+          setComplexity(prompt.complexity || "");
+          setSellerNote(prompt.seller_note || "");
+          setTags(prompt.tags || []);
+          setOutputFormat(prompt.output_format || "");
+          setTargetAudience(prompt.target_audience || []);
+          setVerifiedDate(prompt.verified_at || "");
+          setInputNeeds(prompt.input_types || []);
+          setInputData(prompt.input_data || {});
+          
+          // User Guide
+          setQuickSetup(prompt.quick_setup || "");
+          setFillVariables(prompt.fill_variables || "");
+          setWhatToExpect(prompt.what_to_expect || "");
+          setProTips(prompt.pro_tips || "");
+          setCommonMistakes(prompt.common_mistakes || "");
+          setHowToAdapt(prompt.how_to_adapt || "");
+          
+          if (prompt.guide_steps && prompt.guide_steps.length > 0) {
+            setGuideSteps(prompt.guide_steps.map((step: any, i: number) => {
+              try {
+                if (typeof step === 'string' && step.startsWith('{')) {
+                  const parsed = JSON.parse(step);
+                  return { id: parsed.id || i + 1, text: parsed.text || step };
+                }
+                return { id: i + 1, text: typeof step === 'string' ? step : step.text };
+              } catch(e) {
+                return { id: i + 1, text: String(step) };
+              }
+            }));
+          }
+
+          if (prompt.cover_image_url) {
+            setImagePreview(prompt.cover_image_url);
+            // In Edit Mode, we might not have the public_id from the DB
+            setCoverPublicId(null); 
+          }
+
+          if (prompt.prompt_images && prompt.prompt_images.length > 0) {
+            const sortedImages = [...prompt.prompt_images].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            setScreenshots(sortedImages.map(img => ({ 
+              url: img.image_url, 
+              publicId: "" // Existing images in DB don't have public_id stored yet
+            })));
+          }
+
+          // Handle Prompt Text & System Text (Mapping from instructions)
+          const firstStep = prompt.prompt_steps?.[0];
+          const instruction = firstStep?.instruction || "";
+
+          if (prompt.is_multi_step) {
+            setPromptTab('chain');
+            setChainSteps(prompt.prompt_steps?.map((p: any) => ({ 
+              id: p.id, 
+              text: p.instruction 
+            })) || [{ id: 1, text: "" }]);
+          } else if (instruction.startsWith("System: ")) {
+            setPromptTab('system');
+            // Basic extraction logic matching the controller's format
+            const parts = instruction.split("\n\nUser: ");
+            setSystemText(parts[0].replace("System: ", ""));
+            setPromptText(parts[1] || "");
+          } else {
+            setPromptTab('single');
+            setPromptText(instruction);
+          }
+
+          // Delay setting isInitializing to false to allow category/subcat effects to run or be skipped
+          setTimeout(() => setIsInitializing(false), 500);
+
+          if (prompt.models) {
+            setSelectedModels(prompt.models.map((m: any) => m.id));
+          }
+
+        } catch (err) {
+          console.error("Error fetching prompt for edit:", err);
+        }
+      }
+      fetchPromptData();
+    }
+  }, [isEditMode, promptId]);
+
   useEffect(() => {
     if (category) {
-      supabase.from('subcategories').select('*').eq('category_id', category).then(({data}) => {
-         if(data) setSubcatsData(data || []);
+      supabase.from('subcategories').select('*').eq('category_id', category).then(({ data, error }) => {
+         if (!error && data) setSubcatsData(data);
       });
     } else {
       setSubcatsData([]);
     }
-    // Reset use case when category changes
-    setSubCategory("");
-    setSelectedUseCase("");
+    // Reset use case when category changes, but ONLY if not currently initializing edit data
+    if (!isInitializing) {
+      setSubCategory("");
+      setSelectedUseCase("");
+    }
   }, [category]);
 
   // Fetch use cases from DB and match with taxonomy data
@@ -224,128 +386,147 @@ export default function PromptUploadPage() {
         
         // 3. Fetch from DB
         supabase.from('use_cases')
-          .select('name')
+          .select('id, name')
           .eq('subcategory_id', Number(subCategory))
           .then(({data}) => {
+            if(data) setDbUseCases(data);
             const dbNames = data?.map(d => d.name) || [];
-            // Merge suggestions, avoiding duplicates
             const allSuggestions = Array.from(new Set([...staticSuggestions, ...dbNames]));
-            setUseCaseSuggestions(allSuggestions);
+            // Map suggestions back to include IDs where available
+            setUseCaseSuggestions(allSuggestions.map(name => {
+              const dbMatch = data?.find(d => d.name.toLowerCase() === name.toLowerCase());
+              return { id: dbMatch?.id || null, name };
+            }));
           });
       } else {
         setUseCaseSuggestions([]);
+        setDbUseCases([]);
       }
     } else {
       setUseCaseSuggestions([]);
+      setDbUseCases([]);
     }
-    setSelectedUseCase("");
+    // Only reset use case text if user is actively changing subcategory
+    if (!isInitializing) {
+      setSelectedUseCase("");
+    }
   }, [subCategory, category, categoriesData, subcatsData]);
 
+  // Sync selectedUseCaseId when selectedUseCase text matches a DB use case
   useEffect(() => {
-    if (platform) {
-       supabase.from('models')
-         .select('*, model_groups!inner(id, platform_id, name), model_tags(tags(id, name))')
-         .eq('model_groups.platform_id', platform)
-         .then(({data}) => {
-            if(data) setModelsData(data);
-         });
+    if (!selectedUseCase) {
+      setSelectedUseCaseId("");
+      return;
+    }
+    const match = dbUseCases.find(uc => uc.name.toLowerCase() === selectedUseCase.toLowerCase());
+    if (match) {
+      setSelectedUseCaseId(match.id);
+    } else {
+      setSelectedUseCaseId("");
+    }
+  }, [selectedUseCase, dbUseCases]);
+
+  // Flatten models from the centralized cached platforms data (Task 33)
+  useEffect(() => {
+    if (platform && platformsData.length > 0) {
+      const selectedPlat = platformsData.find(p => p.id === platform);
+      if (selectedPlat && selectedPlat.model_groups) {
+        const flatModels: any[] = [];
+        selectedPlat.model_groups.forEach((group: any) => {
+          if (group.models) {
+            group.models.forEach((m: any) => {
+              flatModels.push({
+                ...m,
+                model_groups: { name: group.name, platform_id: group.platform_id }
+              });
+            });
+          }
+        });
+        setModelsData(flatModels);
+      } else {
+        setModelsData([]);
+      }
     } else {
        setModelsData([]);
     }
-  }, [platform]);
+  }, [platform, platformsData]);
+
+  // ID 34: Debounced API query for Tags Autocomplete
+  useEffect(() => {
+    if (!tagsInput || tagsInput.trim() === '') {
+      setTagsSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const { data: res } = await supabase.from('tags').select('id, name').ilike('name', `%${tagsInput}%`).limit(20);
+        if (res) setTagsSuggestions(res);
+      } catch (err) { }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [tagsInput]);
 
   // Functions
   const handlePublish = async () => {
     if (completenessPct < 100 || !user) return;
     setIsPublishing(true);
+    
+    // API Upload Helper
+    const uploadFile = async (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      return data.secure_url;
+    };
+
     try {
-      // 1. Upload Cover Image
-      let coverUrl = "";
-      if (coverFile) {
-        const fd = new FormData();
-        fd.append('file', coverFile);
-        coverUrl = await uploadToCloudinary(fd);
-      }
-      
-      // 2. Upload Screenshots
-      const screenshotUrls = [];
-      for (const file of screenshotFiles) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const url = await uploadToCloudinary(fd);
-        screenshotUrls.push(url);
-      }
+      // 1. Assets are already uploaded via immediate upload logic
+      const coverUrl = imagePreview;
+      const screenshotUrls = screenshots.map(s => s.url);
 
-      // 3. Upload Prompt Files (New)
-      const promptFileUrls = [];
-      for (const file of promptFiles) {
-        const fd = new FormData();
-        fd.append('file', file);
-        const url = await uploadToCloudinary(fd);
-        promptFileUrls.push(url);
-      }
+      const promptFileUrls: string[] = []; // Keeping this as a potential future feature
+      // ... (prompt files could be handled similarly if needed)
 
-      // 4. Submit to API Route
-      const payload = {
-        title,
-        tagline,
-        price,
-        category,
-        subCategory,
-        platform,
-        selectedModels,
-        selectedUseCase,
-        coverUrl,
-        promptTab,
-        chainSteps,
-        systemText,
-        promptText,
-        screenshotUrls,
-        promptFileUrls,
-        inputNeeds,
-        inputData,
-        targetAudience,
-        outputFormat,
-        verifiedDate,
-        quickSetup,
-        guideSteps: guideSteps.map(s => s.text),
-        fillVariables,
-        whatToExpect,
-        proTips,
-        commonMistakes,
-        howToAdapt,
-        complexity,
-        tags,
-        sellerNote
+      // 2. Prepare Data
+      const promptData = {
+        title, tagline, price, category, subCategory, platform,
+        selectedModels, coverUrl, screenshotUrls, promptFileUrls,
+        inputNeeds, inputData, targetAudience, outputFormat,
+        verifiedDate, quickSetup, guideSteps, fillVariables,
+        whatToExpect, proTips, commonMistakes, howToAdapt,
+        complexity, tags, sellerNote, 
+        creatorId: profile?.id || user.id,
+        promptTab, systemText, promptText, chainSteps,
+        useCaseId: selectedUseCaseId
       };
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const resData = await response.json();
-
-      if (!response.ok) {
-        console.error("API insert error:", resData);
-        alert(`Error publishing: ${resData.error}\n\nDetails: ${resData.details || 'None'}`);
-        setIsPublishing(false);
-        return;
+      // 3. Call Server Action (Create or Update)
+      let result: any;
+      if (isEditMode && promptId) {
+        const r = await fetch(`/api/prompts/${promptId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(promptData) }); result = await r.json();
+      } else {
+        const r = await fetch("/api/prompts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(promptData) }); result = await r.json();
       }
 
-      const promptId = resData.promptId;
-      
-      // Successfully through all inserts, now mark as published
-      if (promptId) {
-        setPublishedPromptId(String(promptId));
+      if (result.success) {
+        if (!isEditMode && result.promptId) {
+          setPublishedPromptId(String(result.promptId));
+        } else if (isEditMode) {
+          setPublishedPromptId(promptId);
+        }
+        setIsPublished(true);
+        toast?.success(`Prompt successfully ${isEditMode ? 'updated' : 'published'}!`);
+      } else {
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'publish'} prompt`);
       }
-      
-      setIsPublished(true);
-      toast?.success("Prompt successfully published!");
     } catch (err: any) {
-      console.error("Error publishing:", err);
-      alert("Error publishing: " + err.message);
+      console.error("Error saving prompt:", err);
+      toast.error("Error saving: " + err.message);
     } finally {
       setIsPublishing(false);
     }
@@ -388,6 +569,53 @@ export default function PromptUploadPage() {
   const handleTagAdd = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && tagsInput.trim()) { setTags([...tags, tagsInput.trim()]); setTagsInput(""); } };
   const getVarsCount = () => (promptText.match(/\[[A-Z_]+\]/g) || []).filter((v,i,a) => a.indexOf(v)===i).length;
 
+  const handleAddChainStep = async () => {
+    const newStep = { id: Date.now(), text: "" };
+    setChainSteps(prev => [...prev, newStep]);
+    
+    // ID 33: In Edit Mode, we should ideally persist this immediately if following the roadmap
+    if (isEditMode && promptId) {
+       const r = await fetch(`/api/prompts/${promptId}/steps`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+         instruction: "",
+         step_number: chainSteps.length + 1,
+         step_type: 'prompt'
+       }) });
+       const res = await r.json();
+       if (res.success && res.step) {
+         // Update the local ID with the DB ID
+         setChainSteps(prev => prev.map(s => s.id === newStep.id ? { ...s, id: res.step.id } : s));
+       }
+    }
+  };
+
+  const moveChainStep = async (idx: number, direction: 'up' | 'down') => {
+    const newSteps = [...chainSteps];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= newSteps.length) return;
+    
+    [newSteps[idx], newSteps[targetIdx]] = [newSteps[targetIdx], newSteps[idx]];
+    setChainSteps(newSteps);
+
+    // ID 34: Persist reorder if in edit mode
+    if (isEditMode && promptId) {
+      const updates = newSteps.map((s, i) => ({
+        id: typeof s.id === 'number' ? s.id : (s as any).id,
+        step_number: i + 1
+      })).filter(s => typeof s.id === 'number'); // Only steps that exist in DB
+
+      if (updates.length > 0) {
+        await fetch(`/api/prompts/${promptId}/steps/reorder`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ updates }) });
+      }
+    }
+  };
+
+  const removeChainStep = (idx: number) => {
+    if (chainSteps.length <= 1) return;
+    setChainSteps(prev => prev.filter((_, i) => i !== idx));
+    // Note: Actual DB deletion could happen here in Edit Mode, 
+    // but typically we'll handle it during the final save or a dedicated delete action if requested.
+  };
+
   const checks = [
     { label: "Prompt text", done: promptTab === 'chain' ? chainSteps.some(s => s.text.length > 10) : promptText.length > 10 },
     { label: "Title", done: title.length > 2 },
@@ -400,7 +628,6 @@ export default function PromptUploadPage() {
     { label: "Price set", done: parseInt(price) >= 10 }
   ];
   const completenessPct = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
-  const showAuthPrompt = !loading && !user;
 
   const SectionHeader = ({ num, titleStr, desc }: { num: number; titleStr: string; desc: string }) => {
     const isActive = activeSection === num;
@@ -420,11 +647,17 @@ export default function PromptUploadPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#f8f9fc] text-slate-900 font-sans pb-32">
-      <div className={cn("max-w-[1240px] mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-12 transition-all duration-200", showAuthPrompt && "blur-sm pointer-events-none select-none")}>
+    <div className="min-h-screen bg-[#f8f9fc] text-slate-900 font-sans pb-32">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-12">
         <div className="mb-10 max-w-2xl">
-          <h1 className="text-4xl md:text-[44px] leading-none font-black tracking-tighter text-slate-900 mb-3">List a prompt</h1>
-          <p className="text-slate-500 font-medium text-sm md:text-base">Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime.</p>
+          <h1 className="text-4xl md:text-[44px] leading-none font-black tracking-tighter text-slate-900 mb-3">
+            {isEditMode ? "Update your prompt" : "List a prompt"}
+          </h1>
+          <p className="text-slate-500 font-medium text-sm md:text-base">
+            {isEditMode 
+              ? "Refine your configuration. Changes will be live immediately after saving."
+              : "Share what works. Earn coins every time someone buys. Sections expand as you fill — save your draft anytime."}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
@@ -707,14 +940,77 @@ export default function PromptUploadPage() {
                         )}
 
                         {promptTab === 'chain' && (
-                          <div className="space-y-3">
+                          <div className="space-y-0 relative">
+                            {/* Vertical Pipeline Connector */}
+                            <div className="absolute left-[23px] top-6 bottom-6 w-0.5 bg-slate-200" />
+                            
                             {chainSteps.map((s, idx) => (
-                              <div key={s.id} className="border border-slate-200 rounded-xl overflow-hidden">
-                                 <div className="bg-slate-50 p-2 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-700"><span>Step {idx+1}</span></div>
-                                 <textarea value={s.text} onChange={e => { const nc = [...chainSteps]; nc[idx].text = e.target.value; setChainSteps(nc); }} className="w-full p-3 text-xs font-mono border-none outline-none min-h-[80px]" placeholder="Step prompt..." />
+                              <div key={s.id} className="relative group pb-6 last:pb-2">
+                                <div className="flex gap-4 items-start">
+                                   {/* Step Badge / Handle */}
+                                   <div className="z-10 w-11 h-11 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center text-xs font-black text-slate-400 group-hover:border-purple-300 group-hover:text-purple-600 transition-all shadow-sm shrink-0">
+                                      {idx + 1}
+                                   </div>
+
+                                   {/* Step Card */}
+                                   <div className="flex-1 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:border-purple-200">
+                                      <div className="bg-slate-50/80 p-3 border-b border-slate-200 flex justify-between items-center">
+                                         <div className="flex items-center gap-2">
+                                           <GripVertical className="w-3.5 h-3.5 text-slate-300 group-hover:text-purple-300" />
+                                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stage {idx+1}</span>
+                                         </div>
+                                         <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+                                              <button 
+                                                onClick={() => moveChainStep(idx, 'up')} 
+                                                disabled={idx === 0}
+                                                className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-purple-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                              >
+                                                <ChevronUp className="w-3.5 h-3.5" />
+                                              </button>
+                                              <div className="w-px h-3 bg-slate-200" />
+                                              <button 
+                                                onClick={() => moveChainStep(idx, 'down')} 
+                                                disabled={idx === chainSteps.length - 1}
+                                                className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-purple-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                              >
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                            <button 
+                                              onClick={() => removeChainStep(idx)}
+                                              className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                         </div>
+                                      </div>
+                                      <textarea 
+                                        value={s.text} 
+                                        onChange={e => { 
+                                          const nc = [...chainSteps]; 
+                                          nc[idx].text = e.target.value; 
+                                          setChainSteps(nc); 
+                                        }} 
+                                        className="w-full p-4 text-[13px] font-mono border-none outline-none min-h-[120px] bg-white text-slate-700 placeholder:text-slate-300 focus:ring-0" 
+                                        placeholder={`Describe the objective for stage ${idx+1}...`} 
+                                      />
+                                   </div>
+                                </div>
                               </div>
                             ))}
-                            <button onClick={()=>setChainSteps([...chainSteps, {id: Date.now(), text: ""}])} className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50">+ Add step</button>
+                            
+                            <div className="pl-[59px] pt-2">
+                              <button 
+                                onClick={handleAddChainStep} 
+                                className="w-full py-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl text-[13px] font-bold text-slate-400 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50/50 transition-all flex items-center justify-center gap-2 group shadow-xs"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-purple-100 group-hover:scale-110 transition-all">
+                                  <Plus className="w-3.5 h-3.5" />
+                                </div>
+                                Append next sequence stage
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -745,6 +1041,8 @@ export default function PromptUploadPage() {
                             <div key={p.id} onClick={()=>setPlatform(p.id)} className={cn("px-3 py-2 border rounded-xl flex items-center justify-center text-center cursor-pointer text-[11px] font-bold transition-all", platform === p.id ? "bg-purple-50 border-purple-300 text-purple-700 shadow-sm" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300")}>{p.name}</div>
                           ))}
                         </div>
+
+
                       </div>
 
                       {modelsData.length > 0 && (
@@ -800,26 +1098,78 @@ export default function PromptUploadPage() {
                         </div>
                       )}
 
+                      {/* GLOBAL SELECTED MODELS LIST */}
+                      {selectedModels.length > 0 && (
+                        <div className="pt-4 border-t border-slate-100 mb-4">
+                          <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2 block text-center sm:text-left">Selected Models</label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedModels.map(id => {
+                              let modelName = "Unknown Model";
+                              for (const plat of platformsData) {
+                                for (const group of plat.model_groups || []) {
+                                  const match = group.models?.find((m: any) => m.id === id);
+                                  if (match) modelName = match.name;
+                                }
+                              }
+                              return (
+                                <div key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700/80 border border-purple-100 text-[11px] font-medium rounded-lg backdrop-blur-sm transition-all hover:bg-purple-100/50">
+                                  {modelName}
+                                  <button onClick={(e) => { e.stopPropagation(); setSelectedModels(prev => prev.filter(mid => mid !== id)); }} className="ml-1 text-purple-400 hover:text-purple-600 focus:outline-none flex items-center justify-center rounded-full hover:bg-white p-0.5 transition-colors">
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                          <label className="text-[11px] font-black uppercase text-slate-500 mb-2 block">Last verified date</label>
                          <input type="text" value={verifiedDate} onChange={e=>setVerifiedDate(e.target.value)} placeholder="e.g. March 2025" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" />
                       </div>
 
                       <div className="pt-4 border-t border-slate-100">
-                        <label className="text-[11px] font-black uppercase text-slate-500 mb-2 block">Cover Image (Live Preview)</label>
-                        <input type="file" accept="image/*" className="hidden" id="coverUpload" onChange={(e) => {
-                           if(e.target.files && e.target.files[0]) {
-                             const file = e.target.files[0];
-                             if (file.size > MAX_FILE_SIZE) {
-                               toast.error("Cover image exceeds the 7MB limit.");
-                               return;
-                             }
-                             setCoverFile(file);
-                             setImagePreview(URL.createObjectURL(file));
-                           }
+                        <input type="file" accept="image/*" className="hidden" id="coverUpload" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > MAX_FILE_SIZE) {
+                              toast.error("File size exceeds 10MB limit.");
+                              return;
+                            }
+                            setIsUploadingCover(true);
+                            setImagePreview(URL.createObjectURL(file)); 
+                            
+                            try {
+                              const result = await handleFileUpload(file, 'cover');
+                              if (coverPublicId) {
+                                handleDeleteFile(coverPublicId); // Cleanup old image asynchronously
+                              }
+                              setImagePreview(result.url);
+                              setCoverPublicId(result.publicId);
+                              toast.success("Cover image updated!");
+                            } catch (err) {
+                              console.error(err);
+                              toast.error("Failed to upload cover image.");
+                              setImagePreview(null);
+                            } finally {
+                              setIsUploadingCover(false);
+                            }
+                          }
                         }} />
-                        <label htmlFor="coverUpload" className="w-full h-32 border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
+                        <label htmlFor="coverUpload" className="w-full h-32 border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group relative">
                            {imagePreview ? <img src={imagePreview} className="w-full h-full object-cover" alt="" /> : <UploadCloud className="w-6 h-6 text-slate-400" />}
+                           {imagePreview && !isUploadingCover && (
+                             <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (coverPublicId) handleDeleteFile(coverPublicId); setImagePreview(null); setCoverPublicId(null); }} className="absolute -top-2 -right-2 w-6 h-6 bg-slate-800 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-rose-500 z-10">
+                               <span className="text-[12px]">✕</span>
+                             </div>
+                           )}
+                           {isUploadingCover && (
+                             <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+                               <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                               <span className="text-[10px] font-bold text-purple-700 animate-pulse">Uploading...</span>
+                             </div>
+                           )}
                         </label>
                       </div>
 
@@ -915,29 +1265,65 @@ export default function PromptUploadPage() {
                         <div className="mt-8 space-y-4">
                           <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">Use Case <span className="text-rose-500">*</span></label>
                           <div className="space-y-4">
-                            <input
-                              type="text"
-                              value={selectedUseCase}
-                              onChange={(e) => setSelectedUseCase(e.target.value)}
-                              placeholder="e.g. SEO blog articles, LinkedIn thought leadership, API generation..."
-                              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500"
-                            />
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={selectedUseCase}
+                                onChange={(e) => setSelectedUseCase(e.target.value)}
+                                placeholder="e.g. SEO blog articles, LinkedIn thought leadership, API generation..."
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500 pr-24"
+                              />
+                              {selectedUseCase && !selectedUseCaseId && !isCreatingUseCase && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setIsCreatingUseCase(true);
+                                    try {
+                                      const r = await fetch("/api/use-cases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: selectedUseCase, categoryId: category, subcategoryId: subCategory }) }); const res = await r.json();
+                                      if (res.success && res.data) {
+                                        setSelectedUseCaseId(res.data.id);
+                                        setSelectedUseCase(res.data.name);
+                                        setDbUseCases(prev => [...prev, res.data]);
+                                        toast.success("New use case created!");
+                                      } else {
+                                        toast.error(res.error || "Failed to create use case");
+                                      }
+                                    } catch (err) {
+                                      toast.error("An error occurred");
+                                    } finally {
+                                      setIsCreatingUseCase(false);
+                                    }
+                                  }}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-purple-600 text-white text-[10px] font-bold rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                                >
+                                  CREATE NEW
+                                </button>
+                              )}
+                              {isCreatingUseCase && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                  <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                              )}
+                            </div>
                             
                             {useCaseSuggestions.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {useCaseSuggestions.map((uc) => (
                                   <button
-                                    key={uc}
+                                    key={uc.name}
                                     type="button"
-                                    onClick={() => setSelectedUseCase(uc)}
+                                    onClick={() => {
+                                      setSelectedUseCase(uc.name);
+                                      setSelectedUseCaseId(uc.id || "");
+                                    }}
                                     className={cn(
                                       "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border",
-                                      selectedUseCase === uc 
+                                      selectedUseCase === uc.name 
                                         ? "bg-purple-600 text-white border-purple-600" 
                                         : "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100"
                                     )}
                                   >
-                                    {uc}
+                                    {uc.name}
                                   </button>
                                 ))}
                               </div>
@@ -952,40 +1338,41 @@ export default function PromptUploadPage() {
                         <label className="text-[13px] font-bold text-slate-800 mb-1 block flex items-center gap-2">Target audience <span className="text-rose-500 text-xs">*</span></label>
                         <p className="text-[11px] font-medium text-slate-500 mb-4">Select all roles that would find this prompt valuable.</p>
                         <div className="flex flex-wrap gap-2">
-                          {["Designers", "Developers", "Marketers", "Founders", "Writers", "Students", "Creators", "Analysts", "Sales"].map(a => (
-                             <div key={a} onClick={()=>toggleAudience(a)} className={cn("px-4 py-2 border rounded-full text-center text-[11px] font-bold cursor-pointer transition-all", targetAudience.includes(a)?"bg-slate-900 border-slate-900 text-white":"bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50")}>{a} {targetAudience.includes(a) && "✕"}</div>
-                          ))}
+                          {audiencesData.length > 0 ? audiencesData.map(a => (
+                             <div key={a.id} onClick={()=>toggleAudience(a.name)} className={cn("px-4 py-2 border rounded-full text-center text-[11px] font-bold cursor-pointer transition-all", targetAudience.includes(a.name)?"bg-slate-900 border-slate-900 text-white":"bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50")}>{a.name} {targetAudience.includes(a.name) && "✕"}</div>
+                          )) : <div className="text-xs text-slate-400 py-2">Loading audiences...</div>}
                         </div>
                       </div>
 
                       <div className="pt-6 border-t border-slate-100">
                         <label className="text-[13px] font-bold text-slate-800 mb-4 block">Output format <span className="text-rose-500 text-xs">*</span></label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {[
-                            {n: 'Long-form text', d: 'Articles, essays, reports, documentation', i: AlignLeft},
-                            {n: 'Short copy', d: 'Emails, ads, captions, taglines', i: Type},
-                            {n: 'Structured data', d: 'JSON, tables, lists, YAML, XML', i: LayoutGrid},
-                            {n: 'Code', d: 'Scripts, components, queries, configs', i: Code},
-                            {n: 'Image / visual', d: 'Midjourney, DALL-E, FLUX, SD', i: Images},
-                            {n: 'Audio / music', d: 'TTS, voice clone, song, sound effects', i: Play},
-                            {n: 'Video', d: 'Sora, Runway, Kling, Veo output', i: Play},
-                            {n: 'Conversational', d: 'Multi-turn, roleplay, agent dialogue', i: FileText},
-                            {n: 'Tool call / function', d: 'API call, function output, action', i: Zap},
-                            {n: 'Multiple outputs', d: 'Variations, batch results, ranked', i: ListChecks}
-                          ].map(f => {
-                             const Icon = f.i;
+                          {outputsData.length > 0 ? outputsData.map(f => {
+                             const iconMap: Record<string, any> = {
+                               'Long-form text': AlignLeft,
+                               'Short copy': Type,
+                               'Structured data': LayoutGrid,
+                               'Code': Code,
+                               'Image / visual': Images,
+                               'Audio / music': Play,
+                               'Video': Play,
+                               'Conversational': FileText,
+                               'Tool call / function': Zap,
+                               'Multiple outputs': ListChecks
+                             };
+                             const Icon = iconMap[f.name] || FileText;
                              return (
-                             <div key={f.n} onClick={()=>setOutputFormat(f.n)} className={cn("p-4 border rounded-xl cursor-pointer transition-all flex items-start gap-3", outputFormat===f.n?"bg-purple-50 border-purple-300 ring-1 ring-purple-300 shadow-sm":"bg-white border-slate-200 hover:border-slate-300")}>
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", outputFormat===f.n ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-500")}>
+                             <div key={f.id} onClick={()=>setOutputFormat(f.name)} className={cn("p-4 border rounded-xl cursor-pointer transition-all flex items-start gap-3", outputFormat===f.name?"bg-purple-50 border-purple-300 ring-1 ring-purple-300 shadow-sm":"bg-white border-slate-200 hover:border-slate-300")}>
+                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5", outputFormat===f.name ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-500")}>
                                   <Icon className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <div className={cn("text-[13px] font-bold mb-0.5", outputFormat===f.n?"text-purple-800":"text-slate-800")}>{f.n}</div>
-                                  <div className={cn("text-[11px] leading-relaxed", outputFormat===f.n?"text-purple-600/90":"text-slate-500")}>{f.d}</div>
+                                  <div className={cn("text-[13px] font-bold mb-0.5", outputFormat===f.name?"text-purple-800":"text-slate-800")}>{f.name}</div>
+                                  <div className={cn("text-[11px] leading-relaxed", outputFormat===f.name?"text-purple-600/90":"text-slate-500")}>{f.description || "Standard format template"}</div>
                                 </div>
                              </div>
                              )
-                          })}
+                          }) : <div className="text-xs text-slate-400 py-2">Loading output formats...</div>}
                         </div>
                       </div>
 
@@ -1008,33 +1395,57 @@ export default function PromptUploadPage() {
                   <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                     <div className="p-5 md:p-6 pt-0 border-t border-slate-100 mt-2 space-y-6">
                       
-                      <input type="file" multiple accept="image/*,video/*" className="hidden" id="screenshotUpload" onChange={(e) => {
+                      <input type="file" multiple accept="image/*,video/*" className="hidden" id="screenshotUpload" onChange={async (e) => {
                         if(e.target.files) {
-                          const newFiles: File[] = [];
-                          Array.from(e.target.files).forEach((file: File) => {
-                            if (file.size > MAX_FILE_SIZE) {
-                              toast.error(`Screenshot ${file.name} exceeds the 7MB limit.`);
-                            } else {
-                              newFiles.push(file);
+                          const files = Array.from(e.target.files);
+                          const validFiles = files.filter(f => {
+                            if (f.size > MAX_FILE_SIZE) {
+                              toast.error(`Screenshot ${f.name} exceeds the 10MB limit.`);
+                              return false;
                             }
+                            return true;
                           });
-                          setScreenshotFiles(prev => [...prev, ...newFiles]);
-                          const newUrls = newFiles.map(f => URL.createObjectURL(f));
-                          setScreenshots(prev => [...prev, ...newUrls]);
+
+                          if (validFiles.length === 0) return;
+
+                          setUploadingCount(prev => prev + validFiles.length);
+                          
+                          // Parallel Upload
+                          try {
+                            const uploadPromises = validFiles.map(async (file) => {
+                              const result = await handleFileUpload(file, 'screenshot');
+                              return result;
+                            });
+
+                            const results = await Promise.all(uploadPromises);
+                            setScreenshots(prev => [...prev, ...results]);
+                            toast.success(`Uploaded ${results.length} screenshots!`);
+                          } catch (err) {
+                            console.error(err);
+                            toast.error("Some screenshots failed to upload.");
+                          } finally {
+                            setUploadingCount(prev => Math.max(0, prev - validFiles.length));
+                          }
                         }
                       }} />
-                      <label htmlFor="screenshotUpload" className="w-full py-10 border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all">
+                      <label htmlFor="screenshotUpload" className="w-full py-10 border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all relative">
                         <UploadCloud className="w-8 h-8 text-slate-300 mb-2" />
                         <div className="text-sm font-bold text-slate-700">Drag & drop output screenshots here</div>
                         <div className="text-[11px] font-semibold text-slate-400 mt-1">PNG, JPG, GIF · Max 10MB each</div>
+                        {uploadingCount > 0 && (
+                          <div className="mt-4 px-4 py-2 bg-white border border-purple-100 rounded-full flex items-center gap-2 shadow-sm animate-in zoom-in">
+                            <div className="w-3.5 h-3.5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-[11px] font-bold text-purple-600">Uploading {uploadingCount} image{uploadingCount > 1 ? 's' : ''}...</span>
+                          </div>
+                        )}
                       </label>
 
                       {screenshots.length > 0 && (
                         <div className="flex gap-3 flex-wrap mt-4">
-                          {screenshots.map((src, idx) => (
+                          {screenshots.map((s, idx) => (
                             <div key={idx} className="w-20 h-20 rounded-xl bg-slate-200 border border-slate-300 flex items-center justify-center animate-in zoom-in relative overflow-hidden">
-                              <img src={src} className="w-full h-full object-cover" alt="" />
-                              <div onClick={(e) => { e.stopPropagation(); setScreenshots(s => s.filter((_, i) => i !== idx)); setScreenshotFiles(s => s.filter((_, i) => i !== idx)); }} className="absolute -top-2 -right-2 w-5 h-5 bg-slate-800 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-rose-500">
+                              <img src={s.url} className="w-full h-full object-cover" alt="" />
+                              <div onClick={(e) => { e.stopPropagation(); handleDeleteFile(s.publicId); setScreenshots(prev => prev.filter((_, i) => i !== idx)); }} className="absolute -top-2 -right-2 w-5 h-5 bg-slate-800 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-rose-500">
                                 <span className="text-[10px]">✕</span>
                               </div>
                             </div>
@@ -1169,7 +1580,7 @@ export default function PromptUploadPage() {
                     <div className="p-5 md:p-6 pt-0 border-t border-slate-100 mt-2 space-y-6">
                       
                       <div>
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Works best for</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Works best for (Tags)</label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {tags.map(t => (
                             <div key={t} className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 flex items-center gap-2">
@@ -1177,7 +1588,33 @@ export default function PromptUploadPage() {
                             </div>
                           ))}
                         </div>
-                        <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} onKeyDown={handleTagAdd} placeholder="Type a use case and press Enter..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500" />
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            value={tagsInput} 
+                            onChange={e => setTagsInput(e.target.value)} 
+                            onKeyDown={handleTagAdd} 
+                            placeholder="Type a tag and press Enter..." 
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-purple-500" 
+                          />
+                          {tagsSuggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                              {tagsSuggestions.map(ts => (
+                                <div 
+                                  key={ts.id} 
+                                  onClick={() => {
+                                    if (!tags.includes(ts.name)) setTags([...tags, ts.name]);
+                                    setTagsInput("");
+                                    setTagsSuggestions([]);
+                                  }}
+                                  className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm font-medium border-b border-slate-100 last:border-0"
+                                >
+                                  {ts.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div>
@@ -1336,7 +1773,9 @@ export default function PromptUploadPage() {
                                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                   <span>Publishing...</span>
                                </div>
-                             ) : "Publish prompt 🚀"}
+                             ) : (
+                               isEditMode ? "Update prompt 🚀" : "Publish prompt 🚀"
+                             )}
                              {isPublishing && <motion.div layoutId="load" className="absolute bottom-0 left-0 h-1 bg-white/40" initial={{width:0}} animate={{width:'100%'}} transition={{duration:2}} />}
                           </button>
                         </div>
@@ -1392,7 +1831,9 @@ export default function PromptUploadPage() {
                           <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                         </div>
                         
-                        <h2 className="text-4xl md:text-[52px] leading-[1.1] font-black text-slate-900 mb-6 tracking-tight">Your prompt is live!</h2>
+                        <h2 className="text-4xl md:text-[52px] leading-[1.1] font-black text-slate-900 mb-6 tracking-tight">
+                          {isEditMode ? "Prompt updated!" : "Your prompt is live!"}
+                        </h2>
                         <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md">
                           It’s now visible on the Explore page. Share it to get your first buyers — sellers who share on day 1 get 10x more visibility.
                         </p>
@@ -1521,26 +1962,6 @@ export default function PromptUploadPage() {
 
         </div>
       </div>
-
-      {showAuthPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/40" />
-          <div className="relative w-full max-w-md rounded-2xl border border-white/20 bg-white p-6 shadow-2xl">
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <AlertCircle className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-black tracking-tight text-slate-900">You are not logged in</h2>
-            <p className="mt-2 text-sm font-medium text-slate-600">Please get logged in to upload your prompt.</p>
-            <Link
-              href="/sign-in?next=%2Fupload"
-              className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 text-sm font-bold text-white transition-colors hover:bg-purple-700"
-            >
-              Go to Sign In
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -436,7 +436,7 @@ export default function PromptDetailPage({ params: paramsPromise }: { params: Pr
             created_at,
             platforms(name),
             categories(name),
-            users(display_name, username)
+            users(username)
           `)
           .order('created_at', { ascending: false })
           .limit(4);
