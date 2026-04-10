@@ -14,7 +14,10 @@ import {
   Video, 
   FileText, 
   Sparkles,
-  Eye
+  Eye,
+  EyeOff,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +43,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { deletePromptAction, togglePromptStatusAction } from "@/app/actions/prompt";
 
 // Define it here or export it from a shared place - since we removed backend/
 export type PromptItem = {
@@ -73,6 +77,7 @@ export type PromptItem = {
   review_count?: number;
   lastTested?: string;
   is_multi_step?: boolean;
+  is_published?: boolean;
   views_count?: number;
   steps?: any[];
   reviews?: any[];
@@ -227,6 +232,8 @@ export default function PromptDetailClient({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [activeTab, setActiveTab] = useState("prompt");
 
+  const isOwner = user?.id === prompt.seller?.id;
+
   const handlePurchase = async () => {
     if (!user) {
       router.push(`/sign-in?next=${encodeURIComponent(`/prompt/${prompt.id}`)}`);
@@ -312,8 +319,56 @@ export default function PromptDetailClient({
               </Badge>
             </div>
 
-            <div className="py-2">
+            <div className="py-2 flex flex-col md:flex-row md:items-start justify-between gap-4">
               <PromptHeader platform={prompt.platform} category={prompt.category} title={prompt.title} tagline={prompt.tagline || ""} />
+              
+              {isOwner && (
+                <div className="flex items-center gap-2 mt-2 md:mt-0 bg-primary/5 border border-primary/20 rounded-2xl p-2 shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 px-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground font-semibold"
+                    onClick={() => router.push(`/upload?id=${prompt.id}`)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Edit
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 px-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground font-semibold"
+                    onClick={async () => {
+                      if (confirm(`Are you sure you want to ${prompt.is_published ? 'hide' : 'show'} this prompt?`)) {
+                        const res = await togglePromptStatusAction(prompt.id, !prompt.is_published);
+                        if (res.success) {
+                          window.location.reload();
+                        } else {
+                          toast.error("Failed to toggle status");
+                        }
+                      }
+                    }}
+                  >
+                    {prompt.is_published ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                    {prompt.is_published ? "Hide" : "Show"}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 px-3 rounded-xl hover:bg-rose-500/10 hover:text-rose-500 transition-all text-muted-foreground font-semibold"
+                    onClick={async () => {
+                      if (confirm("Are you sure you want to delete this prompt forever?")) {
+                        const res = await deletePromptAction(prompt.id);
+                        if (res.success) {
+                          router.push("/explore");
+                        } else {
+                          toast.error("Failed to delete prompt");
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-6 mb-8 pb-4">

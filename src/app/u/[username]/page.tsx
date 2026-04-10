@@ -267,7 +267,7 @@ export default function SellerProfilePage({ params: paramsPromise }: { params: P
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
                         {filteredPrompts.map((p) => (
-                          <SellerPromptCard key={p.id} prompt={p} />
+                          <SellerPromptCard key={p.id} prompt={p} isOwner={isOwner} />
                         ))}
                       </div>
                     )}

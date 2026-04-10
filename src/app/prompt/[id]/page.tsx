@@ -47,6 +47,8 @@ type PromptItem = {
   review_count?: number;
   lastTested?: string;
   is_multi_step?: boolean;
+  is_published?: boolean;
+  views_count?: number;
   steps?: any[];
   reviews?: any[];
   created_at?: string;
@@ -323,6 +325,7 @@ function mapDbPrompt(row: any, sellerData?: any): PromptItem {
     review_count: Number(row.review_count || 0),
     lastTested: row.verified_at || row.updated_at || row.created_at || "Recent",
     is_multi_step: !!row.is_multi_step,
+    is_published: !!row.is_published,
     steps: row.prompt_steps || [],
     reviews: row.reviews || [],
     created_at: row.created_at,

@@ -195,7 +195,7 @@ function PromptUploadPageContent() {
   const handleDeleteFile = async (publicId: string) => {
     if (!publicId) return;
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch('/api/upload/cloudinary', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ public_id: publicId })
@@ -212,7 +212,7 @@ function PromptUploadPageContent() {
     fd.append('file', file);
     fd.append('folder', `prompts/${type}s`);
     
-    const res = await fetch('/api/upload', {
+    const res = await fetch('/api/upload/cloudinary', {
       method: 'POST',
       body: fd
     });
@@ -223,7 +223,7 @@ function PromptUploadPageContent() {
     }
 
     const data = await res.json();
-    return { url: data.secure_url, publicId: data.public_id };
+    return { url: data.url, publicId: data.publicId };
   };
 
   useEffect(() => {
@@ -273,7 +273,14 @@ useEffect(() => {
           setCategory(prompt.category_id);
           setSubCategory(prompt.subcategory_id);
           setSelectedUseCaseId(prompt.use_case_id || "");
-          setSelectedUseCase(prompt.use_cases?.name || "");
+          // Correctly handle the joined use_cases object
+          if (prompt.use_cases) {
+            setSelectedUseCase(prompt.use_cases.name || "");
+          } else if (prompt.use_case) { // fallback
+            setSelectedUseCase(prompt.use_case.name || "");
+          } else {
+            setSelectedUseCase("");
+          }
           setComplexity(prompt.complexity || "");
           setSellerNote(prompt.seller_note || "");
           setTags(prompt.tags || []);
@@ -471,18 +478,11 @@ useEffect(() => {
     if (completenessPct < 100 || !user) return;
     setIsPublishing(true);
     
-    // API Upload Helper
-    const uploadFile = async (file: File) => {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: fd
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      return data.secure_url;
-    };
+    // Binary uploads are now handled immediately when selected.
+    // handleFileUpload('cover' | 'screenshots') calls /api/upload/cloudinary
+    // and stores the resulting URLs in state.
+    
+    // We don't need the local uploadFile helper here anymore as assets are pre-loaded.
 
     try {
       // 1. Assets are already uploaded via immediate upload logic
@@ -506,11 +506,22 @@ useEffect(() => {
       };
 
       // 3. Call Server Action (Create or Update)
+      // Standardizing on /api/upload for metadata as per main-2 style preference
       let result: any;
       if (isEditMode && promptId) {
-        const r = await fetch(`/api/prompts/${promptId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(promptData) }); result = await r.json();
+        const r = await fetch(`/api/upload?id=${promptId}`, { 
+          method: "PUT", 
+          headers: { "Content-Type": "application/json" }, 
+          body: JSON.stringify(promptData) 
+        }); 
+        result = await r.json();
       } else {
-        const r = await fetch("/api/prompts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(promptData) }); result = await r.json();
+        const r = await fetch("/api/upload", { 
+          method: "POST", 
+          headers: { "Content-Type": "application/json" }, 
+          body: JSON.stringify(promptData) 
+        }); 
+        result = await r.json();
       }
 
       if (result.success) {
