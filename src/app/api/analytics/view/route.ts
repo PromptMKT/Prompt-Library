@@ -9,19 +9,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No promptId provided" }, { status: 400 });
     }
 
-    // Try RPC call first; fall back to manual update
-    const { error } = await supabase.rpc('increment_view_count', { prompt_id: promptId });
+    // Increment manually since the RPC is untyped in this branch and causes build errors
+    const { data: current, error: fetchErr } = await supabase
+      .from('prompts')
+      .select('views_count')
+      .eq('id', promptId)
+      .single();
 
-    if (error) {
-      const { data: current } = await supabase
-        .from('prompts')
-        .select('views_count')
-        .eq('id', promptId)
-        .single();
-
+    if (!fetchErr && current) {
       await supabase
         .from('prompts')
-        .update({ views_count: (current?.views_count || 0) + 1 })
+        .update({ views_count: (current.views_count || 0) + 1 } as any)
         .eq('id', promptId);
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Grid3X3, List, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -196,7 +196,7 @@ function ExploreAppleMark() {
   );
 }
 
-export default function ExploreClient({ 
+function ExploreClientContent({ 
   initialDataset, 
   initialWishlistedIds 
 }: { 
@@ -802,5 +802,19 @@ export default function ExploreClient({
         </section>
       </div>
     </div>
+  );
+}
+
+export default function ExploreClient({ 
+  initialDataset, 
+  initialWishlistedIds 
+}: { 
+  initialDataset: ExploreDataset;
+  initialWishlistedIds: string[];
+}) {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>}>
+      <ExploreClientContent initialDataset={initialDataset} initialWishlistedIds={initialWishlistedIds} />
+    </Suspense>
   );
 }

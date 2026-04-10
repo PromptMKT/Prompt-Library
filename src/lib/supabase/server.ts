@@ -26,3 +26,6 @@ export async function createServerSupabaseClient() {
     }
   );
 }
+
+// Alias for standard Next.js Supabase naming convention
+export const createClient = createServerSupabaseClient;

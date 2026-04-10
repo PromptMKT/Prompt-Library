@@ -9,6 +9,8 @@ export const metadata = {
   description: "Browse the best AI prompts for various models and use cases. Find high-quality, professional prompt systems for your next workflow.",
 };
 
+export const dynamic = "force-dynamic";
+
 async function ExploreDataFetcher() {
   try {
     const supabase = await createServerSupabaseClient();

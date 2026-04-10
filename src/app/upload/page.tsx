@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Eye, Heart, Share2, UploadCloud, CheckCircle2, ChevronDown, ChevronUp, Trash2, GripVertical, LayoutGrid, Type, AlignLeft, Tags, Code, Images, FileText, MousePointerClick, DollarSign, ListChecks, ArrowRight, Play, Zap, FileJson, ChevronRight as ChevronRightIcon, AlertCircle, Plus, X, Check, File, Rocket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -107,7 +107,7 @@ const TAXONOMY_DATA = [
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-export default function PromptUploadPage() {
+function PromptUploadPageContent() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1963,5 +1963,13 @@ useEffect(() => {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PromptUploadPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" /></div>}>
+      <PromptUploadPageContent />
+    </Suspense>
   );
 }
