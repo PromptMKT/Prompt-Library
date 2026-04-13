@@ -11,16 +11,22 @@ import {
   Flame, TrendingUp, Zap, Globe, ArrowRight, BadgeCheck, Share2
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
+import { PromptService } from "@/lib/services/PromptService";
+import { ExplorePromptCard } from "@/app/explore/components/ExplorePromptCard";
 
 // ─── DUMMY DATA ───────────────────────────────────────────────────────────────
 
 const prompts = [
-  { id: 1, title: "Neon Cyberpunk City at Midnight", price: 29, rating: 4.9, sales: 3204, author: "AlphaDesigner", platform: "Midjourney", image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&q=80" },
-  { id: 2, title: "Ethereal Portrait – Bioluminescent Skin", price: 19, rating: 4.7, sales: 1850, author: "VisionX",       platform: "DALL-E",      image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80" },
-  { id: 3, title: "Street Photography in Rainy Tokyo", price: 14, rating: 4.8, sales: 2100, author: "Kinora",           platform: "Stable-D",    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=600&q=80" },
-  { id: 4, title: "Abstract Fluid Art – Gold & Indigo", price: 24, rating: 4.6, sales: 987,  author: "ArtFlux",         platform: "Midjourney",  image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80" },
-  { id: 5, title: "Cinematic Landscape – Golden Hour", price: 35, rating: 5.0, sales: 4100, author: "FrameForge",      platform: "Runway ML",   image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&q=80" },
+  { id: 1, title: "Neon Cyberpunk City at Midnight", price: 29, rating: 4.9, sales: 3204, author: "AlphaDesigner", platform: "Midjourney", image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&q=80", category: "image" },
+  { id: 2, title: "Ethereal Portrait – Bioluminescent Skin", price: 19, rating: 4.7, sales: 1850, author: "VisionX",       platform: "DALL-E",      image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80", category: "image" },
+  { id: 3, title: "Street Photography in Rainy Tokyo", price: 14, rating: 4.8, sales: 2100, author: "Kinora",           platform: "Stable-D",    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=600&q=80", category: "image" },
+  { id: 4, title: "Abstract Fluid Art – Gold & Indigo", price: 24, rating: 4.6, sales: 987,  author: "ArtFlux",         platform: "Midjourney",  image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80", category: "image" },
+  { id: 5, title: "Cinematic Landscape – Golden Hour", price: 35, rating: 5.0, sales: 4100, author: "FrameForge",      platform: "Runway ML",   image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&q=80", category: "image" },
+  { id: 10, title: "Professional SaaS Landing Page Copy", price: 15, rating: 4.8, sales: 1200, author: "CopyMaster",    platform: "ChatGPT",     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80", category: "text" },
+  { id: 11, title: "Next.js 15 Auth Dashboard", price: 49, rating: 4.9, sales: 850, author: "DevPro",        platform: "GitHub",      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80", category: "code" },
+  { id: 12, title: "Autonomous Social Media Agent", price: 79, rating: 5.0, sales: 450, author: "AgentX",        platform: "Gemini",      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&q=80", category: "agent" },
+  { id: 13, title: "Modern Minimalist Icon Set", price: 12, rating: 4.7, sales: 3200, author: "Iconic",        platform: "DALL-E",      image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=600&q=80", category: "image" },
+  { id: 14, title: "Python Data Analysis Script", price: 25, rating: 4.6, sales: 1100, author: "PyExpert",      platform: "HuggingFace", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80", category: "code" },
 ];
 
 const widePrompts = [
@@ -439,48 +445,29 @@ export default function HomePage() {
   const [liked, setLiked] = useState<number[]>([]);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [activeFilter, setActiveFilter] = useState("all");
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [promptsRes, catsRes] = await Promise.all([
-          supabase
-            .from('prompts')
-            .select(`
-              id, title, price, cover_image_url, created_at, purchases_count, average_rating,
-              creator:users(display_name, username),
-              platform:platforms(name)
-            `)
-            .eq('is_published', true)
-            .order('created_at', { ascending: false })
-            .limit(10),
-          supabase.from('categories').select('*').limit(5)
-        ]);
-        
-        if (promptsRes.error) {
-          console.error("Supabase prompts query error (home):", promptsRes.error);
-        }
-        if (catsRes.error) {
-          console.error("Supabase categories query error (home):", catsRes.error);
-        }
-        
-        if (promptsRes.data) {
-          setDbPrompts(promptsRes.data.map(p => ({
+        const homePrompts = await PromptService.getAllPrompts(20);
+        if (homePrompts) {
+          const remappedPrompts = homePrompts.map((p: any) => ({
             id: p.id,
             title: p.title,
+            description: p.description,
             price: p.price,
-            created_at: p.created_at,
-            rating: 4.8,
-            sales: 0,
-            author: (p.creator as any)?.display_name || (p.creator as any)?.username || "Creator",
-            platform: (p.platform as any)?.name || "AI",
-            image: p.cover_image_url
-          })));
+            image: p.cover_image_url || 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&q=80',
+            rating: p.average_rating || 5.0,
+            author: p.users?.username || 'Creator Pro',
+            platform: p.platforms?.name || 'ChatGPT',
+            category: p.categories?.name || 'General',
+            sales: p.purchases_count || 0,
+            viewsCount: p.views_count || 0
+          }));
+          setDbPrompts(remappedPrompts as any);
         }
-
-        if (catsRes.data) {
-          setDbCategories(catsRes.data);
-        }
+        setDbCategories([]);
       } catch (err) {
         console.error("Error loading home data:", err);
       }
@@ -560,6 +547,7 @@ export default function HomePage() {
           </motion.div>
         </section>
 
+
         {/* ── IMAGE TRANSFORMATION (9:16) ──────────────────────────────────────── */}
         <section>
           <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" />
@@ -624,21 +612,24 @@ export default function HomePage() {
         {/* ── 16:9 VIDEO PROMPTS ───────────────────────────────────────────────── */}
         <section>
           <SectionHeader title="Video & YouTube Prompts" sub="16:9 Widescreen · Cinematic" />
-          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
             {[...widePrompts, widePrompts[0]].slice(0, 5).map((p, i) => (
-              <SectionCard200
+              <ExplorePromptCard
                 key={`${p.id}-${i}`}
-                p={{
-                  title: p.title,
-                  image: p.image,
-                  platform: "YouTube",
-                  rating: 4.7,
-                  author: "Creator Pro",
-                  price: 24,
-                }}
-                href={`/prompt/${p.promptId}`}
-                category1="Video"
-                category2={i % 2 === 0 ? "YouTube" : "Cinematic"}
+                id={p.promptId.toString()}
+                title={p.title}
+                description={p.title}
+                image={p.image}
+                rating={4.7}
+                usageCount={2100}
+                tags={["Video", i % 2 === 0 ? "YouTube" : "Cinematic"]}
+                creator="Creator Pro"
+                price={24}
+                category="Video"
+                platform="YouTube"
+                mode="grid"
+                initialWishlisted={false}
+                viewsCount={0}
               />
             ))}
           </div>
@@ -670,14 +661,24 @@ export default function HomePage() {
         {/* ── BASED ON PROFESSION & INTEREST ─────────────────────────────────────── */}
         <section>
           <SectionHeader title="Based on Your Profession & Interest" sub="Single prompt cards · handpicked for you" />
-          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
             {prompts.slice(0, 5).map((p) => (
-              <SectionCard200
+              <ExplorePromptCard
                 key={`prof2-${p.id}`}
-                p={p}
-                href={`/prompt/${p.id}`}
-                category1="Profession"
-                category2="Interest"
+                id={p.id.toString()}
+                title={p.title}
+                description={p.title}
+                image={p.image}
+                rating={p.rating || 4.8}
+                usageCount={p.sales || 0}
+                tags={["Profession", "Interest"]}
+                creator={p.author || "Unknown"}
+                price={p.price || 0}
+                category="Profession"
+                platform={p.platform || "AI"}
+                mode="grid"
+                initialWishlisted={false}
+                viewsCount={0}
               />
             ))}
           </div>
@@ -781,10 +782,72 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── TRENDING ─────────────────────────────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Trending Topics" />
-          <div className="bg-card border border-border/60 rounded-[3rem] p-10 space-y-10">
+
+
+        {/* ── WHAT PEOPLE ARE BUYING ─────────────────────────────────────────── */}
+        <section className="space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h2 className="heading-h2">What People are Buying</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {["all", "text", "image", "code", "agent"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  className={cn(
+                    "px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all border",
+                    activeFilter === f 
+                      ? "bg-purple-600 text-white border-purple-600 shadow-xl shadow-purple-600/20" 
+                      : "bg-white text-slate-500 border-slate-200 hover:border-purple-300 hover:text-purple-600"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
+            <AnimatePresence mode="popLayout">
+              {displayPrompts
+                .filter(p => activeFilter === "all" || p.category === activeFilter)
+                .slice(0, 10)
+                .map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2, delay: i * 0.05 }}
+                  >
+                    <ExplorePromptCard
+                      id={p.id.toString()}
+                      title={p.title}
+                      description={p.title}
+                      image={p.image}
+                      rating={p.rating || 4.8}
+                      usageCount={p.sales || 2100}
+                      tags={[p.category || "General"]}
+                      creator={p.author || "Creator Pro"}
+                      price={p.price || 24}
+                      category={p.category}
+                      platform={p.platform || "Midjourney"}
+                      mode="grid"
+                      initialWishlisted={false}
+                viewsCount={0}
+                    />
+                  </motion.div>
+                ))}
+            </AnimatePresence>
+          </div>
+        </section>
+
+        {/* ── TRENDING TOPICS ──────────────────────────────────────────────────── */}
+        <section className="space-y-12">
+          <SectionHeader title="Trending Topics" sub="Explore trending prompts by category" more={false} />
+          <div className="bg-card border border-border/60 rounded-[3rem] p-10 space-y-16">
             {trendingGroups.map((group, gi) => (
               <div key={group.label}>
                 <div className="flex items-center gap-2 mb-4">
@@ -815,14 +878,24 @@ export default function HomePage() {
         {/* ── MOST LIKED PROMPTS (Favorite Section) ─────────────────────────────── */}
         <section className="bg-slate-50 border border-slate-200/60 rounded-[3rem] p-8 md:p-12">
           <SectionHeader title="Most Liked Prompts" sub="User favorites · Community picks" />
-          <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
             {prompts.slice(0, 5).map((p, i) => (
-              <SectionCard200
+              <ExplorePromptCard
                 key={`fave-${i}`}
-                p={{ ...p, id: i + 100 }}
-                href={`/prompt/${p.id}`}
-                category1="Architecture"
-                category2="System Design"
+                id={(p.id + 100).toString()}
+                title={p.title}
+                description={p.title}
+                image={p.image}
+                rating={p.rating || 4.8}
+                usageCount={p.sales || 0}
+                tags={["Architecture", "System Design"]}
+                creator={p.author || "Unknown"}
+                price={p.price || 0}
+                category="Design"
+                platform={p.platform || "AI"}
+                mode="grid"
+                initialWishlisted={false}
+                viewsCount={0}
               />
             ))}
           </div>
