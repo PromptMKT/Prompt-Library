@@ -13,36 +13,15 @@ import {
 
 import { PromptService } from "@/lib/services/PromptService";
 import { ExplorePromptCard } from "@/app/explore/components/ExplorePromptCard";
+import { supabase } from "@/lib/supabase";
 
 // ─── DUMMY DATA ───────────────────────────────────────────────────────────────
 
-const prompts = [
-  { id: 1, title: "Neon Cyberpunk City at Midnight", price: 29, rating: 4.9, sales: 3204, author: "AlphaDesigner", platform: "Midjourney", image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&q=80", category: "image" },
-  { id: 2, title: "Ethereal Portrait – Bioluminescent Skin", price: 19, rating: 4.7, sales: 1850, author: "VisionX",       platform: "DALL-E",      image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80", category: "image" },
-  { id: 3, title: "Street Photography in Rainy Tokyo", price: 14, rating: 4.8, sales: 2100, author: "Kinora",           platform: "Stable-D",    image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=600&q=80", category: "image" },
-  { id: 4, title: "Abstract Fluid Art – Gold & Indigo", price: 24, rating: 4.6, sales: 987,  author: "ArtFlux",         platform: "Midjourney",  image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80", category: "image" },
-  { id: 5, title: "Cinematic Landscape – Golden Hour", price: 35, rating: 5.0, sales: 4100, author: "FrameForge",      platform: "Runway ML",   image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&q=80", category: "image" },
-  { id: 10, title: "Professional SaaS Landing Page Copy", price: 15, rating: 4.8, sales: 1200, author: "CopyMaster",    platform: "ChatGPT",     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80", category: "text" },
-  { id: 11, title: "Next.js 15 Auth Dashboard", price: 49, rating: 4.9, sales: 850, author: "DevPro",        platform: "GitHub",      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80", category: "code" },
-  { id: 12, title: "Autonomous Social Media Agent", price: 79, rating: 5.0, sales: 450, author: "AgentX",        platform: "Gemini",      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&q=80", category: "agent" },
-  { id: 13, title: "Modern Minimalist Icon Set", price: 12, rating: 4.7, sales: 3200, author: "Iconic",        platform: "DALL-E",      image: "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=600&q=80", category: "image" },
-  { id: 14, title: "Python Data Analysis Script", price: 25, rating: 4.6, sales: 1100, author: "PyExpert",      platform: "HuggingFace", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80", category: "code" },
-];
 
-const widePrompts = [
-  { id: 6, title: "YouTube Thumbnail – Viral Energy",        image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=700&q=80", promptId: 1 },
-  { id: 7, title: "Documentary B-Roll – Urban Decay",        image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=700&q=80", promptId: 2 },
-  { id: 8, title: "Cinematic Drone Shot – Coastal Cliffs",   image: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=700&q=80", promptId: 3 },
-  { id: 9, title: "Product Reveal – Dark Studio Setup",      image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=700&q=80", promptId: 4 },
-];
 
-const batchPrompts = [
-  { title: "LinkedIn Prompt", img: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=400&q=80", promptId: 1 },
-  { title: "SEO Strategy",    img: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&q=80", promptId: 2 },
-  { title: "Twitter Thread",  img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80", promptId: 3 },
-  { title: "Content Plan",    img: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&q=80", promptId: 4 },
-  { title: "Email Campaign",  img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?w=400&q=80", promptId: 5 },
-];
+
+
+
 
 const platforms = [
   { name: "ChatGPT",    icon: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg", padding: "p-5 md:p-7" },
@@ -63,13 +42,7 @@ const trendingGroups = [
   { label: "Agents",            icon: <Globe className="w-3.5 h-3.5" /> },
 ];
 
-const categories = [
-  { title: "Photography & Imaging", desc: "Image generation, transformation, etc.", icon: ImageIcon },
-  { title: "Video Generation",      desc: "Shorts, Reels, Cinematic sequences",   icon: Video },
-  { title: "Coding & Technical",    desc: "Architecture, Debugging, Logic",       icon: Code },
-  { title: "SEO & Content",         desc: "Blogs, Articles, Social strategy",     icon: Globe },
-  { title: "Research & Strategy",   desc: "Market analysis, Startup ideas",       icon: Zap },
-];
+
 
 const professions = [
   { title: "CONTENT\nCREATORS",             emoji: "🤳" },
@@ -86,14 +59,7 @@ const guides = [
   { title: "Startup Ideas Hacks", tag: "💡 Startup",   seeds: ["aurora", "desert", "coast", "lake"] },
 ];
 
-const contributors = [
-  { name: "Noah Thompson",   role: "Prompt Engineer",   likes: "72.9K", posts: "828", views: "342K", seed: "noah" },
-  { name: "Sara Kim",        role: "AI Art Director",   likes: "58.3K", posts: "614", views: "220K", seed: "sara" },
-  { name: "Luca Moretti",    role: "Midjourney Expert", likes: "91.2K", posts: "1.2K", views: "480K", seed: "luca" },
-  { name: "Ava Chen",        role: "Brand Strategist",  likes: "44.1K", posts: "399", views: "175K", seed: "ava"  },
-  { name: "James Wright",    role: "Video Generationist", likes: "67.8K", posts: "755", views: "310K", seed: "james" },
-  { name: "Mia Santos",      role: "Content Creator",   likes: "38.5K", posts: "520", views: "140K", seed: "mia"  },
-];
+
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -106,28 +72,59 @@ const Stars = ({ rating }: { rating: number }) => (
   </div>
 );
 
-const SectionHeader = ({ title, sub, more = true }: { title: string; sub?: string; more?: boolean }) => (
+const SectionHeader = ({ title, sub, more = true, href = "/explore" }: { title: string; sub?: string; more?: boolean; href?: string }) => (
   <div className="flex items-end justify-between mb-8">
     <div>
       <h2 className="heading-h2">{title}</h2>
       {sub && <p className="body-xs tracking-widest mt-2">{sub}</p>}
     </div>
     {more && (
-      <button className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group">
-        See all <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-      </button>
+      <Link href={href}>
+        <button className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors group">
+          See all <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+        </button>
+      </Link>
     )}
   </div>
 );
 
-const ActionStrip = () => (
+
+const WishlistButton = ({ promptId }: { promptId: string }) => {
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const handleToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const prev = isWishlisted;
+    setIsWishlisted(!prev);
+    try {
+      const response = await fetch('/api/wishlist/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promptId })
+      });
+      const res = await response.json();
+      if (!res.success) {
+        setIsWishlisted(prev);
+      } else {
+        setIsWishlisted(res.wishlisted ?? !prev);
+      }
+    } catch {
+      setIsWishlisted(prev);
+    }
+  };
+  return (
+    <button onClick={handleToggle} className={cn("w-8 h-8 rounded-xl backdrop-blur-md border border-white/10 flex items-center justify-center transition-colors shadow-sm z-[50]", isWishlisted ? "bg-rose-500/20 text-rose-400 border-rose-400/50" : "bg-black/40 text-white hover:text-rose-400 hover:border-rose-400/50")}>
+      <Heart className={cn("w-4 h-4", isWishlisted && "fill-rose-400")} />
+    </button>
+  );
+};
+
+const ActionStrip = ({ promptId }: { promptId: string }) => (
   <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-6 group-hover:translate-x-0 z-30 duration-200">
     <button className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-purple-600 hover:border-purple-500 transition-colors shadow-sm">
       <Eye className="w-4 h-4" />
     </button>
-    <button className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:text-rose-400 hover:border-rose-400/50 transition-colors shadow-sm">
-      <Heart className="w-4 h-4" />
-    </button>
+    <WishlistButton promptId={promptId} />
     <button className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:text-blue-400 hover:border-blue-400/50 transition-colors shadow-sm">
       <Share2 className="w-4 h-4" />
     </button>
@@ -146,7 +143,7 @@ const PortraitCard = ({ image, badge, title, price, rating, author, href }: { im
     <div className="aspect-[9/16] relative overflow-hidden">
       <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-      <ActionStrip />
+      <ActionStrip promptId={p.id} />
       {badge && (
         <span className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
           {badge}
@@ -182,7 +179,7 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
     <div className="h-62.5 w-full relative overflow-hidden shrink-0 bg-slate-100">
       <img src={p.image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <ActionStrip />
+      <ActionStrip promptId={p.id} />
       <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
         {p.platform}
       </span>
@@ -204,19 +201,7 @@ const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
 );
 
 // Shared fixed-size card for Image Transformation, Instagram, and YouTube sections
-const SectionCard200 = ({
-  p,
-  href,
-  category1,
-  category2,
-  imageOnly = false,
-}: {
-  p: typeof prompts[0] | { title: string; image: string; platform: string; rating: number; author: string; price: number };
-  href: string;
-  category1: string;
-  category2: string;
-  imageOnly?: boolean;
-}) => (
+const SectionCard200 = ({ p, href, category1, category2, imageOnly = false }: { p: any; href: string; category1: string; category2: string; imageOnly?: boolean }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -235,7 +220,7 @@ const SectionCard200 = ({
             {p.platform}
           </span>
 
-          <ActionStrip />
+          <ActionStrip promptId={p.id} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           
           {/* Hover Content Section (Bottom 15%) */}
@@ -260,7 +245,7 @@ const SectionCard200 = ({
             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border border-white/20 bg-black/40 text-white backdrop-blur-md z-10">
               {p.platform}
             </div>
-            <ActionStrip />
+            <ActionStrip promptId={p.id} />
           </div>
           <div className="p-4 flex flex-col h-full bg-white">
             <div className="flex gap-1.5 flex-wrap mb-2">
@@ -307,20 +292,20 @@ const BatchCard = ({ title, img, href }: { title: string; img: string; href: str
 );
 
 // Trending mini card
-const TrendingCard = ({ seed, idx, href }: { seed: string; idx: number; href: string }) => (
+const TrendingCard = ({ seed, idx, href, title, price }: { seed: string; idx: number; href: string; title?: string; price?: number }) => (
   <motion.div whileHover={{ y: -4, scale: 1.03 }} className="glass-card w-28 shrink-0 bg-card border border-border/60 hover:border-primary rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-primary/20 transition-all" onClick={() => { window.location.href = href; }}>
     <div className="aspect-square overflow-hidden relative">
       <img src={`https://picsum.photos/seed/${seed}-${idx}/200`} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
     </div>
     <div className="p-2">
-      <div className="text-[9px] font-black text-foreground truncate">Prompt #{idx+1}</div>
-      <div className="text-[8px] text-muted-foreground font-bold mt-0.5">◈ {12 + idx}</div>
+      <div className="text-[9px] font-black text-foreground truncate">{title || `Prompt #${idx+1}`}</div>
+      <div className="text-[8px] text-muted-foreground font-bold mt-0.5">◈ {price || 12 + idx}</div>
     </div>
   </motion.div>
 );
 
 // Contributor profile card
-const ProfileCard = ({ c, href }: { c: typeof contributors[0]; href: string }) => (
+const ProfileCard = ({ c, href }: { c: any; href: string }) => (
   <motion.div
     whileHover={{ y: -6 }}
     className="glass-card w-60 shrink-0 bg-card border border-border/60 hover:border-primary rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/20 transition-all cursor-pointer"
@@ -442,32 +427,59 @@ const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const [liked, setLiked] = useState<number[]>([]);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [dbUsers, setDbUsers] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState("all");
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const homePrompts = await PromptService.getAllPrompts(20);
+        const homePrompts = await PromptService.getAllPrompts(200);
         if (homePrompts) {
           const remappedPrompts = homePrompts.map((p: any) => ({
             id: p.id,
             title: p.title,
             description: p.description,
-            price: p.price,
+            price: p.price || 0,
             image: p.cover_image_url || 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&q=80',
             rating: p.average_rating || 5.0,
-            author: p.users?.username || 'Creator Pro',
+            author: p.users?.username || 'Creator',
+            authorId: p.creator_id,
+            authorAvatar: p.users?.avatar_url,
             platform: p.platforms?.name || 'ChatGPT',
             category: p.categories?.name || 'General',
+            categoryId: p.categories?.id || null,
             sales: p.purchases_count || 0,
-            viewsCount: p.views_count || 0
+            viewsCount: p.views_count || 0,
+            seed: p.users?.username || 'user'
           }));
           setDbPrompts(remappedPrompts as any);
+
+          const userMap = new Map();
+          remappedPrompts.forEach(p => {
+             if (p.authorId) {
+               const existing = userMap.get(p.authorId) || { name: p.author, role: "Prompt Engineer", likes: 0, posts: 0, views: 0, seed: p.seed, avatarUrl: p.authorAvatar };
+               existing.posts += 1;
+               existing.views += Number(p.viewsCount);
+               existing.likes += Math.round(Number(p.rating) * 10 + (Number(p.sales) * 2)); 
+               userMap.set(p.authorId, existing);
+             }
+          });
+          const topUsers = Array.from(userMap.values())
+             .sort((a, b) => b.views - a.views)
+             .map(u => ({ 
+               ...u, 
+               likes: u.likes > 1000 ? (u.likes/1000).toFixed(1) + 'K' : u.likes.toString(), 
+               views: u.views > 1000 ? (u.views/1000).toFixed(1) + 'K' : u.views.toString(),
+               posts: u.posts.toString()
+             }));
+          setDbUsers(topUsers);
         }
-        setDbCategories([]);
+
+        const { data: cats } = await supabase.from('categories').select('*');
+        if (cats) setDbCategories(cats);
+
       } catch (err) {
         console.error("Error loading home data:", err);
       }
@@ -475,7 +487,19 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  const displayPrompts = dbPrompts.length > 0 ? dbPrompts : prompts;
+  const getFiltered = (condition: (p: any) => boolean, limit = 5) => {
+    const subset = dbPrompts.filter(condition);
+    if (subset.length >= limit) return subset.slice(0, limit);
+    const fallback = dbPrompts.filter(p => !subset.includes(p)).slice(0, Math.max(0, limit - subset.length));
+    return [...subset, ...fallback];
+  };
+
+  const imagePrompts = getFiltered(p => p.category?.toLowerCase().includes("image") || p.category?.toLowerCase().includes("visual"));
+  const videoPrompts = getFiltered(p => p.category?.toLowerCase().includes("video") || p.platform?.toLowerCase().includes("runway"));
+  const packPrompts = dbPrompts.length > 5 ? dbPrompts.slice(5, 10) : dbPrompts; 
+  const trendingPrompts = [...dbPrompts].sort((a, b) => b.viewsCount - a.viewsCount);
+  const mostLikedPrompts = [...dbPrompts].sort((a, b) => b.rating - a.rating);
+  const displayPrompts = dbPrompts; 
 
   // Icon mapping for database categories
   const getCategoryIcon = (name: string) => {
@@ -550,9 +574,9 @@ export default function HomePage() {
 
         {/* ── IMAGE TRANSFORMATION (9:16) ──────────────────────────────────────── */}
         <section>
-          <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" />
+          <SectionHeader title="Image Transformation" sub="Instagram · Story · Portrait · 9:16 Format" href="/explore?category=image-visual" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            {displayPrompts.slice(0, 5).map((p, i) => (
+            {imagePrompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={p.id}
                 p={p}
@@ -567,9 +591,9 @@ export default function HomePage() {
 
         {/* ── INSTAGRAM PROMPTS ────────────────────────────────────────────────── */}
         <section>
-          <SectionHeader title="Instagram Prompts" sub="Reels · AI Avatars · Posts" />
+          <SectionHeader title="Instagram Prompts" sub="Reels · AI Avatars · Posts" href="/explore?category=image-visual" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            {displayPrompts.slice(0, 5).map((p, i) => (
+            {imagePrompts.slice(0, 5).map((p, i) => (
               <SectionCard200
                 key={`ig-${p.id}`}
                 p={p}
@@ -611,25 +635,25 @@ export default function HomePage() {
 
         {/* ── 16:9 VIDEO PROMPTS ───────────────────────────────────────────────── */}
         <section>
-          <SectionHeader title="Video & YouTube Prompts" sub="16:9 Widescreen · Cinematic" />
+          <SectionHeader title="Video & YouTube Prompts" sub="16:9 Widescreen · Cinematic" href="/explore?category=video-generation" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
-            {[...widePrompts, widePrompts[0]].slice(0, 5).map((p, i) => (
+            {videoPrompts.slice(0, 5).map((p, i) => (
               <ExplorePromptCard
-                key={`${p.id}-${i}`}
-                id={p.promptId.toString()}
+                key={`video-${p.id}-${i}`}
+                id={p.id.toString()}
                 title={p.title}
-                description={p.title}
+                description={p.description || p.title}
                 image={p.image}
-                rating={4.7}
-                usageCount={2100}
-                tags={["Video", i % 2 === 0 ? "YouTube" : "Cinematic"]}
-                creator="Creator Pro"
-                price={24}
-                category="Video"
-                platform="YouTube"
+                rating={p.rating || 4.7}
+                usageCount={p.sales || 2100}
+                tags={[p.category || "Video", i % 2 === 0 ? "YouTube" : "Cinematic"]}
+                creator={p.author || "Creator Pro"}
+                price={p.price || 24}
+                category={p.category || "Video"}
+                platform={p.platform || "Platform"}
                 mode="grid"
                 initialWishlisted={false}
-                viewsCount={0}
+                viewsCount={p.viewsCount || 0}
               />
             ))}
           </div>
@@ -637,20 +661,20 @@ export default function HomePage() {
 
         {/* ── BATCH STACKED PROMPT CARDS ───────────────────────────────────────── */}
         <section>
-          <SectionHeader title="Prompt Packs" sub="Bundled collections → stacked value" />
+          <SectionHeader title="Prompt Packs" sub="Bundled collections → stacked value" href="/explore?sort=featured" />
           <div className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide pb-2">
-            {batchPrompts.slice(0, 5).map((b, i) => (
+            {packPrompts.slice(0, 5).map((b, i) => (
               <SectionCard200
-                key={`${b.title}-${i}`}
+                key={`pack-${b.id}-${i}`}
                 p={{
                   title: b.title,
-                  image: b.img,
+                  image: b.image,
                   platform: "Bundle",
-                  rating: 4.8,
-                  author: prompts[i % prompts.length].author,
-                  price: prompts[i % prompts.length].price,
+                  rating: b.rating || 4.8,
+                  author: b.author || "Creator",
+                  price: b.price || 19,
                 }}
-                href={`/prompt/${b.promptId}`}
+                href={`/prompt/${b.id}`}
                 category1="Prompt Pack"
                 category2="Bundle"
               />
@@ -660,14 +684,14 @@ export default function HomePage() {
 
         {/* ── BASED ON PROFESSION & INTEREST ─────────────────────────────────────── */}
         <section>
-          <SectionHeader title="Based on Your Profession & Interest" sub="Single prompt cards · handpicked for you" />
+          <SectionHeader title="Based on Your Profession & Interest" sub="Single prompt cards · handpicked for you" href="/explore?sort=newest" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
-            {prompts.slice(0, 5).map((p) => (
+            {displayPrompts.slice(0, 5).map((p) => (
               <ExplorePromptCard
                 key={`prof2-${p.id}`}
                 id={p.id.toString()}
                 title={p.title}
-                description={p.title}
+                description={p.description || p.title}
                 image={p.image}
                 rating={p.rating || 4.8}
                 usageCount={p.sales || 0}
@@ -678,7 +702,7 @@ export default function HomePage() {
                 platform={p.platform || "AI"}
                 mode="grid"
                 initialWishlisted={false}
-                viewsCount={0}
+                viewsCount={p.viewsCount || 0}
               />
             ))}
           </div>
@@ -722,7 +746,7 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {(dbCategories.length > 0 ? dbCategories : categories).map((cat: any, i) => {
+            {dbCategories.map((cat: any, i) => {
               const Icon = cat.icon || getCategoryIcon(cat.name || cat.title);
               return (
                 <div
@@ -856,8 +880,8 @@ export default function HomePage() {
                   <Flame className="w-3.5 h-3.5 text-orange-500 ml-1" />
                 </div>
                 <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 snap-x">
-                  {[...Array(12)].map((_, j) => (
-                    <TrendingCard key={j} seed={`${group.label}-${gi}`} idx={j} href={`/prompt/${prompts[j % prompts.length].id}`} />
+                  {trendingPrompts.slice(0, 12).map((p, j) => (
+                    <TrendingCard key={j} seed={`${group.label}-${gi}`} idx={j} href={`/prompt/${p.id}`} title={p.title} price={p.price || 0} />
                   ))}
                 </div>
               </div>
@@ -869,7 +893,7 @@ export default function HomePage() {
         <section>
           <SectionHeader title="Top Contributors" more={false} />
           <div className="flex gap-5 overflow-x-auto scrollbar-hide pb-6 snap-x -mx-2 px-2">
-            {contributors.map((c) => (
+            {dbUsers.slice(0, 6).map((c: any) => (
               <ProfileCard key={c.seed} c={c} href={`/u/${c.name}`} />
             ))}
           </div>
@@ -877,25 +901,25 @@ export default function HomePage() {
 
         {/* ── MOST LIKED PROMPTS (Favorite Section) ─────────────────────────────── */}
         <section className="bg-slate-50 border border-slate-200/60 rounded-[3rem] p-8 md:p-12">
-          <SectionHeader title="Most Liked Prompts" sub="User favorites · Community picks" />
+          <SectionHeader title="Most Liked Prompts" sub="User favorites · Community picks" href="/explore?sort=featured" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 pb-2">
-            {prompts.slice(0, 5).map((p, i) => (
+            {mostLikedPrompts.slice(0, 5).map((p, i) => (
               <ExplorePromptCard
-                key={`fave-${i}`}
-                id={(p.id + 100).toString()}
+                key={`fave-${p.id}`}
+                id={p.id.toString()}
                 title={p.title}
-                description={p.title}
+                description={p.description || p.title}
                 image={p.image}
                 rating={p.rating || 4.8}
                 usageCount={p.sales || 0}
-                tags={["Architecture", "System Design"]}
-                creator={p.author || "Unknown"}
+                tags={p.category ? [p.category] : ["Architecture", "System Design"]}
+                creator={p.author || "Creator"}
                 price={p.price || 0}
-                category="Design"
-                platform={p.platform || "AI"}
+                category={p.category || "Design"}
+                platform={p.platform || "Platform"}
                 mode="grid"
                 initialWishlisted={false}
-                viewsCount={0}
+                viewsCount={p.viewsCount || 0}
               />
             ))}
           </div>
@@ -913,8 +937,8 @@ export default function HomePage() {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <div className="flex -space-x-2">
-                {contributors.map(c => (
-                  <img key={c.seed} src={`https://i.pravatar.cc/32?u=${c.seed}`} className="w-8 h-8 rounded-full border-2 border-card" alt="" />
+                {dbUsers.slice(0, 6).map((c: any) => (
+                  <img key={c.seed} src={c.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.seed}`} className="w-8 h-8 rounded-full border-2 border-card" alt="" />
                 ))}
               </div>
               <div className="text-xs text-muted-foreground font-bold"><span className="text-foreground font-black">50K+</span> happy users</div>
