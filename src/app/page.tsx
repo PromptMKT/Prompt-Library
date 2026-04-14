@@ -132,7 +132,7 @@ const ActionStrip = ({ promptId }: { promptId: string }) => (
 );
 
 // Portrait card (9:16)
-const PortraitCard = ({ image, badge, title, price, rating, author, href }: { image: string; badge?: string; title?: string; price?: number; rating?: number; author?: string; href: string }) => (
+const PortraitCard = ({ id, image, badge, title, price, rating, author, href }: { id: string; image: string; badge?: string; title?: string; price?: number; rating?: number; author?: string; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -143,7 +143,7 @@ const PortraitCard = ({ image, badge, title, price, rating, author, href }: { im
     <div className="aspect-[9/16] relative overflow-hidden">
       <img src={image} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-      <ActionStrip promptId={p.id} />
+      <ActionStrip promptId={id} />
       {badge && (
         <span className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-black/50 backdrop-blur-md text-white border border-white/10">
           {badge}
@@ -167,7 +167,7 @@ const PortraitCard = ({ image, badge, title, price, rating, author, href }: { im
 );
 
 // Full standard prompt card
-const PromptCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
+const PromptCard = ({ p, href }: { p: any; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -354,7 +354,7 @@ const ProfileCard = ({ c, href }: { c: any; href: string }) => (
 );
 
 // Favorite Card (Specific to Most Liked section matching User requirements)
-const FavoriteCard = ({ p, href }: { p: typeof prompts[0]; href: string }) => (
+const FavoriteCard = ({ p, href }: { p: any; href: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -457,7 +457,7 @@ export default function HomePage() {
           setDbPrompts(remappedPrompts as any);
 
           const userMap = new Map();
-          remappedPrompts.forEach(p => {
+          remappedPrompts.forEach((p: any) => {
              if (p.authorId) {
                const existing = userMap.get(p.authorId) || { name: p.author, role: "Prompt Engineer", likes: 0, posts: 0, views: 0, seed: p.seed, avatarUrl: p.authorAvatar };
                existing.posts += 1;
@@ -468,7 +468,7 @@ export default function HomePage() {
           });
           const topUsers = Array.from(userMap.values())
              .sort((a, b) => b.views - a.views)
-             .map(u => ({ 
+             .map((u: any) => ({ 
                ...u, 
                likes: u.likes > 1000 ? (u.likes/1000).toFixed(1) + 'K' : u.likes.toString(), 
                views: u.views > 1000 ? (u.views/1000).toFixed(1) + 'K' : u.views.toString(),
@@ -490,15 +490,15 @@ export default function HomePage() {
   const getFiltered = (condition: (p: any) => boolean, limit = 5) => {
     const subset = dbPrompts.filter(condition);
     if (subset.length >= limit) return subset.slice(0, limit);
-    const fallback = dbPrompts.filter(p => !subset.includes(p)).slice(0, Math.max(0, limit - subset.length));
+    const fallback = dbPrompts.filter((p: any) => !subset.includes(p)).slice(0, Math.max(0, limit - subset.length));
     return [...subset, ...fallback];
   };
 
-  const imagePrompts = getFiltered(p => p.category?.toLowerCase().includes("image") || p.category?.toLowerCase().includes("visual"));
-  const videoPrompts = getFiltered(p => p.category?.toLowerCase().includes("video") || p.platform?.toLowerCase().includes("runway"));
+  const imagePrompts = getFiltered((p: any) => p.category?.toLowerCase().includes("image") || p.category?.toLowerCase().includes("visual"));
+  const videoPrompts = getFiltered((p: any) => p.category?.toLowerCase().includes("video") || p.platform?.toLowerCase().includes("runway"));
   const packPrompts = dbPrompts.length > 5 ? dbPrompts.slice(5, 10) : dbPrompts; 
-  const trendingPrompts = [...dbPrompts].sort((a, b) => b.viewsCount - a.viewsCount);
-  const mostLikedPrompts = [...dbPrompts].sort((a, b) => b.rating - a.rating);
+  const trendingPrompts = [...dbPrompts].sort((a: any, b: any) => b.viewsCount - a.viewsCount);
+  const mostLikedPrompts = [...dbPrompts].sort((a: any, b: any) => b.rating - a.rating);
   const displayPrompts = dbPrompts; 
 
   // Icon mapping for database categories
